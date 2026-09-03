@@ -1,13 +1,17 @@
 {
   "name": "crawlcheck-core",
-  "version": "0.2.0",
-  "description": "The dependency-free modules of the CrawlCheck AI-crawler visibility scanner, extracted from production: robots.txt policy per crawler agent, user-agent group shadowing detection, crawler identification and log-line forgery verification against the operators' published IP feeds.",
+  "version": "0.3.0",
+  "description": "The dependency-free modules of the CrawlCheck AI-crawler visibility scanner, extracted from production: robots.txt policy per crawler agent, user-agent group shadowing detection, crawler identification and log-line forgery verification against the operators' published IP feeds, the quotable-content reader an answer engine is judged by, and the markdown-negotiation and agent-surface probes.",
   "type": "module",
   "main": "src/index.js",
   "exports": {
     ".": "./src/index.js",
     "./robots": "./src/robots.js",
-    "./agents": "./src/agents.js"
+    "./agents": "./src/agents.js",
+    "./quotable": "./src/quotable.js",
+    "./surfaces": "./src/surfaces.js",
+    "./jsonld": "./src/jsonld.js",
+    "./rows": "./src/rows.js"
   },
   "files": [
     "src"
@@ -36,6 +40,13 @@
     "aeo",
     "geo",
     "crawler",
-    "cloudflare-workers"
+    "cloudflare-workers",
+    "quotable content",
+    "content negotiation",
+    "text/markdown",
+    "agents.md",
+    "faqpage",
+    "json-ld",
+    "answer engine"
   ]
 }
