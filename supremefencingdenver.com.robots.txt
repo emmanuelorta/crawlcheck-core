@@ -1,0 +1,86 @@
+User-agent: *
+Disallow: /wp-admin/
+Allow: /wp-admin/admin-ajax.php
+
+# AI and LLM crawlers explicitly allowed
+User-agent: GPTBot
+Allow: /wp-admin/admin-ajax.php
+Disallow: /wp-admin/
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /wp-admin/admin-ajax.php
+Disallow: /wp-admin/
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /wp-admin/admin-ajax.php
+Disallow: /wp-admin/
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /wp-admin/admin-ajax.php
+Disallow: /wp-admin/
+Allow: /
+
+User-agent: Claude-Web
+Allow: /wp-admin/admin-ajax.php
+Disallow: /wp-admin/
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /wp-admin/admin-ajax.php
+Disallow: /wp-admin/
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /wp-admin/admin-ajax.php
+Disallow: /wp-admin/
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /wp-admin/admin-ajax.php
+Disallow: /wp-admin/
+Allow: /
+
+User-agent: Google-Extended
+Allow: /wp-admin/admin-ajax.php
+Disallow: /wp-admin/
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /wp-admin/admin-ajax.php
+Disallow: /wp-admin/
+Allow: /
+
+User-agent: Amazonbot
+Allow: /wp-admin/admin-ajax.php
+Disallow: /wp-admin/
+Allow: /
+
+User-agent: CCBot
+Allow: /wp-admin/admin-ajax.php
+Disallow: /wp-admin/
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /wp-admin/admin-ajax.php
+Disallow: /wp-admin/
+Allow: /
+
+User-agent: cohere-ai
+Allow: /wp-admin/admin-ajax.php
+Disallow: /wp-admin/
+Allow: /
+
+User-agent: Bytespider
+Allow: /wp-admin/admin-ajax.php
+Disallow: /wp-admin/
+Allow: /
+
+Content-Signal: search=yes, ai-train=no
+
+EntityMap: https://supremefencingdenver.com/entitymap.json
+Sitemap: https://supremefencingdenver.com/sitemap_index.xml
+Sitemap: https://supremefencingdenver.com/entitymap-sitemap.xml
+Llms: https://supremefencingdenver.com/llms.txt
