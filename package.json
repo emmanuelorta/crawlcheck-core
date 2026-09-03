@@ -1,0 +1,16 @@
+{
+  "name": "crawlcheck-core",
+  "version": "0.1.0",
+  "description": "The dependency-free modules of the CrawlCheck AI-crawler visibility scanner, extracted from production: robots.txt policy per crawler agent, user-agent group shadowing detection.",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": { ".": "./src/index.js", "./robots": "./src/robots.js" },
+  "files": ["src"],
+  "scripts": { "test": "node --test \"test/**/*.test.js\"" },
+  "repository": { "type": "git", "url": "https://github.com/emmanuelorta/crawlcheck-core" },
+  "homepage": "https://crawlcheck.io",
+  "author": "Emmanuel Orta (https://emmanuelorta.com)",
+  "license": "MIT",
+  "engines": { "node": ">=20" },
+  "keywords": ["robots.txt", "ai crawlers", "gptbot", "claudebot", "perplexitybot", "llms.txt", "seo", "aeo", "geo", "crawler", "cloudflare-workers"]
+}
