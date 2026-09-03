@@ -1,0 +1,90 @@
+{
+ "ok": true,
+ "counted": 11,
+ "tally": {
+  "verified": 5,
+  "spoofed": 2,
+  "unverifiable": 3,
+  "no_bot": 1
+ },
+ "forged_rate_pct": 28.6,
+ "denominator_note": "The rate divides by verified + spoofed only. Requests naming an operator that publishes no feed are excluded - counting them as forged would inflate the number, and counting them as genuine would understate it.",
+ "rows": [
+  {
+   "line": "132.196.86.1 - - [03/Sep/2026:05:00:00 +0000] \"GET /robots.txt HTTP/1.1\" 200 512 \"-\" \"Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.2;",
+   "bot": "GPTBot",
+   "ip": "132.196.86.1",
+   "verdict": "verified",
+   "why": "inside GPTBot's published range"
+  },
+  {
+   "line": "1.2.3.4 - - [03/Sep/2026:05:00:00 +0000] \"GET /robots.txt HTTP/1.1\" 200 512 \"-\" \"Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.2; +htt",
+   "bot": "GPTBot",
+   "ip": "1.2.3.4",
+   "verdict": "spoofed",
+   "why": "claims GPTBot from an address outside every range GPTBot's operator publishes"
+  },
+  {
+   "line": "216.73.216.1 - - [03/Sep/2026:05:00:00 +0000] \"GET /robots.txt HTTP/1.1\" 200 512 \"-\" \"Mozilla/5.0 (compatible; ClaudeBot/1.0; +claudebot@anthropic.com)\"",
+   "bot": "ClaudeBot",
+   "ip": "216.73.216.1",
+   "verdict": "verified",
+   "why": "inside ClaudeBot's published range"
+  },
+  {
+   "line": "203.0.113.9 - - [03/Sep/2026:05:00:00 +0000] \"GET /robots.txt HTTP/1.1\" 200 512 \"-\" \"Mozilla/5.0 (compatible; ClaudeBot/1.0; +claudebot@anthropic.com)\"",
+   "bot": "ClaudeBot",
+   "ip": "203.0.113.9",
+   "verdict": "spoofed",
+   "why": "claims ClaudeBot from an address outside every range ClaudeBot's operator publishes"
+  },
+  {
+   "line": "107.20.236.150 - - [03/Sep/2026:05:00:00 +0000] \"GET /robots.txt HTTP/1.1\" 200 512 \"-\" \"Mozilla/5.0 (compatible; PerplexityBot/1.0; +https://perplexity.ai/perpl",
+   "bot": "PerplexityBot",
+   "ip": "107.20.236.150",
+   "verdict": "verified",
+   "why": "inside PerplexityBot's published range"
+  },
+  {
+   "line": "192.178.4.1 - - [03/Sep/2026:05:00:00 +0000] \"GET /robots.txt HTTP/1.1\" 200 512 \"-\" \"Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)\"",
+   "bot": "Googlebot",
+   "ip": "192.178.4.1",
+   "verdict": "verified",
+   "why": "inside Googlebot's published range"
+  },
+  {
+   "line": "157.55.39.1 - - [03/Sep/2026:05:00:00 +0000] \"GET /robots.txt HTTP/1.1\" 200 512 \"-\" \"Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)\"",
+   "bot": "Bingbot",
+   "ip": "157.55.39.1",
+   "verdict": "verified",
+   "why": "inside Bingbot's published range"
+  },
+  {
+   "line": "198.51.100.7 - - [03/Sep/2026:05:00:00 +0000] \"GET /robots.txt HTTP/1.1\" 200 512 \"-\" \"CCBot/2.0 (https://commoncrawl.org/faq/)\"",
+   "bot": "CCBot",
+   "ip": "198.51.100.7",
+   "verdict": "unverifiable",
+   "why": "this operator publishes no address feed, so the claim can be neither confirmed nor accused"
+  },
+  {
+   "line": "198.51.100.8 - - [03/Sep/2026:05:00:00 +0000] \"GET /robots.txt HTTP/1.1\" 200 512 \"-\" \"Mozilla/5.0 (Linux; Android 5.0) AppleWebKit/537.36 (KHTML, like Gecko) Mo",
+   "bot": "Bytespider",
+   "ip": "198.51.100.8",
+   "verdict": "unverifiable",
+   "why": "this operator publishes no address feed, so the claim can be neither confirmed nor accused"
+  },
+  {
+   "line": "198.51.100.9 - - [03/Sep/2026:05:00:00 +0000] \"GET /robots.txt HTTP/1.1\" 200 512 \"-\" \"Mozilla/5.0 (Windows NT 10.0) Chrome/128\"",
+   "bot": null,
+   "ip": "198.51.100.9",
+   "verdict": "no named crawler"
+  },
+  {
+   "line": "no address here at all Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.2; +https://openai.com/gptbot)",
+   "bot": "GPTBot",
+   "ip": "",
+   "verdict": "unverifiable",
+   "why": "no IP address found on this line"
+  }
+ ]
+}
