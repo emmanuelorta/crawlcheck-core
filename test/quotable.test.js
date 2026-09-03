@@ -15,6 +15,16 @@ const page = (body) => "<html><head><title>t</title></head><body>" + body + "</b
 // with the scanner's user-agent and Accept, refuses to compare unless the bytes
 // are identical, and only then asserts that this module reproduces the numbers.
 // Opt in with CC_LIVE=1 — the offline suite needs no network.
+//
+// One thing is stripped before the digest is taken, and only one: the Cloudflare
+// Web Analytics beacon <script> the edge injects into the response. It is not
+// part of the page the site serves and it is not stable — two colos served this
+// page 8 bytes apart on 2026-09-03, differing only in the beacon's build hash,
+// its SRI integrity hash and an "spa" flag — so a digest over the raw bytes
+// fails on the CDN's release schedule and says "the site changed" when it did
+// not. The fixture names the exclusion and carries the pattern; nothing else is
+// normalised. The reader never saw the element either: it is a <script>, which
+// the reader excludes from content before it counts anything.
 const live = process.env.CC_LIVE === "1";
 const sha256 = async (buf) => Buffer.from(await crypto.subtle.digest("SHA-256", buf)).toString("hex");
 
@@ -27,7 +37,10 @@ test("parity with the production scanner on a live scan of treeservicedenverllc.
     redirect: "follow",
   });
   assert.equal(res.status, 200);
-  const buf = new Uint8Array(await res.arrayBuffer());
+  const raw = Buffer.from(await res.arrayBuffer());
+  const beacon = new RegExp(expected.digest_excludes_pattern, "gi");
+  const buf = Buffer.from(raw.toString("latin1").replace(beacon, ""), "latin1");
+  assert.ok(buf.byteLength < raw.byteLength, "the edge-injected beacon this digest excludes was not found — the exclusion pattern is stale, not the page");
   assert.equal(buf.byteLength, expected.page_bytes,
     "the page is a different length than when this fixture was captured — the site changed, not the reader");
   assert.equal(await sha256(buf), expected.page_sha256,
