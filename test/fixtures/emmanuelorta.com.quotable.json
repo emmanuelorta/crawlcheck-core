@@ -1,0 +1,51 @@
+{
+  "_": "Captured from a live production scan of emmanuelorta.com at crawlcheck.io. `quotable` and `agent_surfaces_found` are the service's own values, copied unaltered. The page itself is NOT committed: page_sha256 is the digest of the exact response body the scan read, so the live test re-fetches with the same user-agent and Accept, refuses to compare if the page has changed, and only then checks that this module reproduces the service's numbers.",
+  "not_reproducible_because": "This homepage renders live edge-read figures refreshed hourly, so its bytes change and the captured digest cannot be re-verified. Confirmed 2026-09-03: an identical-length response returned a different sha256 three hours after capture. The block below is a true record of what the service produced from the page at scan time and is used to prove the reader distinguishes two different sites - it is deliberately NOT used as a re-fetch parity target.",
+  "reproducible": false,
+  "domain": "emmanuelorta.com",
+  "page_url": "https://emmanuelorta.com/",
+  "scan_id": "7tuxavkb10",
+  "scanned_at": "2026-09-03T15:29:46Z",
+  "score_version": 15,
+  "service_build_sha": "959282e633dfcfef",
+  "grade": "A",
+  "overall": 92,
+  "name_hint": "Terrarium Station LLC",
+  "section_score": 67,
+  "quotable": {
+    "paragraphs": 87,
+    "words": 2539,
+    "lead": "Builder · Operator · Denver Record updated 3 September 2026",
+    "lead_names_subject": false,
+    "lead_defines": false,
+    "answer_units": 24,
+    "first_person": 9,
+    "headings": 43,
+    "question_headings": 3,
+    "question_headings_answered": 3,
+    "headings_with_id": 0,
+    "sentences": 153,
+    "median_sentence_words": 15,
+    "short_share": 82,
+    "quotable": 19,
+    "quotable_share": 12,
+    "samples": [
+      "Builder · Operator · Denver Record updated 3 September 2026 I'm Emmanuel Orta — VSNARY .",
+      "The most common serious finding so far is a file returning 200 to every crawler while serving a verification page instead of the content.",
+      "It exports Darwin Core, so an institution can read it without asking me for anything."
+    ],
+    "faq_questions": 0,
+    "faq_visible": 0,
+    "dated": true,
+    "tables": 0
+  },
+  "agent_surfaces_found": {
+    "agent_skills": false,
+    "agents_md": true,
+    "api_catalog": false,
+    "mcp_card": false,
+    "link_header": false,
+    "markdown": false
+  },
+  "agent_surfaces_markdown_content_type": "text/html; charset=utf-8"
+}
