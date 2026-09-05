@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { crawlerPolicy, parseGroups, shadowedGroups, groupFor, pathAllowed, AGENTS } from "../src/robots.js";
+import { crawlerPolicy, parseGroups, shadowedGroups, groupFor, pathAllowed, rootAllowed, AGENTS } from "../src/robots.js";
 
 const fx = (n) => readFileSync(new URL("./fixtures/" + n, import.meta.url), "utf8");
 
@@ -70,3 +70,28 @@ for (const d of ["treeservicedenverllc.com", "supremefencingdenver.com"]) {
     }
   });
 }
+
+// build 0.3.1 — the documented call pathAllowed(groupFor(groups, ua), path)
+// threw "g.rules is not iterable" because groupFor returns an envelope.
+test("pathAllowed/rootAllowed accept the groupFor envelope", () => {
+  const groups = parseGroups("User-agent: GPTBot\nDisallow: /wp-admin/\nUser-agent: *\nAllow: /");
+  const env = groupFor(groups, "GPTBot");
+  assert.equal(pathAllowed(env, "/wp-admin/"), false);
+  assert.equal(pathAllowed(env, "/"), true);
+  assert.equal(rootAllowed(env), true);
+  assert.equal(pathAllowed(env.group, "/wp-admin/"), false, "bare group still works");
+});
+test("no matching group and no * must not throw", () => {
+  const env = groupFor(parseGroups("User-agent: Bingbot\nDisallow: /"), "GPTBot");
+  assert.equal(env.group, null);
+  assert.equal(pathAllowed(env, "/"), true);
+  assert.equal(rootAllowed(env), true);
+  assert.equal(pathAllowed(null, "/"), true);
+  assert.equal(rootAllowed(undefined), true);
+});
+test("crawlerPolicy is unchanged by the unwrap", () => {
+  const txt = "User-agent: GPTBot\nDisallow: /wp-admin/\nUser-agent: *\nAllow: /";
+  const groups = parseGroups(txt);
+  const pol = crawlerPolicy(txt, false, "/wp-admin/");
+  for (const a of pol.agents) assert.equal(a.allowed, pathAllowed(groupFor(groups, a.ua), "/wp-admin/"), a.ua);
+});
