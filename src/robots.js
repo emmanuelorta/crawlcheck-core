@@ -107,7 +107,18 @@ export function groupFor(groups, ua) {
   return { group: best, named: bestLen > 0 };
 }
 
+// groupFor() returns an envelope ({ group, named }) so callers can tell a
+// named match from the * fallback. pathAllowed() and rootAllowed() accept
+// either the envelope or the bare group, so the documented call
+// pathAllowed(groupFor(groups, ua), path) works as well as the internal one.
+function unwrapGroup(g) {
+  if (!g) return null;
+  if (Object.prototype.hasOwnProperty.call(g, "group") && !Array.isArray(g.rules)) return g.group || null;
+  return g;
+}
+
 export function pathAllowed(g, path) {
+  g = unwrapGroup(g);
   if (!g) return true;
   const p = path || "/";
   let best = null;
@@ -124,6 +135,7 @@ export function pathAllowed(g, path) {
 }
 
 export function rootAllowed(g) {
+  g = unwrapGroup(g);
   if (!g) return true;
   let best = null;
   for (const r of g.rules) {
