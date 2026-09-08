@@ -1,0 +1,36 @@
+{
+  "_": "Captured from a live production scan of treeservicedenverllc.com at crawlcheck.io, after build 293 corrected the attribute reader. `images` is the service's own value, copied unaltered. The page itself is not committed: page_sha256 and page_bytes describe the exact response the reader was run against, and the live test re-fetches with the same user-agent and Accept and refuses to compare unless the bytes still match.",
+  "domain": "treeservicedenverllc.com",
+  "page_url": "https://treeservicedenverllc.com/",
+  "fetch": {
+    "user_agent": "Mozilla/5.0 (compatible; CrawlCheck/1.0; +https://crawlcheck.io/bot)",
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+  },
+  "page_sha256": "94fedfdbba56bfdd5ad851d29eed590f439838db0354d57c95efa60e9db5db29",
+  "page_bytes": 131490,
+  "digest_excludes": "the Cloudflare Web Analytics beacon script the edge injects into the response",
+  "digest_excludes_pattern": "<script[^>]+static\\.cloudflareinsights\\.com[\\s\\S]*?</script>",
+  "scan_id": "66kre29lir",
+  "scanned_at": "2026-09-08T18:02:11.209Z",
+  "service_build_sha": "58b377a91c9dc44a",
+  "grade": "A",
+  "overall": 95,
+  "images": {
+    "measured": true,
+    "total": 9,
+    "no_alt": 0,
+    "empty_alt": 0,
+    "no_dimensions": 0,
+    "lazy": 7,
+    "lazy_above_fold": 0,
+    "modern_format": 8,
+    "svg": 1,
+    "data_uri": 0,
+    "og_image": true,
+    "ld_image": true,
+    "ld_imageobject": true,
+    "preloaded": 0,
+    "fetchpriority_high": 0
+  },
+  "reproducible": true
+}
