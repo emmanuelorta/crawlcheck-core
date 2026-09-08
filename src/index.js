@@ -3,4 +3,5 @@ export { BOT_TOKENS, BOT_FEED_OF, BOT_IP_FEEDS, CRAWLERS, identifyBot, ip4ToInt,
 export { quotable, quoteSignals, quoteRows, quoteBlock, SCORE_VERSION, QUOTABLE_WEIGHT } from "./quotable.js";
 export { UA, CRAWLER_ACCEPT, TIMEOUT_MS, SURFACE_PATHS, abortable, grab, looksHtml, agentSurfaces, agentSurfaceRows, surfaceApplicability, skillMd, agentsMd } from "./surfaces.js";
 export { ldGraphNodes } from "./jsonld.js";
+export { imageSignals, imageRows } from "./images.js";
 export { tgt, pctScore } from "./rows.js";
