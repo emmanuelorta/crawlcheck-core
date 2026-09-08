@@ -4,13 +4,15 @@ The dependency-free modules of [CrawlCheck](https://crawlcheck.io), the AI-crawl
 
 The hosted service fetches a site as 15 crawler identities and grades 22 sections across three stages — **reach** (can the crawler get in), **read** (what it actually receives), **quote** (can an answer engine lift it). This repository is the open core: the readers and checks that need no network, no store and no key, published so the measurements can be reproduced.
 
-**What is here today:** the robots.txt policy reader, the crawler identifier / log-line forgery verifier, the quotable-content reader, and the markdown-negotiation and agent-surface probes. **What stays in the service:** fetching as fifteen crawler identities, the record over time, monitoring, the dataset, billing.
+**What is here today:** the robots.txt policy reader, the crawler identifier / log-line forgery verifier, the quotable-content reader, the image-signal reader, and the markdown-negotiation and agent-surface probes. **What stays in the service:** fetching as fifteen crawler identities, the record over time, monitoring, the dataset, billing.
 
 ## Install
 
 ```bash
-npm install crawlcheck-core
+npm install github:emmanuelorta/crawlcheck-core
 ```
+
+Not on the npm registry yet, so install it from the repository. Every subpath below resolves from that install.
 
 ## robots — which crawlers your robots.txt actually admits
 
@@ -151,11 +153,28 @@ ldGraphNodes(html); // root nodes and @graph children, merged by @id
 
 Two rules, both easy to get wrong. A node nested inside another node is a **value** — a PostalAddress, an Offer, a ListItem, an Answer — not a subject the page is asserting, and it is not held to the standards an entity is. And the **same `@id` twice is one subject**: RDF merges statements, so a reader that keeps the first node and drops the second reads a site declaring a typeless fingerprint stub before its full Organization as having an untyped business. That was measured on a live site, which is why the merge is here.
 
+## images — what an engine can learn from the pictures
+
+```js
+import { imageSignals, imageRows } from "crawlcheck-core/images";
+
+const sig = imageSignals(html);
+// { total:9, no_alt:0, empty_alt:0, no_dimensions:0, lazy:7, lazy_above_fold:0,
+//   modern_format:8, svg:1, og_image:true, ld_image:true, ld_imageobject:true, ... }
+imageRows({ images: sig });   // eight rows, five scored
+```
+
+Five rows are scored: a missing alt attribute, width and height declared, nothing lazy-loaded above the fold, an entity image in the JSON-LD, an og:image. Three are reported and deliberately never scored, and that is the point of the module.
+
+`alt=""` **is not a missing alt.** It is the correct markup for a decorative image, and most real sites are nearly all decorative alt, so scoring it fails almost every site on a signal that is usually right. Only a missing *attribute* counts. File format and hero priority are preferences rather than defects. And a page with no images returns one unscored row, so the section scores `null` instead of zero.
+
+The reader carries a fix that came out of writing these tests: the attribute pattern excluded whitespace, so any quoted value containing a space read back as an empty string and `alt="a cedar fence"` was indistinguishable from `alt=""`. Measured on six live homepages, that reported 15 of 15, 9 of 9 and 10 of 11 images as decorative when almost all carried real alt text.
+
 ## Tests
 
 ```bash
-npm test            # 33 tests, no network
-CC_LIVE=1 npm test  # 36: adds the three live checks
+npm test            # 48 tests, no network (4 skipped)
+CC_LIVE=1 npm test  # 48: adds the four live parity checks
 ```
 
 **robots** — RFC group parsing, precedence, the shadowing case both ways, unmeasured inputs, table integrity, and parity with the production scanner on two real robots.txt files.
@@ -173,6 +192,8 @@ Each `.quotable.json` holds the output of one real scan at crawlcheck.io — the
 That makes drift loud instead of silent. A stored HTML blob would keep passing forever against a page that no longer exists; a digest mismatch says plainly that the site changed, not the reader, and the fixture needs recapturing.
 
 One of the two fixtures is deliberately **not** a re-fetch target. `emmanuelorta.com` renders live figures on an hourly refresh — measured on 2026-09-03, an identical-length response returned a different digest three hours after capture — so its fixture carries `reproducible: false` and the reason. It stays because the two recorded readings disagree (100 against 67; nine FAQ questions against none; markdown negotiated against not), which is what proves the reader does not flatten one site into another.
+
+**images** — the three distinctions above pinned as tests (missing vs empty alt, a page with no images, format and priority unscored), the row contract and the three-state verdict, malformed input, and parity with a live production scan reproducing every field the service recorded from the same bytes.
 
 ## Roadmap
 
