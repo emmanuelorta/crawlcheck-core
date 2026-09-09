@@ -1,5 +1,12 @@
 name: test
-on: [push, pull_request]
+# Runs on pushes to main and on every pull request. Not on pushes to
+# other branches: multi-directory changes land through the web upload form
+# one directory per commit, so an intermediate commit on a working branch is
+# expected to be red and must not page anyone. The PR run tests the head.
+on:
+  push:
+    branches: [main]
+  pull_request:
 jobs:
   test:
     runs-on: ubuntu-latest
