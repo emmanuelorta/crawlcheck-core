@@ -14,21 +14,17 @@
 // fragment), sentence length, and how much of the copy opens in the first
 // person. Navigation, header, footer, forms, script and style are removed first.
 //
-// Thresholds come from a 176-homepage corpus pass (2026-09-02) and are pinned to
-// SCORE_VERSION 15; each row states the corpus figure it was set against. Three
-// rows — heading ids, tables, visible dates — are measured and deliberately NOT
-// scored: at 0-4% adoption they would punish almost every site for the same
-// thing. A page with fewer than five body paragraphs is not scored at all.
+// WHAT THIS MODULE IS AND IS NOT. It publishes the MEASUREMENT: every count and
+// share the production scanner reads from a page, reproducible byte-for-byte
+// against a live scan (see test/quotable.test.js, CC_LIVE=1). It does not
+// publish the SCORING. The thresholds each signal is judged against, the weight
+// the section carries in the overall grade, and the corpus calibration those
+// numbers were set from stay in the service at crawlcheck.io. That split is
+// deliberate and it is the honest one: the reading is a fact about your page and
+// you are entitled to check it, while the calibration took a multi-hundred-site
+// corpus to earn and is the product.
 
-import { tgt, pctScore } from "./rows.js";
 import { ldGraphNodes } from "./jsonld.js";
-
-export { pctScore };
-
-// The score version these thresholds belong to, and the weight the quotable
-// section carries in the production overall grade.
-export const SCORE_VERSION = 15;
-export const QUOTABLE_WEIGHT = 0.8;
 
 const esc = (s) =>
   String(s ?? "").replace(/[&<>"']/g, (c) =>
@@ -110,54 +106,11 @@ export function quoteSignals(html, nodes, nameHint) {
     faq_questions: faqQ, faq_visible: faqVisible, dated: dated, tables: tables };
 }
 
-export function quoteRows(r) {
-  const q = r.quotable; if (!q) return [];
-  // SCORE_VERSION 15: thresholds from a 176-homepage corpus pass (2026-09-02).
-  // Fewer than five body paragraphs -> every content row n/a: a JS shell or a
-  // wall has no copy to judge, and payload already scores that case.
-  const enough = (q.paragraphs || 0) >= 5;
-  const na = null;
-  const unitShare = q.paragraphs ? Math.round(100 * q.answer_units / q.paragraphs) : 0;
-  const fpShare = q.paragraphs ? Math.round(100 * q.first_person / q.paragraphs) : 0;
-  return [
-    tgt("Lead paragraph defines the subject", q.lead ? ((q.lead_names_subject ? "names it" : "does not name it") + ", " + (q.lead_defines ? "defines it" : "no defining verb")) : "no lead paragraph", "a first sentence that says what this is (corpus: 30% of homepages do)", (enough && q.lead) ? !!q.lead_defines : na,
-      "the first paragraph is the one most often lifted whole; if it is a slogan, the engine has to assemble the answer from fragments. Naming the subject is shown, not scored"),
-    tgt("Paragraphs an engine can quote whole", q.paragraphs ? q.answer_units + " of " + q.paragraphs + " (" + unitShare + "%)" : "none", "at least 25% (corpus median 29%)", enough ? unitShare >= 25 : na,
-      "a self-contained paragraph of 15-70 words with a fact in it is the unit answer engines extract; a 200-word paragraph gets summarised instead, and the summary is theirs"),
-    tgt("Question headings with an answer under them", q.question_headings ? q.question_headings_answered + " of " + q.question_headings : "no question headings", "at least half, where question headings exist", (enough && q.question_headings) ? q.question_headings_answered * 2 >= q.question_headings : na,
-      "the shape a query has when it arrives; a page that already carries the question and a short answer is quoted in that order. Having none is not scored"),
-    tgt("FAQ markup matches the visible text", q.faq_questions ? q.faq_visible + " of " + q.faq_questions + " questions visible" : "no FAQPage", "every declared question readable on the page", q.faq_questions ? q.faq_visible === q.faq_questions : na,
-      "FAQ markup for text a visitor cannot see is a claim with nothing behind it; engines that compare the two drop the markup"),
-    tgt("Headings carry an id", q.headings ? q.headings_with_id + " of " + q.headings : "no headings", "an id on each, so a passage can be cited by fragment (not scored: corpus median 0%)", na,
-      "a heading with an id is a stable address for one passage; without it a citation can only point at the whole page"),
-    tgt("Sentence length", q.sentences ? "median " + q.median_sentence_words + " words, " + q.short_share + "% under 26" : "no sentences", "a median of 22 words or fewer (corpus median 15)", (enough && q.sentences >= 10) ? q.median_sentence_words <= 22 : na,
-      "quotes are short; a 40-word sentence is paraphrased, and the paraphrase carries the engine's wording, not yours"),
-    tgt("Sentences with a checkable fact", q.sentences ? q.quotable + " of " + q.sentences + " (" + q.quotable_share + "%)" : "no sentences", "at least 15% (corpus median 20%)", (enough && q.sentences >= 10) ? q.quotable_share >= 15 : na,
-      "8-30 words with a number, date or name, in the third person: the sentence an engine can attribute to you without editing it"),
-    tgt("Paragraphs that open in the first person", q.paragraphs ? q.first_person + " of " + q.paragraphs + " (" + fpShare + "%)" : "none", "a third or fewer (corpus p90 24%)", enough ? fpShare <= 33 : na,
-      "\"We offer\" needs rewriting before it can be quoted about you; \"Acme offers\" does not"),
-    tgt("Tables with a header row and at least two data rows", String(q.tables || 0), "one per set of comparable facts (not scored: rare on homepages)", na,
-      "a table is the one structure every extractor reads the same way; the same facts in prose are re-assembled differently by each engine"),
-    tgt("A visible updated or published date", q.dated ? "yes" : "none found", "a dated line in the copy (not scored: 4% of homepages carry one)", na,
-      "engines weigh freshness from the text as well as from schema; a date the reader can see is the one they trust")
-  ];
-}
-
-export function quoteBlock(r) {
-  const q = r.quotable; if (!q) return "";
-  let h = "";
-  if (q.samples && q.samples.length) h += '<p class="none"><strong>Sentences an engine could lift as they stand:</strong></p><ul class="cmp__fl">' + q.samples.map(function (s) { return "<li>\u201c" + esc(s) + "\u201d</li>"; }).join("") + "</ul>";
-  if (q.lead) h += '<p class="none"><strong>The lead, as delivered:</strong> \u201c' + esc(q.lead) + '\u201d</p>';
-  return h + '<p class="none"><strong>What this scores, and what it is not.</strong> These rows read the delivered HTML for the shape of quotable text: nothing here judges whether the copy is good, true or wanted. ' +
-    'Counts come from body paragraphs and list items with the navigation, header, footer and forms removed; a page with fewer than five is not scored here. Thresholds were set from a 176-homepage corpus pass and each row states the corpus figure it was set against. Weight 0.8 in the overall and part of the Quote stage, from score version 15.</p>';
-}
-
 // Convenience: the production call site, in one call. scan() runs
 //   result.quotable = quoteSignals(html, ldGraphNodes(html), nameHint)
-// and then quoteRows({ quotable: result.quotable }); this does both and hands
-// back the signals, the rows and the section score together.
+// and this does the same, parsing the JSON-LD graph for you. The rows, the
+// thresholds and the section score are the service's; this hands back the
+// reading they are computed from.
 export function quotable(html, nameHint) {
-  const signals = quoteSignals(html, ldGraphNodes(html), nameHint || "");
-  const rows = signals ? quoteRows({ quotable: signals }) : [];
-  return { signals: signals, rows: rows, score: pctScore(rows) };
+  return { signals: quoteSignals(html, ldGraphNodes(html), nameHint || "") };
 }
