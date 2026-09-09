@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { quoteSignals, quoteRows, quoteBlock, quotable, pctScore, SCORE_VERSION, QUOTABLE_WEIGHT } from "../src/quotable.js";
+import { quoteSignals, quotable } from "../src/quotable.js";
 import { ldGraphNodes } from "../src/jsonld.js";
 
 const fx = (n) => readFileSync(new URL("./fixtures/" + n, import.meta.url), "utf8");
@@ -48,12 +48,10 @@ test("parity with the production scanner on a live scan of treeservicedenverllc.
 
   const html = new TextDecoder("utf-8").decode(buf);
   const got = quoteSignals(html, ldGraphNodes(html), expected.name_hint);
-  assert.equal(expected.score_version, SCORE_VERSION, "fixture captured under a different score version");
   for (const k of Object.keys(expected.quotable)) {
     assert.deepEqual(got[k], expected.quotable[k], k);
   }
   assert.equal(Object.keys(got).length, Object.keys(expected.quotable).length, "field set");
-  assert.equal(pctScore(quoteRows({ quotable: got })), expected.section_score, "section score");
 });
 
 // Two recorded readings of two different sites. The second site's page carries
@@ -78,7 +76,7 @@ test("the two recorded scans disagree, which is what makes them worth keeping", 
 test("no <body> is null, not a zero", () => {
   assert.equal(quoteSignals("", [], ""), null);
   assert.equal(quoteSignals("User-agent: *", [], ""), null, "a text file is not a page with no content");
-  assert.deepEqual(quotable("", "").rows, []);
+  assert.equal(quotable("", "").signals, null);
 });
 
 test("navigation, header, footer, forms, script and style are not content", () => {
@@ -110,17 +108,6 @@ test("a question heading counts as answered only with a 8-90 word paragraph unde
   assert.equal(bare.question_headings, 1, "an interrogative opener counts even without a question mark");
 });
 
-test("FAQ parity is checked against the whole visible page, footer and form included", () => {
-  const ld = '<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Do you offer free estimates?","acceptedAnswer":{"@type":"Answer","text":"Yes"}},{"@type":"Question","name":"What areas do you serve?","acceptedAnswer":{"@type":"Answer","text":"Denver"}}]}</script>';
-  const visible = "<footer><p>Do you offer free estimates? Yes, every quote is free.</p></footer>";
-  const html = page("<p>Acme Fencing is a Denver fence contractor for homeowners.</p>" + visible + ld);
-  const s = quoteSignals(html, ldGraphNodes(html), "");
-  assert.equal(s.faq_questions, 2);
-  assert.equal(s.faq_visible, 1, "the second question is declared and nowhere on the page");
-  const rows = quoteRows({ quotable: Object.assign({}, s, { paragraphs: 5 }) });
-  assert.equal(rows.find((r) => r.k === "FAQ markup matches the visible text").ok, false);
-});
-
 test("a fact means a number, a year or a proper noun; first person is excluded", () => {
   const s = quoteSignals(page(
     "<p>Acme Fencing installs cedar privacy fence across the Denver metro area today.</p>" +
@@ -132,34 +119,6 @@ test("a fact means a number, a year or a proper noun; first person is excluded",
 });
 
 // ── the rows ────────────────────────────────────────────────────────────────
-test("under five paragraphs nothing is scored — a JS shell is not a thin page", () => {
-  const s = quoteSignals(page("<p>Acme Fencing is a Denver fence contractor for homeowners here.</p>"), [], "");
-  const rows = quoteRows({ quotable: s });
-  assert.equal(rows.length, 10);
-  assert.equal(rows.filter((r) => r.ok !== null).length, 0);
-  assert.equal(pctScore(rows), null, "an unscored section is null, never zero");
-});
-
-test("ten rows, three of them never scored at any input", () => {
-  const q = fxj("treeservicedenverllc.com.quotable.json").quotable;
-  const rows = quoteRows({ quotable: q });
-  assert.equal(rows.length, 10);
-  const unscored = rows.filter((r) => r.ok === null).map((r) => r.k);
-  assert.deepEqual(unscored, ["Headings carry an id", "Tables with a header row and at least two data rows", "A visible updated or published date"],
-    "too rare in the corpus to score fairly — measured and shown, deliberately not counted");
-  assert.equal(quoteRows({ quotable: null }).length, 0);
-  assert.equal(QUOTABLE_WEIGHT, 0.8);
-});
-
-test("quoteBlock renders the samples, the lead and the caveat", () => {
-  const q = fxj("emmanuelorta.com.quotable.json").quotable;
-  const h = quoteBlock({ quotable: q });
-  assert.match(h, /Sentences an engine could lift as they stand/);
-  assert.match(h, /176-homepage corpus pass/);
-  assert.equal(quoteBlock({ quotable: null }), "");
-});
-
-// ── jsonld ──────────────────────────────────────────────────────────────────
 test("ldGraphNodes: @graph children are entities, the same @id twice is one subject", () => {
   const html = '<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"#org"},{"@id":"#org","name":"Acme"},{"@id":"#org","@type":"Organization","url":"https://acme.test"}]}</script>';
   const nodes = ldGraphNodes(html);
@@ -167,4 +126,21 @@ test("ldGraphNodes: @graph children are entities, the same @id twice is one subj
   assert.equal(nodes[0].name, "Acme");
   assert.equal(nodes[0]["@type"], "Organization", "a typeless stub declared first must not read as an untyped business");
   assert.deepEqual(ldGraphNodes("<script type=\"application/ld+json\">{ not json </script>"), [], "unparseable JSON-LD is skipped, not thrown");
+});
+
+test("the package publishes the reading, not the scoring", async () => {
+  const mod = await import("../src/quotable.js");
+  assert.deepEqual(Object.keys(mod).sort(), ["quotable", "quoteSignals"]);
+  for (const gone of ["quoteRows", "quoteBlock", "SCORE_VERSION", "QUOTABLE_WEIGHT"]) {
+    assert.equal(mod[gone], undefined, gone + " is the service's, not the package's");
+  }
+  const src = readFileSync(new URL("../src/quotable.js", import.meta.url), "utf8");
+  for (const leak of ["corpus median", "QUOTABLE_WEIGHT", "SCORE_VERSION", "p90"]) {
+    assert.equal(src.includes(leak), false, "calibration leaked back in: " + leak);
+  }
+  // The measurement is still whole: every field the service records is produced here.
+  const got = quoteSignals(page("<p>Acme Fencing installs cedar fence in Denver. It was founded in 2014.</p>"), [], "Acme Fencing");
+  for (const k of ["paragraphs", "answer_units", "sentences", "quotable", "quotable_share", "first_person", "lead", "headings", "faq_questions"]) {
+    assert.ok(k in got, "missing signal: " + k);
+  }
 });
