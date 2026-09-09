@@ -1,7 +1,7 @@
 {
   "name": "crawlcheck-core",
-  "version": "0.4.0",
-  "description": "The dependency-free modules of the CrawlCheck AI-crawler visibility scanner, extracted from production: robots.txt policy per crawler agent, user-agent group shadowing detection, crawler identification and log-line forgery verification against the operators' published IP feeds, the quotable-content reader an answer engine is judged by, and the markdown-negotiation and agent-surface probes.",
+  "version": "0.5.0",
+  "description": "The dependency-free modules of the CrawlCheck AI-crawler visibility scanner, extracted from production: robots.txt policy per crawler agent, user-agent group shadowing detection, crawler identification and log-line forgery verification against the operators' published IP feeds, the quotable-content reader an answer engine is judged by (the reading, not the scoring), and the markdown-negotiation and agent-surface probes.",
   "type": "module",
   "main": "src/index.js",
   "exports": {

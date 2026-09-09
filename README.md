@@ -6,7 +6,7 @@ The dependency-free modules of [CrawlCheck](https://crawlcheck.io), the AI-crawl
 
 The hosted service fetches a site as 15 crawler identities and grades 22 sections across three stages — **reach** (can the crawler get in), **read** (what it actually receives), **quote** (can an answer engine lift it). This repository is the open core: the readers and checks that need no network, no store and no key, published so the measurements can be reproduced.
 
-**What is here today:** the robots.txt policy reader, the crawler identifier / log-line forgery verifier, the quotable-content reader, the image-signal reader, and the markdown-negotiation and agent-surface probes. **What stays in the service:** fetching as fifteen crawler identities, the record over time, monitoring, the dataset, billing.
+**What is here today:** the robots.txt policy reader, the crawler identifier / log-line forgery verifier, the quotable-content reader, the image-signal reader, and the markdown-negotiation and agent-surface probes. **What stays in the service:** the scoring — the thresholds each reading is judged against, the weight every section carries in the grade, and the corpus calibration those numbers were set from — plus fetching as fifteen crawler identities, the record over time, monitoring, the dataset, and billing. The rule is simple: **a reading of your page is a fact you are entitled to check, and the calibration is the product.**
 
 ## Install
 
@@ -92,31 +92,39 @@ Why this exists: the scanner's own telemetry once counted 78 of 85 "GPTBot" hits
 ```js
 import { quotable } from "crawlcheck-core/quotable";
 
-const { signals, rows, score } = quotable(html, "Acme Fencing LLC");
+const { signals } = quotable(html, "Acme Fencing LLC");
 
 signals.lead_defines;    // does the first sentence say what this IS
 signals.answer_units;    // paragraphs of 15-70 words that carry a fact
 signals.quotable_share;  // % of sentences an engine could attribute unedited
 signals.faq_questions;   // declared in FAQPage markup
 signals.faq_visible;     // ...and actually readable on the page
-score;                   // 0-100 over the scored rows, or null when not scorable
 ```
 
 The question is not whether the copy is good. It is whether, when an answer engine wants to state a fact about this page, there is a sentence on it that can be lifted **as it stands** — or whether the engine has to assemble one, in which case the answer carries the engine's wording rather than yours.
 
-Ten rows come back. Seven are scored against thresholds set from a 176-homepage corpus pass, and each row states the corpus figure it was measured against: a lead that defines the subject (30% of homepages do), at least 25% of paragraphs quotable whole (median 29%), question headings answered where they exist, FAQ markup matching the visible text, a median sentence of 22 words or fewer (median 15), at least 15% of sentences carrying a checkable fact (median 20%), and a third or fewer paragraphs opening in the first person (p90 24%).
+This module publishes the **reading**, not the scoring. Every count and share the production scanner records for a page is produced here and is reproducible byte-for-byte against a live scan — that is what the parity test does, and it refuses to compare unless the page bytes still match the ones the fixture was captured from. What the service keeps is what those readings are judged against: the thresholds, the weight the section carries in the overall grade, and the multi-hundred-site corpus pass the numbers were calibrated from.
 
-Three rows are **measured and deliberately not scored** — heading ids, tables, a visible date. At 0-4% adoption, scoring them would dock almost every site for the same thing and say nothing about any of them. That is what `ok: null` means throughout this package, and `pctScore()` divides by the scored rows only, returning `null` rather than `0` for a section with none. A page with fewer than five body paragraphs is not scored at all: a JavaScript shell has no copy to judge, and the payload section already says so.
+The distinction is not a marketing line, it is the one that keeps the product honest. Anyone can check that we read their page correctly; nobody has to take our word for a number. What they cannot lift is the calibration, which is the part that took a corpus to earn.
 
 Two details that are easy to get wrong and are settled here. **FAQ parity is checked against the whole visible page**, not the stripped body — an FAQ accordion inside a `<footer>` is still text a reader can see. And **counts come from body paragraphs and list items with navigation, header, footer and forms removed**, because a nav menu is not prose and counting it inflates every ratio on the page.
 
 | Export | What it does |
 |---|---|
-| `quotable(html, nameHint)` | The production call site in one call: signals, rows and section score |
+| `quotable(html, nameHint)` | The production call site in one call: parses the JSON-LD graph and returns `{ signals }` |
 | `quoteSignals(html, nodes, nameHint)` | The reader. `nodes` comes from `ldGraphNodes(html)`; `null` when the input has no `<body>` |
-| `quoteRows({ quotable })` | The ten rows with their thresholds and the reason each one matters |
-| `quoteBlock({ quotable })` | The prose block the report renders under the table |
-| `SCORE_VERSION`, `QUOTABLE_WEIGHT` | 15, and the 0.8 this section carries in the overall grade |
+
+Scoring the reading — `quoteRows`, `quoteBlock`, the section weight and the score version — is in the service, not this package. Point the free scan at a URL to see the rows: <https://crawlcheck.io/>.
+
+## rows — the three-state row every reader returns
+
+```js
+import { tgt, pctScore } from "crawlcheck-core/rows";
+```
+
+A row is `{ k, cur, opt, ok, why }`: the check, what this page currently does, what it should do, the verdict, and why it matters. **`ok: null` is the third state and it is load-bearing** — it means *measured but not scored*. A signal too rare to judge on, one that does not apply to this kind of site, or one that is purely informational is shown to the reader and deliberately left out of the arithmetic. `pctScore()` divides by the scored rows only and returns `null`, never `0`, for a section with none: an unmeasured section is not a failing one.
+
+That rule is why a service-area business is not marked down for having no street address, and why a brand-new site with no field performance data is not reported as slow. Most audit tools have two states, and every gap in their own measurement becomes your zero.
 
 ## surfaces — markdown negotiation, and the Accept header that made a site an F
 
