@@ -1,5 +1,7 @@
 # crawlcheck-core
 
+[![tests](https://github.com/emmanuelorta/crawlcheck-core/actions/workflows/test.yml/badge.svg)](https://github.com/emmanuelorta/crawlcheck-core/actions/workflows/test.yml)
+
 The dependency-free modules of [CrawlCheck](https://crawlcheck.io), the AI-crawler visibility scanner, extracted from the production Worker. No build step, no dependencies, ESM, Node 20+.
 
 The hosted service fetches a site as 15 crawler identities and grades 22 sections across three stages — **reach** (can the crawler get in), **read** (what it actually receives), **quote** (can an answer engine lift it). This repository is the open core: the readers and checks that need no network, no store and no key, published so the measurements can be reproduced.
