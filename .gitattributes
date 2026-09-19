@@ -1,0 +1,3 @@
+# Byte-exact fixtures (robots.txt, expected JSON) must not be rewritten on checkout.
+# Without this, Windows runners convert LF to CRLF and the parity tests compare different bytes.
+* -text
