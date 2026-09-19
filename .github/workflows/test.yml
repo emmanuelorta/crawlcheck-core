@@ -9,9 +9,16 @@ on:
   pull_request:
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # The README promises Node 20+ and a clone anyone can test. Prove it on the
+    # declared minimum, the current LTS and the newest release, on all three OSes.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [20, 22, 24]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22 }
+        with: { node-version: "${{ matrix.node }}" }
       - run: npm test
