@@ -2,7 +2,7 @@
 
 [![tests](https://github.com/emmanuelorta/crawlcheck-core/actions/workflows/test.yml/badge.svg)](https://github.com/emmanuelorta/crawlcheck-core/actions/workflows/test.yml)
 
-The dependency-free modules of [CrawlCheck](https://crawlcheck.io), the AI-crawler visibility scanner, extracted from the production Worker. No build step, no dependencies, ESM, Node 20+.
+The dependency-free modules of [CrawlCheck](https://crawlcheck.io), the verification layer for the agentic web, extracted from the production Worker. These are the readers behind its signed answer about what a site permits and serves to AI crawlers and agents. No build step, no dependencies, ESM, Node 20+.
 
 The hosted service fetches a site as 15 crawler identities and grades 22 sections across three stages — **reach** (can the crawler get in), **read** (what it actually receives), **quote** (can an answer engine lift it). This repository is the open core: the readers and checks that need no network, no store and no key, published so the measurements can be reproduced.
 
@@ -58,7 +58,7 @@ GPTBot no longer sees `Disallow: /wp-admin/` — the `*` group stops applying to
 
 ### What it does not do
 
-`*` inside a rule path is stripped and the remainder matched as a prefix; `$` end anchors are not honoured; `Crawl-delay`, `Sitemap` and unknown fields are ignored. These are the production scanner's readings too — the tests include byte-for-byte parity against the live `/api/tool/robots` endpoint on real files, so this module answers exactly what the service answers.
+`*` inside a rule path is stripped and the remainder matched as a prefix; `$` end anchors are not honoured; `Crawl-delay`, `Sitemap` and unknown fields are ignored. These are the production service's readings too — the tests include byte-for-byte parity against the live `/api/tool/robots` endpoint on real files, so this module answers exactly what the service answers.
 
 ## agents — who fetched, and whether they are who they claim
 
@@ -85,7 +85,7 @@ Three verdicts, never two. **Verified**: the address is inside a range the claim
 | `ipInCidr(ip, cidr)`, `ip4ToInt`, `ip6ToBig` | Range matching, IPv4 and IPv6 (including IPv4-mapped) |
 | `BOT_TOKENS`, `BOT_FEED_OF`, `BOT_IP_FEEDS`, `CRAWLERS` | The tables: tokens, token → feed family, feed URLs, and the 18-row operator/role/purpose table |
 
-Why this exists: the scanner's own telemetry once counted 78 of 85 "GPTBot" hits as forged — they were our own test requests. Reverse DNS is the older check the feeds replace; a user-agent is a self-assertion and proves nothing on its own.
+Why this exists: CrawlCheck's own telemetry once counted 78 of 85 "GPTBot" hits as forged — they were our own test requests. Reverse DNS is the older check the feeds replace; a user-agent is a self-assertion and proves nothing on its own.
 
 ## quotable — what an answer engine can lift from the page
 
@@ -103,7 +103,7 @@ signals.faq_visible;     // ...and actually readable on the page
 
 The question is not whether the copy is good. It is whether, when an answer engine wants to state a fact about this page, there is a sentence on it that can be lifted **as it stands** — or whether the engine has to assemble one, in which case the answer carries the engine's wording rather than yours.
 
-This module publishes the **reading**, not the scoring. Every count and share the production scanner records for a page is produced here and is reproducible byte-for-byte against a live scan — that is what the parity test does, and it refuses to compare unless the page bytes still match the ones the fixture was captured from. What the service keeps is what those readings are judged against: the thresholds, the weight the section carries in the overall grade, and the multi-hundred-site corpus pass the numbers were calibrated from.
+This module publishes the **reading**, not the scoring. Every count and share the production service records for a page is produced here and is reproducible byte-for-byte against a live scan — that is what the parity test does, and it refuses to compare unless the page bytes still match the ones the fixture was captured from. What the service keeps is what those readings are judged against: the thresholds, the weight the section carries in the overall grade, and the multi-hundred-site corpus pass the numbers were calibrated from.
 
 The distinction is not a marketing line, it is the one that keeps the product honest. Anyone can check that we read their page correctly; nobody has to take our word for a number. What they cannot lift is the calibration, which is the part that took a corpus to earn.
 
@@ -142,14 +142,14 @@ out.evidence.markdown; // { content_type: "text/markdown; charset=utf-8" }
 
 A scanner's `Accept` header is part of its identity, and getting it wrong makes the whole grade a measurement of the wrong document. This fetcher sent `Accept: */*` until 2026-09-01. vercel.com answered that with 3,025 bytes of `text/markdown`, while every named-crawler row — which sends `text/html` — received the 521 KB page. The scan then scored mobile 0 (there is no viewport meta in a markdown file), entity-map parity 0, and graded the site **F**: a grade about a document no crawler is ever handed. Googlebot, GPTBot and ClaudeBot all send a browser-shaped Accept, so `CRAWLER_ACCEPT` does too.
 
-Markdown negotiation is therefore measured **on purpose, once**, in its own request — never as a side effect of how the page was fetched. Conflating "this site offers markdown to agents" with "our scanner asked for the wrong thing" is the failure mode, and one test in this package exists solely to pin it: exactly one request carries `Accept: text/markdown`, and every other request carries `CRAWLER_ACCEPT`.
+Markdown negotiation is therefore measured **on purpose, once**, in its own request — never as a side effect of how the page was fetched. Conflating "this site offers markdown to agents" with "our fetcher asked for the wrong thing" is the failure mode, and one test in this package exists solely to pin it: exactly one request carries `Accept: text/markdown`, and every other request carries `CRAWLER_ACCEPT`.
 
 The other rule here is that **a 200 answering with HTML is a soft 404**. `/SKILL.md`, `/agents.md` and the three `.well-known` paths are absent on most sites, and a catch-all route returns the SPA shell at 200 for all of them; a naive check reports every one of those as present. Nine of the ten rows this module renders are informational and none is scored — adoption is early, absence is not a defect, and a row that says *NOT APPLICABLE: no Product, Offer or checkout found* is measuring the site rather than the checklist.
 
 | Export | What it does |
 |---|---|
 | `agentSurfaces(base, root)` | The four `.well-known` probes fired together, the Link header off `root`, and the markdown negotiation request |
-| `grab(url)` | The scanner's fetcher: crawler UA, browser-shaped Accept, 10s abort, body read to 60,000 chars |
+| `grab(url)` | CrawlCheck's fetcher: crawler UA, browser-shaped Accept, 10s abort, body read to 60,000 chars |
 | `skillMd(host)` / `agentsMd(host)` | `/SKILL.md` with its YAML frontmatter, `/agents.md` — both with the soft-404 rule |
 | `agentSurfaceRows(result)` | The ten rows, including the applicability wording |
 | `looksHtml(body, ctype)`, `UA`, `CRAWLER_ACCEPT`, `SURFACE_PATHS` | The pieces, exported so a caller can reproduce one probe |
@@ -187,7 +187,7 @@ npm test            # 48 tests, no network (4 skipped)
 CC_LIVE=1 npm test  # 48: adds the four live parity checks
 ```
 
-**robots** — RFC group parsing, precedence, the shadowing case both ways, unmeasured inputs, table integrity, and parity with the production scanner on two real robots.txt files.
+**robots** — RFC group parsing, precedence, the shadowing case both ways, unmeasured inputs, table integrity, and parity with the production service on two real robots.txt files.
 
 **agents** — token matching, IPv4/IPv6 range logic, the three-state verdict, and parity with the production verifier on 11 real log lines against a stored snapshot of the five operator feeds those lines touch (`test/fixtures/ranges.json`, dated inside the file).
 
@@ -211,4 +211,4 @@ Next: the machine-file readers (llms.txt, entity map, the soft-404 and challenge
 
 ## Licence
 
-MIT. Built by [Emmanuel Orta](https://emmanuelorta.com/). The scanner itself is at [crawlcheck.io](https://crawlcheck.io) — free scan, no account.
+MIT. Built by [Emmanuel Orta](https://emmanuelorta.com/). The service itself is at [crawlcheck.io](https://crawlcheck.io): a free A–F audit of what AI crawlers and agents are served, no account.
