@@ -4,7 +4,7 @@
 
 The dependency-free modules of [CrawlCheck](https://crawlcheck.io), the verification layer for the agentic web, extracted from the production Worker. These are the readers behind its signed answer about what a site permits and serves to AI crawlers and agents. No build step, no dependencies, ESM, Node 20+.
 
-The hosted service fetches a site as 15 crawler identities and grades 22 sections across three stages — **reach** (can the crawler get in), **read** (what it actually receives), **quote** (can an answer engine lift it). This repository is the open core: the readers and checks that need no network, no store and no key, published so the measurements can be reproduced.
+The hosted service fetches a site as 15 crawler identities and measures 35 sections, 24 of them graded, across three stages — **reach** (can the crawler get in), **read** (what it actually receives), **quote** (can an answer engine lift it). This repository is the open core: the readers and checks that need no network, no store and no key, published so the measurements can be reproduced.
 
 **What is here today:** the robots.txt policy reader, the crawler identifier / log-line forgery verifier, the quotable-content reader, the image-signal reader, and the markdown-negotiation and agent-surface probes. **What stays in the service:** the scoring — the thresholds each reading is judged against, the weight every section carries in the grade, and the corpus calibration those numbers were set from — plus fetching as fifteen crawler identities, the record over time, monitoring, the dataset, and billing. The rule is simple: **a reading of your page is a fact you are entitled to check, and the calibration is the product.**
 
