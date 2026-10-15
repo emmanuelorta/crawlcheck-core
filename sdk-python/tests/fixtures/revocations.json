@@ -1,0 +1,483 @@
+{
+ "note": "made by the Worker's own code in a test harness with a throwaway key (rvd1)",
+ "full": {
+  "kind": "crawlcheck-revocations",
+  "v": 1,
+  "generated_at": "2026-10-11T13:14:55.824Z",
+  "seq": "0.1",
+  "since": null,
+  "revoked": [
+   {
+    "domain": "shop.example",
+    "state": "automated",
+    "actions": [
+     "transact"
+    ],
+    "decision": "block",
+    "causes": [
+     "high_risk_field_changed"
+    ],
+    "since": "2026-10-11T13:14:55.703Z",
+    "updated_at": "2026-10-11T13:14:55.703Z",
+    "observed_at": "2026-10-11T13:14:55.702Z",
+    "detail": {
+     "high_risk_field_changed": {
+      "fields": [
+       "checkout_host"
+      ],
+      "changed_at": "2026-10-11T12:14:55.702Z",
+      "block_lifts_by": "2026-10-18T12:14:55.702Z"
+     }
+    },
+    "check": "https://crawlcheck.io/api/v1/resolve?domain=shop.example"
+   },
+   {
+    "domain": "xn--pple-43d.com",
+    "state": "automated",
+    "actions": [
+     "connect",
+     "transact"
+    ],
+    "decision": "block",
+    "causes": [
+     "impersonation_suspected"
+    ],
+    "since": "2026-10-11T13:14:55.703Z",
+    "updated_at": "2026-10-11T13:14:55.703Z",
+    "observed_at": "2026-10-11T13:14:55.702Z",
+    "detail": {
+     "impersonation_suspected": {
+      "brand": "apple.com",
+      "technique": "idn_homoglyph"
+     }
+    },
+    "check": "https://crawlcheck.io/api/v1/resolve?domain=xn--pple-43d.com"
+   }
+  ],
+  "active_total": 2,
+  "cleared": [],
+  "delta_complete": true,
+  "automated_built_at": "2026-10-11T13:14:55.703Z",
+  "by_cause": {
+   "high_risk_field_changed": 1,
+   "impersonation_suspected": 1
+  },
+  "reading": "Domains whose connect or transact decision is block now, for one of three causes: the owner declared an incident (owner_incident), CrawlCheck suspects an impersonation of a top-10,000 brand (impersonation_suspected: connect and transact), or a high-risk field (payment processor, checkout host, wallet, OAuth server, mail host, MCP endpoint) changed and the owner has not confirmed it within 7 days (high_risk_field_changed: transact). Hold this list and refuse those actions offline. With ?since=<generated_at> you get only what was added or changed since (revoked: replace your entry for that domain) and what left the list since (cleared, lifted: remove it); when delta_complete is false the logs no longer reach back that far, so fetch the full list.",
+  "poll_seconds": 60,
+  "rebuilt": "owner incidents within a minute; automated entries every batch window (:02, :32, :47 UTC)",
+  "sdk": "syncRevocations() / sync_revocations() hold it; guard() refuses a listed domain for a listed action with no network call",
+  "code": {
+   "version_id": null,
+   "script_sha16": null,
+   "state": "unknown",
+   "deployed": null,
+   "build_log_entry": null,
+   "score_version": 31,
+   "scoring_policy_sha256": "86898d2a8c88d6b56e6710f3aadf4375cbb5342d4a2f9aa017b536d95602d671",
+   "decision_rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e",
+   "check": "https://crawlcheck.io/api/v1/builds"
+  },
+  "sha256": "13c782666de404f8c170232769a127acbd34d38c250b90c1ac3b6320b01c56b2",
+  "signature": {
+   "v": 1,
+   "alg": "Ed25519",
+   "kid": "m3JoWSDhN2k3t9MQL11mlWNGm5O5JEJ5dE8ekCIP5ss",
+   "over": "sha256",
+   "message": "crawlcheck-data-v1\n13c782666de404f8c170232769a127acbd34d38c250b90c1ac3b6320b01c56b2",
+   "sig": "-kn4YOROgiDc2Fk8eMjSdRB6nG6SlsVsB-6b6xkrsrJFPtsksirHHiin7cJa9RD9If4vDB-9Fn8hkJ65Xr5JCA",
+   "signed_at": "2026-10-11T13:14:55.869Z",
+   "key": {
+    "kid": "m3JoWSDhN2k3t9MQL11mlWNGm5O5JEJ5dE8ekCIP5ss",
+    "jwk": {
+     "kty": "OKP",
+     "crv": "Ed25519",
+     "x": "3MSOmtiA71yc0dqVVi2S6abJYKX65mFsosURtK0B0c0"
+    },
+    "published_in": "https://crawlcheck.io/.well-known/http-message-signatures-directory"
+   },
+   "canonical": "sha256 over canonical JSON of every field except sha256 and signature"
+  }
+ },
+ "delta": {
+  "kind": "crawlcheck-revocations",
+  "v": 1,
+  "generated_at": "2026-10-11T13:14:55.917Z",
+  "seq": "0.2",
+  "since": "2026-10-11T13:14:55.824Z",
+  "revoked": [
+   {
+    "domain": "paypa1.com",
+    "state": "automated",
+    "actions": [
+     "connect",
+     "transact"
+    ],
+    "decision": "block",
+    "causes": [
+     "impersonation_suspected"
+    ],
+    "since": "2026-10-11T13:14:55.915Z",
+    "updated_at": "2026-10-11T13:14:55.915Z",
+    "observed_at": "2026-10-11T13:14:55.914Z",
+    "detail": {
+     "impersonation_suspected": {
+      "brand": "paypal.com",
+      "technique": "character_swap"
+     }
+    },
+    "check": "https://crawlcheck.io/api/v1/resolve?domain=paypa1.com"
+   }
+  ],
+  "active_total": 2,
+  "cleared": [
+   {
+    "domain": "shop.example",
+    "state": "lifted",
+    "causes": [
+     "high_risk_field_changed"
+    ],
+    "actions": [
+     "transact"
+    ],
+    "since": "2026-10-11T13:14:55.703Z",
+    "at": "2026-10-11T13:14:55.915Z",
+    "lifted_at": "2026-10-11T13:14:55.915Z"
+   }
+  ],
+  "delta_complete": true,
+  "automated_built_at": "2026-10-11T13:14:55.915Z",
+  "by_cause": {
+   "impersonation_suspected": 2
+  },
+  "reading": "Domains whose connect or transact decision is block now, for one of three causes: the owner declared an incident (owner_incident), CrawlCheck suspects an impersonation of a top-10,000 brand (impersonation_suspected: connect and transact), or a high-risk field (payment processor, checkout host, wallet, OAuth server, mail host, MCP endpoint) changed and the owner has not confirmed it within 7 days (high_risk_field_changed: transact). Hold this list and refuse those actions offline. With ?since=<generated_at> you get only what was added or changed since (revoked: replace your entry for that domain) and what left the list since (cleared, lifted: remove it); when delta_complete is false the logs no longer reach back that far, so fetch the full list.",
+  "poll_seconds": 60,
+  "rebuilt": "owner incidents within a minute; automated entries every batch window (:02, :32, :47 UTC)",
+  "sdk": "syncRevocations() / sync_revocations() hold it; guard() refuses a listed domain for a listed action with no network call",
+  "code": {
+   "version_id": null,
+   "script_sha16": null,
+   "state": "unknown",
+   "deployed": null,
+   "build_log_entry": null,
+   "score_version": 31,
+   "scoring_policy_sha256": "86898d2a8c88d6b56e6710f3aadf4375cbb5342d4a2f9aa017b536d95602d671",
+   "decision_rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e",
+   "check": "https://crawlcheck.io/api/v1/builds"
+  },
+  "sha256": "1ec217b19ac2ccfebff6cc03a3d0ed8745d77b90ef27698b65b819421c552a76",
+  "signature": {
+   "v": 1,
+   "alg": "Ed25519",
+   "kid": "m3JoWSDhN2k3t9MQL11mlWNGm5O5JEJ5dE8ekCIP5ss",
+   "over": "sha256",
+   "message": "crawlcheck-data-v1\n1ec217b19ac2ccfebff6cc03a3d0ed8745d77b90ef27698b65b819421c552a76",
+   "sig": "dh_oCZPp7-uM1xPVxJLTwOx_Spo5kWxGfZjCnst0OPm6v3-iYG2QnAm9MfwkaH-zxF1tiL0UD_NcJ6Pd2F0vCg",
+   "signed_at": "2026-10-11T13:14:55.918Z",
+   "key": {
+    "kid": "m3JoWSDhN2k3t9MQL11mlWNGm5O5JEJ5dE8ekCIP5ss",
+    "jwk": {
+     "kty": "OKP",
+     "crv": "Ed25519",
+     "x": "3MSOmtiA71yc0dqVVi2S6abJYKX65mFsosURtK0B0c0"
+    },
+    "published_in": "https://crawlcheck.io/.well-known/http-message-signatures-directory"
+   },
+   "canonical": "sha256 over canonical JSON of every field except sha256 and signature"
+  }
+ },
+ "resolve": {
+  "kind": "crawlcheck-resolve",
+  "v": 1,
+  "schema": "https://crawlcheck.io/schemas/resolve.json",
+  "domain": "example-shop.com",
+  "answered_at": "2026-10-11T13:14:55.930Z",
+  "reading": "Each section is declared (what the site says about itself), observed (what CrawlCheck was served) or not_measured, with when it was observed. There is no overall score: decide on the section your action depends on.",
+  "impersonation": {
+   "state": "unread",
+   "why": "the impersonation check could not be read just now (fetch failed)"
+  },
+  "status": "partial",
+  "basis": {
+   "kind": "just_in_time",
+   "measured_at": "2026-10-11T13:14:55.932Z",
+   "budget_ms": 1000,
+   "took_ms": 30,
+   "not_read_in_budget": [],
+   "scope": "read live the moment this domain was first asked about: DNS, the TLS connection, the homepage as a browser and 2 AI identities, robots.txt, the sitemap and 6 machine files, all inside one 1000 ms budget. Anything listed in not_read_in_budget was not read and is not reported absent. No findings, no grade, no capability invoked."
+  },
+  "subject": {
+   "domain": "example-shop.com",
+   "host": "example-shop.com"
+  },
+  "freshness": {
+   "observed_at": "2026-10-11T13:14:55.932Z",
+   "age_hours": 0,
+   "source": "just_in_time",
+   "last_verified_at": "2026-10-11T13:14:55.932Z",
+   "fresh_until": "2026-10-18T13:14:55.932Z",
+   "stale": false,
+   "fresh_policy": "an answer is fresh for 168 hours after observed_at; each action below has its own maximum age. last_verified_at is the latest reading of this domain by any enrolled observer."
+  },
+  "observers": {
+   "primary": {
+    "version_tag": null,
+    "vantage": null
+   },
+   "independent_readings": 0,
+   "by_field": "https://crawlcheck.io/api/corroboration?domain=example-shop.com",
+   "directory": "https://crawlcheck.io/.well-known/crawlcheck-observers.json",
+   "samples_by_network": {
+    "networks": 0,
+    "samples": 0,
+    "groups": [],
+    "window": "the latest 12 independent readings kept for this domain; the primary scan (Cloudflare) is not counted here"
+   }
+  },
+  "crawl_policy": {
+   "state": "not_measured",
+   "observed_at": "2026-10-11T13:14:55.932Z",
+   "why": "robots.txt was not read"
+  },
+  "delivery": {
+   "state": "observed",
+   "observed_at": "2026-10-11T13:14:55.932Z",
+   "url": "https://example-shop.com/",
+   "identity_basis": "every identity was sent by CrawlCheck from its own network; none is the named operator's own crawler",
+   "identities": [
+    {
+     "identity": "browser",
+     "label": "Mobile browser",
+     "status": null,
+     "bytes": null,
+     "html": false,
+     "final_host": null,
+     "sha256": null
+    },
+    {
+     "identity": "gptbot",
+     "label": "GPTBot",
+     "status": null,
+     "bytes": null,
+     "html": false,
+     "final_host": null,
+     "sha256": null
+    },
+    {
+     "identity": "claudebot",
+     "label": "ClaudeBot",
+     "status": null,
+     "bytes": null,
+     "html": false,
+     "final_host": null,
+     "sha256": null
+    }
+   ],
+   "same_bytes_for_every_identity": false
+  },
+  "machine_files": {
+   "state": "not_measured",
+   "observed_at": "2026-10-11T13:14:55.932Z",
+   "why": "no machine file was read"
+  },
+  "capabilities": {
+   "state": "observed",
+   "observed_at": "2026-10-11T13:14:55.932Z",
+   "declared": 0,
+   "by_safety_class": {},
+   "verified": 0,
+   "mismatches": 0,
+   "invocation_rule": "capabilities are read from declarations only; nothing is invoked. Later verification may call read_only_public operations alone; every other class needs the site owner's authorisation and a test account, and unknown is never called",
+   "certificate": null,
+   "items": null,
+   "declared_files": [],
+   "note": "the census records whether a capability file is present; nothing was invoked or verified. A full scan verifies declared capabilities."
+  },
+  "entity": {
+   "state": "not_measured",
+   "observed_at": "2026-10-11T13:14:55.932Z",
+   "why": "the census carries no entity reading"
+  },
+  "findings": {
+   "access": "public",
+   "rule": null,
+   "items": [],
+   "summary": null,
+   "withheld": null,
+   "note": "a census record carries readings, not findings"
+  },
+  "confidence": {
+   "identities_answered": 0,
+   "vantages": 1,
+   "note": "one vantage, one pass, read under a time budget"
+  },
+  "contradictions": null,
+  "evidence": {
+   "scan": "POST https://crawlcheck.io/api/scan {\"domain\":\"example-shop.com\"}",
+   "offline_verifier": "https://crawlcheck.io/crawlcheck-verify.mjs?v=454ff4ba84bef41b",
+   "verify_this_answer": "save it as answer.json, then: node crawlcheck-verify.mjs answer.json"
+  },
+  "assurance": "degraded",
+  "dns": {
+   "state": "not_measured",
+   "observed_at": "2026-10-11T13:14:55.932Z",
+   "why": "the DNS lookup did not answer within the budget (fetch failed)"
+  },
+  "tls": {
+   "state": "observed",
+   "observed_at": "2026-10-11T13:14:55.932Z",
+   "https": false,
+   "url": "https://example-shop.com/",
+   "error": "fetch failed",
+   "certificate": "the HTTPS connection failed: fetch failed"
+  },
+  "upgrade": {
+   "state": "queued",
+   "to": "full",
+   "expected": "at the next cron window (:02, :17, :32 or :47 UTC), usually within 30 minutes",
+   "how": "a full scan is queued; when it lands this answer is replaced and the change appears on https://crawlcheck.io/api/v1/changes?domain=example-shop.com as section assurance, partial → full",
+   "scan_now": "POST https://crawlcheck.io/api/scan {\"domain\":\"example-shop.com\"}"
+  },
+  "actions": {
+   "v": 1,
+   "decisions": "allow | warn | require_confirmation | block | unsupported",
+   "rule": "decided from this answer's own sections at signing time; an agent's own policy may be stricter, never looser. This is a partial (just-in-time) answer: only what it read live counts, so cite, connect and transact cannot reach their assurance until the full scan lands",
+   "read": {
+    "decision": "warn",
+    "minimum_assurance": "reachable",
+    "assurance_found": [],
+    "needs": "robots.txt lets AI agents read the path, and the page was served to at least one AI-crawler identity",
+    "why": "no robots.txt policy was read, so permission is unknown; the impersonation check could not be read",
+    "doubts": [
+     "no_policy",
+     "impersonation_unread"
+    ],
+    "max_age_hours": 168
+   },
+   "cite": {
+    "decision": "warn",
+    "minimum_assurance": "reachable + entity observed",
+    "assurance_found": [],
+    "needs": "everything read needs, plus an observed entity and no contradiction the site makes with itself",
+    "scope": {
+     "covers": [
+      "access: robots.txt and what was actually served to AI-crawler identities",
+      "permissions: the rights and content signals the site declares",
+      "identity: the entity the site declares and who has proven control of the domain",
+      "provenance: when, from where and by whom it was observed, signed and logged"
+     ],
+     "does_not_cover": "whether the content is true, accurate, current or complete; a cite decision says the source may be cited and attributed, not that what it says is right"
+    },
+    "why": "no robots.txt policy was read, so permission is unknown; the publisher's identity was not observed, so attribution is unconfirmed; the impersonation check could not be read",
+    "doubts": [
+     "no_policy",
+     "entity_unobserved",
+     "read_equivalence_unmeasured",
+     "impersonation_unread"
+    ],
+    "max_age_hours": 168
+   },
+   "connect": {
+    "decision": "unsupported",
+    "minimum_assurance": "conformant",
+    "assurance_found": [],
+    "needs": "a declared capability that CrawlCheck invoked read-only and found to behave as declared",
+    "why": "the site declares no capability to connect to",
+    "doubts": [],
+    "max_age_hours": 72
+   },
+   "transact": {
+    "decision": "require_confirmation",
+    "minimum_assurance": "action_ready",
+    "assurance_found": [],
+    "needs": "owner-verified identity and an action-ready capability; CrawlCheck does not certify transactions, so a human confirms",
+    "why": "CrawlCheck does not certify transactions; a human confirms every financial, identity or irreversible action; the impersonation check could not be read",
+    "doubts": [
+     "impersonation_unread"
+    ],
+    "max_age_hours": 24
+   },
+   "administer": {
+    "decision": "block",
+    "minimum_assurance": "never automatic",
+    "assurance_found": [],
+    "needs": "high-privilege operations are never authorised by a public record",
+    "why": "never authorised by a public record",
+    "doubts": [],
+    "max_age_hours": 0
+   }
+  },
+  "absences": [],
+  "control": {
+   "state": "unproven",
+   "proofs": [],
+   "organization": null,
+   "claim": "https://crawlcheck.io/registry/example-shop.com/claim",
+   "why": "nobody has proven control of example-shop.com to CrawlCheck, so who stands behind the site is unconfirmed",
+   "note": "control says who answers for the domain, not whether it is safe; it does not change any decision in this answer"
+  },
+  "transparency": {
+   "state": "pending",
+   "log_id": "crawlcheck-resolve-log-v1",
+   "leaf_hash": "b9d19de859df75cf0147379e15a08fdf227082104a4198073150d9d15a0f079b",
+   "queued_at": "2026-10-11T13:14:55.965Z",
+   "merged_within_minutes": 30,
+   "proof": "https://crawlcheck.io/api/v1/log/proof?leaf=b9d19de859df75cf0147379e15a08fdf227082104a4198073150d9d15a0f079b"
+  },
+  "degraded": {
+   "sources": [
+    {
+     "source": "impersonation",
+     "why": "the impersonation check could not be read just now (fetch failed)"
+    }
+   ],
+   "reading": "These sources could not be read when this answer was made. Everything else in it was read as usual; each action that depends on a missing source is decided by the failure policy (fail closed where the missing source could hold a block). Ask again shortly for a complete answer.",
+   "policy": "https://crawlcheck.io/spec/failure-policy",
+   "policy_v": 1
+  },
+  "code": {
+   "version_id": null,
+   "script_sha16": null,
+   "state": "unknown",
+   "deployed": null,
+   "build_log_entry": null,
+   "score_version": 31,
+   "scoring_policy_sha256": "86898d2a8c88d6b56e6710f3aadf4375cbb5342d4a2f9aa017b536d95602d671",
+   "decision_rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e",
+   "check": "https://crawlcheck.io/api/v1/builds"
+  },
+  "sha256": "dec5472e7a7c0445fe70b3b0232807cb9cb87effc1d20f1275a981b70607403d",
+  "signature": {
+   "v": 1,
+   "alg": "Ed25519",
+   "kid": "m3JoWSDhN2k3t9MQL11mlWNGm5O5JEJ5dE8ekCIP5ss",
+   "over": "sha256",
+   "message": "crawlcheck-data-v1\ndec5472e7a7c0445fe70b3b0232807cb9cb87effc1d20f1275a981b70607403d",
+   "sig": "0Q1u0ObSS2AzsH0O_enyJQfFK8XrXXUf4xZet1RHuUKF91p3ImkQd7G81LCF8BgfUxFTQd4_Rhibt5RUJq_GAw",
+   "signed_at": "2026-10-11T13:14:55.966Z",
+   "key": {
+    "kid": "m3JoWSDhN2k3t9MQL11mlWNGm5O5JEJ5dE8ekCIP5ss",
+    "jwk": {
+     "kty": "OKP",
+     "crv": "Ed25519",
+     "x": "3MSOmtiA71yc0dqVVi2S6abJYKX65mFsosURtK0B0c0"
+    },
+    "published_in": "https://crawlcheck.io/.well-known/http-message-signatures-directory"
+   },
+   "canonical": "sha256 over canonical JSON of every field except sha256 and signature"
+  }
+ },
+ "directory": {
+  "keys": [
+   {
+    "kty": "OKP",
+    "crv": "Ed25519",
+    "x": "3MSOmtiA71yc0dqVVi2S6abJYKX65mFsosURtK0B0c0",
+    "kid": "m3JoWSDhN2k3t9MQL11mlWNGm5O5JEJ5dE8ekCIP5ss",
+    "use": "sig",
+    "alg": "EdDSA",
+    "crawlcheck_purpose": "requests and documents",
+    "nbf": 1791724495
+   }
+  ]
+ }
+}

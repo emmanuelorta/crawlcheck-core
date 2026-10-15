@@ -8,6 +8,13 @@ The hosted service fetches a site as 15 crawler identities and measures 35 secti
 
 **What is here today:** the robots.txt policy reader, the crawler identifier / log-line forgery verifier, the quotable-content reader, the image-signal reader, and the markdown-negotiation and agent-surface probes. **What stays in the service:** the scoring — the thresholds each reading is judged against, the weight every section carries in the grade, and the corpus calibration those numbers were set from — plus fetching as fifteen crawler identities, the record over time, monitoring, the dataset, and billing. The rule is simple: **a reading of your page is a fact you are entitled to check, and the calibration is the product.**
 
+## Also in this repository: the SDKs
+
+- **`sdk/`** — [`@crawlcheck/sdk`](https://www.npmjs.com/package/@crawlcheck/sdk) (npm): the typed client for the CrawlCheck API and the zero-dependency offline verifier for signed answers, evidence bundles and receipts. `npm test` runs its suite against production.
+- **`sdk-python/`** — [`crawlcheck`](https://pypi.org/project/crawlcheck/) (PyPI): the same client and verifier for Python 3.9+, no dependencies.
+
+Both are published from the private service repository by a workflow that refuses to publish unless the directory here is byte-identical to what it ships, so this copy is the source the package pages point at, not a mirror that can drift.
+
 ## Install
 
 ```bash
