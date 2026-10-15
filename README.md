@@ -216,6 +216,16 @@ One of the two fixtures is deliberately **not** a re-fetch target. `emmanuelorta
 
 Next: the machine-file readers (llms.txt, entity map, the soft-404 and challenge verdicts behind them). Each ships only with a parity test against the live service.
 
+## Sponsors
+
+crawlcheck-core and the SDKs are MIT licensed and free to use. If they save you time, you can [sponsor the work on GitHub](https://github.com/sponsors/emmanuelorta): sponsorship pays for fixes, tests against real sites, and keeping the libraries in step with how crawlers and agents behave.
+
+**Agency sponsors** — none yet.
+
+**Backers** — none yet.
+
+**Supporters** — none yet.
+
 ## Licence
 
 MIT. Built by [Emmanuel Orta](https://emmanuelorta.com/). The service itself is at [crawlcheck.io](https://crawlcheck.io): a free A–F audit of what AI crawlers and agents are served, no account.
