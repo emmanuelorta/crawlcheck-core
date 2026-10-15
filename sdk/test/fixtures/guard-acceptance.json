@@ -1,0 +1,5647 @@
+{
+ "kind": "crawlcheck-guard-acceptance",
+ "v": 1,
+ "suite_version": "1.2.0",
+ "built_at": "2026-10-10T17:53:14.660Z",
+ "now": "2026-10-10T16:00:00.000Z",
+ "nonce": "ccguard-acceptance-0001",
+ "spec": "https://crawlcheck.io/spec/guard",
+ "lifetimes_s": {
+  "read": 86400,
+  "cite": 86400,
+  "connect": 3600,
+  "transact": 300,
+  "administer": 300
+ },
+ "max_clock_skew_s": 300,
+ "directory": {
+  "keys": [
+   {
+    "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+    "crawlcheck_purpose": "documents",
+    "kty": "OKP",
+    "crv": "Ed25519",
+    "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+   },
+   {
+    "kid": "r0X_XXpsP2-1P00GEj1tOmMIoTJ_w8H30oO6xo1NsRg",
+    "crawlcheck_purpose": "decisions",
+    "kty": "OKP",
+    "crv": "Ed25519",
+    "x": "DNDLnEKFsf8xmexG6JmEdHiq-O5Mn5Hn8p5wt3UvdiA"
+   }
+  ]
+ },
+ "how": "For each case: serve directory at /.well-known/http-message-signatures-directory and answer POST /api/v1/preflight with crawlcheck (status + body or text; unreachable = refuse the connection; by_op = the receipt for the operation asked, keyed \"METHOD url\"). Call the guard with request (pin nonce and now; pass operation when given). A fetch case also serves sites (url -> status, location, body) and records each URL the guard requested and which domain got the CrawlCheck-Receipt header. expect.proceed must match; for fetch cases, fetched must match exactly.",
+ "cases": [
+  {
+   "id": "allow",
+   "title": "allow proceeds",
+   "why": "positive control",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+      "sig": "zyjvcHeLxg2Cbpdqv5Pjkwg1ABGD8WQaLyeKwFf59fdtJEbYgvaYIdnYkebB3BVSTiPHRlisr85dvTWH0JF3Dg",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": true
+   }
+  },
+  {
+   "id": "warn-default",
+   "title": "warn does not proceed by default",
+   "why": "warn means a stated doubt; the caller must opt in",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "warn",
+     "base_decision": "warn",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "warn",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "761afb029b266825f1375975a8cb9c9666799d67a1a799d77dd4ba6515d15b95",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n761afb029b266825f1375975a8cb9c9666799d67a1a799d77dd4ba6515d15b95",
+      "sig": "hpC-X4lL02k6ElrOKNWviRfBALnPSx-PVoqZPUh-88zs4no44g2e5NnHxESOEY445guK7fPWoOjpjGVKi0TtAg",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "warn-allowed",
+   "title": "warn proceeds when the caller allows warn",
+   "why": "positive control",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": true,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "warn",
+     "base_decision": "warn",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "warn",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "761afb029b266825f1375975a8cb9c9666799d67a1a799d77dd4ba6515d15b95",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n761afb029b266825f1375975a8cb9c9666799d67a1a799d77dd4ba6515d15b95",
+      "sig": "hpC-X4lL02k6ElrOKNWviRfBALnPSx-PVoqZPUh-88zs4no44g2e5NnHxESOEY445guK7fPWoOjpjGVKi0TtAg",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": true
+   }
+  },
+  {
+   "id": "confirm-missing",
+   "title": "require_confirmation without a confirm callback",
+   "why": "no human, no action",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-10T16:04:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "transact",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "require_confirmation",
+     "base_decision": "require_confirmation",
+     "human_confirmation_required": true,
+     "reason_codes": [
+      "resolve.actions.transact"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.transact",
+       "effect": "require_confirmation",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "5b1bd1c43fa65d9901ea36d5a223f37a7a4c1fd2742144ae8e185efa6e2b5647",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n5b1bd1c43fa65d9901ea36d5a223f37a7a4c1fd2742144ae8e185efa6e2b5647",
+      "sig": "esjVOrhtMOTmyoz2T8UbUsjs_11w2nQ7E2qHF_5bRJuapQPJf7iImL8wuPxK5xMchg2-IDzKkToO5MLYjlKOBw",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "confirm-no",
+   "title": "require_confirmation, human says no",
+   "why": "",
+   "request": {
+    "domain": "good.example",
+    "action": "transact",
+    "allow_warn": false,
+    "confirm": false,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-10T16:04:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "transact",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "require_confirmation",
+     "base_decision": "require_confirmation",
+     "human_confirmation_required": true,
+     "reason_codes": [
+      "resolve.actions.transact"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.transact",
+       "effect": "require_confirmation",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "5b1bd1c43fa65d9901ea36d5a223f37a7a4c1fd2742144ae8e185efa6e2b5647",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n5b1bd1c43fa65d9901ea36d5a223f37a7a4c1fd2742144ae8e185efa6e2b5647",
+      "sig": "esjVOrhtMOTmyoz2T8UbUsjs_11w2nQ7E2qHF_5bRJuapQPJf7iImL8wuPxK5xMchg2-IDzKkToO5MLYjlKOBw",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "confirm-yes",
+   "title": "require_confirmation, human says yes",
+   "why": "positive control",
+   "request": {
+    "domain": "good.example",
+    "action": "transact",
+    "allow_warn": false,
+    "confirm": true,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-10T16:04:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "transact",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "require_confirmation",
+     "base_decision": "require_confirmation",
+     "human_confirmation_required": true,
+     "reason_codes": [
+      "resolve.actions.transact"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.transact",
+       "effect": "require_confirmation",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "5b1bd1c43fa65d9901ea36d5a223f37a7a4c1fd2742144ae8e185efa6e2b5647",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n5b1bd1c43fa65d9901ea36d5a223f37a7a4c1fd2742144ae8e185efa6e2b5647",
+      "sig": "esjVOrhtMOTmyoz2T8UbUsjs_11w2nQ7E2qHF_5bRJuapQPJf7iImL8wuPxK5xMchg2-IDzKkToO5MLYjlKOBw",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": true
+   }
+  },
+  {
+   "id": "block",
+   "title": "block never proceeds, whatever the options",
+   "why": "",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": true,
+    "confirm": true,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "block",
+     "base_decision": "block",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "block",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "06d6327467764d8a0d4fca6aae52adbff928d7583b040c59d4ad072849f25390",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n06d6327467764d8a0d4fca6aae52adbff928d7583b040c59d4ad072849f25390",
+      "sig": "y0HF72RVSBJIJBfHyIbPLjnQ-tEZ2I7h35JEsfvOZxEPJ0oNAieEUy1BpIPryGS2vy7yRzJbG8njlYo77ZKnCA",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "unsupported",
+   "title": "unsupported never proceeds",
+   "why": "",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": true,
+    "confirm": true,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "unsupported",
+     "base_decision": "unsupported",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "unsupported",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "ddd1072fd4b2672d9927813be25a097998f307df5c78446fe1f5e94dcf6754d4",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\nddd1072fd4b2672d9927813be25a097998f307df5c78446fe1f5e94dcf6754d4",
+      "sig": "eL4NAQr2ZsKPz23ARP9anLoVSMZsNfjhWK6_Qu-hZqn7sWbrtsnbca943Or5gm-3v7nwTTazaPzBw8BWIDHpDw",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "decision-unknown",
+   "title": "an unknown decision value (signed) never proceeds",
+   "why": "fail closed on values this guard does not know",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": true,
+    "confirm": true,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "maybe",
+     "base_decision": "maybe",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "maybe",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "bf9bee6109573c19c49294e9740dec13a800a87c5debfe8f3b243dc2c0c93acd",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\nbf9bee6109573c19c49294e9740dec13a800a87c5debfe8f3b243dc2c0c93acd",
+      "sig": "D4l-hRAQx2J4jPiUm3xfnAtYGvP7wdqXPEsbltFsAylfsHIqyMGZoUxIsK1HusHHhmScB-1-1pZsRMP-QWhhBA",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "other-domain",
+   "title": "a valid allow for another domain",
+   "why": "a receipt is valid only for the domain it names",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "evil.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "67ee0da1d5db557920dc7c17ca5ea7f7d085eaa2000916517e9045210138c627",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n67ee0da1d5db557920dc7c17ca5ea7f7d085eaa2000916517e9045210138c627",
+      "sig": "rbJqN38K-QCxNVAkM-jkBJSD1cgF4VyMBLz2Sm99vrIq9G0ZKocwVgyNGjYmSr_mqUeqN-KlRBnJl5yk3-O4DA",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "subdomain",
+   "title": "a valid allow for the parent domain, asked for a subdomain",
+   "why": "no inheritance across hosts",
+   "request": {
+    "domain": "api.good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+      "sig": "zyjvcHeLxg2Cbpdqv5Pjkwg1ABGD8WQaLyeKwFf59fdtJEbYgvaYIdnYkebB3BVSTiPHRlisr85dvTWH0JF3Dg",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "www-same",
+   "title": "www. is the same site",
+   "why": "CrawlCheck stores a site without www.",
+   "request": {
+    "domain": "www.good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+      "sig": "zyjvcHeLxg2Cbpdqv5Pjkwg1ABGD8WQaLyeKwFf59fdtJEbYgvaYIdnYkebB3BVSTiPHRlisr85dvTWH0JF3Dg",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": true
+   }
+  },
+  {
+   "id": "other-action",
+   "title": "a valid read allow, used to transact",
+   "why": "a receipt is valid only for its action",
+   "request": {
+    "domain": "good.example",
+    "action": "transact",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+      "sig": "zyjvcHeLxg2Cbpdqv5Pjkwg1ABGD8WQaLyeKwFf59fdtJEbYgvaYIdnYkebB3BVSTiPHRlisr85dvTWH0JF3Dg",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "expired",
+   "title": "expired an hour ago",
+   "why": "",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-09T15:00:00.000Z",
+     "expires_at": "2026-10-10T15:00:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "625182b8dd264a0cce75427bc5d6008c40a4f0e8f0de9b16ea0c16252361c9ff",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n625182b8dd264a0cce75427bc5d6008c40a4f0e8f0de9b16ea0c16252361c9ff",
+      "sig": "clK_iPPD1wyGnsSn0cTV319jcAlwskP4e-rUmirpifXKfjcfO8bl8W5q8qjWa1g6Evk4AARvnR7ZVPeBv_BpAg",
+      "signed_at": "2026-10-09T15:00:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "expired-in-skew",
+   "title": "expired 60 s ago, inside the stated 300 s clock skew",
+   "why": "the skew is part of the receipt",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-09T15:59:00.000Z",
+     "expires_at": "2026-10-10T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "e4a24f66ce899f3756efa5f3bdd1f218c2b1fc7bdd005d2b1cbc41f70eb95031",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\ne4a24f66ce899f3756efa5f3bdd1f218c2b1fc7bdd005d2b1cbc41f70eb95031",
+      "sig": "isXNvywmCyChY5mIpP28fUsRTo4nNtCdjtmDuBtB5Upv-b7gue5iCzSXbjSfpfod4q84e61DJQ4dyP8t9kIpAg",
+      "signed_at": "2026-10-09T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": true
+   }
+  },
+  {
+   "id": "skew-inflated",
+   "title": "claims a 1-day clock skew to stay alive",
+   "why": "skew is capped at 300 s",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-09T10:00:00.000Z",
+     "expires_at": "2026-10-10T10:00:00.000Z",
+     "clock_skew_s": 86400,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "a000f67936a9d86f77346639c913e09d17ed45d4dccf21bc1e5d3b6bb81f63af",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\na000f67936a9d86f77346639c913e09d17ed45d4dccf21bc1e5d3b6bb81f63af",
+      "sig": "VhvcVmMkL6bFC1g07RQ6O-NwX4T3BRfpYk1t84OVWyl-BMr9NHgL2WqzcRXIGZLnfBmfAaB_WwUrvjGpA1FEDA",
+      "signed_at": "2026-10-09T10:00:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "future",
+   "title": "decided an hour in the future",
+   "why": "a clock that far off cannot be trusted",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T17:00:00.000Z",
+     "expires_at": "2026-10-11T17:00:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "1cd550eb7eb80f4dfecb90c6ae60dbfe27fb7f03fe79dea4bb6499238abcd281",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n1cd550eb7eb80f4dfecb90c6ae60dbfe27fb7f03fe79dea4bb6499238abcd281",
+      "sig": "Mevm7uqCG6WbD1-R53-YpYyJ-t17i-Xpp9fnqTLjEQ_ETLQXmpIQoJxg-k1Dw3mu9-EqiMePXYWgoBdb57ceBg",
+      "signed_at": "2026-10-10T17:00:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "lifetime-transact",
+   "title": "a transact allow valid for 24 hours",
+   "why": "transact receipts last at most 300 s",
+   "request": {
+    "domain": "good.example",
+    "action": "transact",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "transact",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.transact"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.transact",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "3db5db419cb4f69201989195c769b6046a33f536fd3f1bc0750b73b10822aa6d",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n3db5db419cb4f69201989195c769b6046a33f536fd3f1bc0750b73b10822aa6d",
+      "sig": "LnzgUNN4ualijxNO4XDBVXpkKFHMLgrijCwIOvoH4xB3rUWZAchTw5Xvqyuvb1D8C215SlkZMd2Cl7gFLYFoCg",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "lifetime-connect",
+   "title": "a connect allow valid for 24 hours",
+   "why": "connect receipts last at most 3600 s",
+   "request": {
+    "domain": "good.example",
+    "action": "connect",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "connect",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.connect"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.connect",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "a77cc3ddf138c80c63309749c5e1bc6c79ecb3b0927642bc97e698a5fea3ade1",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\na77cc3ddf138c80c63309749c5e1bc6c79ecb3b0927642bc97e698a5fea3ade1",
+      "sig": "t_ioKIlyonTjFfRbXjRFinIpSPqdpXJjjMEfPPQiSFKDDSECL44jxAUaHXEHtBMOxUlio5V7wHgnQWUCzsVuBA",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "no-expiry",
+   "title": "no expires_at",
+   "why": "",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "b0f77a1f676935b69ffb4ce3101a7f85bad9ea5757f1743a68b5946fc34cf9fa",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\nb0f77a1f676935b69ffb4ce3101a7f85bad9ea5757f1743a68b5946fc34cf9fa",
+      "sig": "cO-jYBNNUuI9RlKmm0wq6a82t_GOldcaTYVIdNSUQfOI-DNIBk4Hox--2MmnV3TH09A5meMLGQwPuqoCV0M6AA",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "nonce-other",
+   "title": "a receipt carrying another request's nonce",
+   "why": "replayed receipt",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "someone-elses-nonce-99",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "09f59c245bc53a39f385216fd9d237e53e1e66fe94d32630d63946ddde232548",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n09f59c245bc53a39f385216fd9d237e53e1e66fe94d32630d63946ddde232548",
+      "sig": "WjvGxG-HlNgvC7TSZAMSypgBFw6WBP9kES9g6_mAU-WJbkgFOMYGYo54bVl8ZJdw7ooHQ2oIr3BKrjXHtlxsBQ",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "nonce-missing",
+   "title": "the request sent a nonce, the receipt has none",
+   "why": "",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "4cafa7313f3543b4fa1bb93c5e4a98065cfc77a2a0c47b7850e4c1ec780a804c",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n4cafa7313f3543b4fa1bb93c5e4a98065cfc77a2a0c47b7850e4c1ec780a804c",
+      "sig": "AtO5EYqxQi_SXpA2F6_OvSyK6h9DLE8VAhfHb2a3NZwuJpNjzMjSmMFZ4i2DXPxOMK91UQzzU4uKYSTCSGx8Dw",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "op-match",
+   "title": "a receipt for exactly this request",
+   "why": "positive control",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z",
+    "operation": {
+     "method": "GET",
+     "url": "https://good.example/a"
+    }
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "operation": {
+      "method": "GET",
+      "url": "https://good.example/a"
+     },
+     "sha256": "52ee5980ea3a45f938f9749bd6dd7fe4ea44baa3cc33ad68147da216f1ddbb7d",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n52ee5980ea3a45f938f9749bd6dd7fe4ea44baa3cc33ad68147da216f1ddbb7d",
+      "sig": "e4FDzMvLaGkBv9iHlI0YMfxIax54-6tVvjUlFKKFTVV9dez1wkrHKVod9u2Ecs0RzIDY7H4dFncm8cQ0iRtyBw",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": true
+   }
+  },
+  {
+   "id": "op-other-url",
+   "title": "a receipt for another URL on the same domain",
+   "why": "a receipt is valid only for the request it names",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z",
+    "operation": {
+     "method": "GET",
+     "url": "https://good.example/a"
+    }
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "operation": {
+      "method": "GET",
+      "url": "https://good.example/b"
+     },
+     "sha256": "dd4231d4daa44acd9033c70dfe05a201f2540c43c9cad322480746b9610b77e4",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\ndd4231d4daa44acd9033c70dfe05a201f2540c43c9cad322480746b9610b77e4",
+      "sig": "o6bM9TTpxqvMzFDBY1bitjqUyZu1nOX-U9MoeG6CJ_NoOsNIrciP-py7qyRmow8hxdM40O8UHz1H8WDtfEWYBw",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "op-other-method",
+   "title": "a GET receipt used for a POST",
+   "why": "",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z",
+    "operation": {
+     "method": "POST",
+     "url": "https://good.example/a"
+    }
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "operation": {
+      "method": "GET",
+      "url": "https://good.example/a"
+     },
+     "sha256": "52ee5980ea3a45f938f9749bd6dd7fe4ea44baa3cc33ad68147da216f1ddbb7d",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n52ee5980ea3a45f938f9749bd6dd7fe4ea44baa3cc33ad68147da216f1ddbb7d",
+      "sig": "e4FDzMvLaGkBv9iHlI0YMfxIax54-6tVvjUlFKKFTVV9dez1wkrHKVod9u2Ecs0RzIDY7H4dFncm8cQ0iRtyBw",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "op-missing",
+   "title": "the request names an operation, the receipt names none",
+   "why": "an unscoped receipt cannot stand in for a scoped one",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z",
+    "operation": {
+     "method": "GET",
+     "url": "https://good.example/a"
+    }
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+      "sig": "zyjvcHeLxg2Cbpdqv5Pjkwg1ABGD8WQaLyeKwFf59fdtJEbYgvaYIdnYkebB3BVSTiPHRlisr85dvTWH0JF3Dg",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "op-tool-schema",
+   "title": "a receipt for the same tool with a different definition",
+   "why": "the tool changed since it was decided",
+   "request": {
+    "domain": "good.example",
+    "action": "connect",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z",
+    "operation": {
+     "tool": "search",
+     "tool_schema_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-10T16:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "connect",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.connect"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.connect",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "operation": {
+      "tool": "search",
+      "tool_schema_sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+     },
+     "sha256": "74549f99fb0196109c6a9b93bb30286a72935362f1eef3b32911e75d4b2a4c4d",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n74549f99fb0196109c6a9b93bb30286a72935362f1eef3b32911e75d4b2a4c4d",
+      "sig": "5OOZM4oYf-4V_fpsrTpx_1__87Lwt1gSvvl-_v0Uy3psBwphvSkDcxToax3XVRNpebKBBNVMXhEkB4ohS0ftAQ",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "op-scopes",
+   "title": "a receipt for fewer scopes than requested",
+   "why": "",
+   "request": {
+    "domain": "good.example",
+    "action": "connect",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z",
+    "operation": {
+     "tool": "search",
+     "tool_schema_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+     "scopes": [
+      "read",
+      "write"
+     ]
+    }
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-10T16:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "connect",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.connect"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.connect",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "operation": {
+      "tool": "search",
+      "tool_schema_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "scopes": [
+       "read"
+      ]
+     },
+     "sha256": "ad621ec96c368ec1a8ad5f92d49154591e922a10fd831707c2b10921f0ef0e0b",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\nad621ec96c368ec1a8ad5f92d49154591e922a10fd831707c2b10921f0ef0e0b",
+      "sig": "UGqt_1hlL4ONFvN2OjjUNeUCND2xnNrY16o4tKzw-crbAOF4uULmQ5gd1B3kJfH-jYCqGqWIN2MnwpZW0t2zCg",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "purpose-key-decision",
+   "title": "a decision signed by another published key than its resolve answer",
+   "why": "keys are separated by purpose; both are published",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "r0X_XXpsP2-1P00GEj1tOmMIoTJ_w8H30oO6xo1NsRg",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+      "sig": "sHDLgsAakNhhPTqSolIcKJkfTbxsMStIZo7kBVA-kZXZKXf6AgoXYo2mxTK9mtkEpdPo4gFruNOQHEhO-fCFCw",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "r0X_XXpsP2-1P00GEj1tOmMIoTJ_w8H30oO6xo1NsRg",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "DNDLnEKFsf8xmexG6JmEdHiq-O5Mn5Hn8p5wt3UvdiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": true
+   }
+  },
+  {
+   "id": "resolve-key-foreign",
+   "title": "a decision whose resolve answer names a key that is not published",
+   "why": "every key a receipt leans on must be published",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "lWm4_2MC43LVz6Tu0m3NS1djTuvTr2mB3jPqfG_JGMo",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "b091fb3487bb0c5f5b37f94c8f20a4580a24260e85063a21c425e3ee063bef15",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\nb091fb3487bb0c5f5b37f94c8f20a4580a24260e85063a21c425e3ee063bef15",
+      "sig": "RhJX-1rkMSwsULdAzo5s5QlnxlCQlOsj5fAX1OA5yajhERiUhnzBBtfrtqhZdJiLKCdHIBZcUa2N1N9j9lFzAQ",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "tampered",
+   "title": "a block receipt edited to allow",
+   "why": "the digest no longer matches",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "block",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "block",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "06d6327467764d8a0d4fca6aae52adbff928d7583b040c59d4ad072849f25390",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n06d6327467764d8a0d4fca6aae52adbff928d7583b040c59d4ad072849f25390",
+      "sig": "y0HF72RVSBJIJBfHyIbPLjnQ-tEZ2I7h35JEsfvOZxEPJ0oNAieEUy1BpIPryGS2vy7yRzJbG8njlYo77ZKnCA",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "tampered-unsigned-field",
+   "title": "a field added after signing",
+   "why": "every field is signed",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+      "sig": "zyjvcHeLxg2Cbpdqv5Pjkwg1ABGD8WQaLyeKwFf59fdtJEbYgvaYIdnYkebB3BVSTiPHRlisr85dvTWH0JF3Dg",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     },
+     "x_note": "added later"
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "unknown-signed-field",
+   "title": "an unknown field that was signed",
+   "why": "forward compatible: ignore unknown fields, but only signed ones",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "x_future_field": {
+      "a": 1
+     },
+     "sha256": "62507775227f0ba54d1d36a0095d8db91104d855bc7ecfb4717ce39ce4a39894",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n62507775227f0ba54d1d36a0095d8db91104d855bc7ecfb4717ce39ce4a39894",
+      "sig": "RglYeWlQyjv1-hIenSmdsnMayrIMnazoHh27DfimfKdwKOA2mudQqmqGSEPMuNxuKLlAOr8vTaQj83an69dSDg",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": true
+   }
+  },
+  {
+   "id": "foreign-key",
+   "title": "a valid signature by a key CrawlCheck does not publish",
+   "why": "integrity is not trust",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "lWm4_2MC43LVz6Tu0m3NS1djTuvTr2mB3jPqfG_JGMo",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+      "sig": "T4IPP7fZwfvgeTiOEP6q_U-mGZ7GgKkVEKog0X5rl44uT5gR-GNkDngN4zV1zq_xJvBuUeUBwhm1xAyyoFGRDg",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "lWm4_2MC43LVz6Tu0m3NS1djTuvTr2mB3jPqfG_JGMo",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "_5OBkFn4qsNKzUuLpq0nzN3MRyZOXy5YxbOPrxjNtMw"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "kid-mismatch",
+   "title": "a published kid on a signature by another key",
+   "why": "the key id must be the key's thumbprint",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+      "sig": "T4IPP7fZwfvgeTiOEP6q_U-mGZ7GgKkVEKog0X5rl44uT5gR-GNkDngN4zV1zq_xJvBuUeUBwhm1xAyyoFGRDg",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "_5OBkFn4qsNKzUuLpq0nzN3MRyZOXy5YxbOPrxjNtMw"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "unsigned",
+   "title": "no signature",
+   "why": "",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71"
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "resolve-unbound",
+   "title": "no resolve answer named",
+   "why": "a decision must name the answer it was made from",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "sha256": "5cb17bb16c0e5575318767d9c4a85b881a347c18e25976a90862e791061517c5",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n5cb17bb16c0e5575318767d9c4a85b881a347c18e25976a90862e791061517c5",
+      "sig": "SiVwNmG7Uzm-PREUOH82JUadu0n7YDWR74Rj5yHvK5H9eCiFpXPS1SHJmbPN9rGAuL-osYqXlJOUEQa1v414Dg",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "wrong-kind",
+   "title": "a signed document of another kind",
+   "why": "only a decision receipt decides",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-resolve",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "fbdf40791795eb385e1800a08d8b988f708e7deb3dae7801da0ac966755c6d85",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\nfbdf40791795eb385e1800a08d8b988f708e7deb3dae7801da0ac966755c6d85",
+      "sig": "s8eIvJCOeEz3M2DlNA3HIyuyOr6SUkYmWgUv3JMguO6rP-ykCPRopn_Cs12aLCcxfsWYzNoKRcvNhT9XmPPECA",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "wrong-version",
+   "title": "a decision of an unknown version",
+   "why": "",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 2,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "f4eb2abc4faef0916b216d236eea1bcb63100f79c0da2d1876cf4912dbc4189b",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\nf4eb2abc4faef0916b216d236eea1bcb63100f79c0da2d1876cf4912dbc4189b",
+      "sig": "bcS8ydxfvDRCctWbQvyNi8m6TSxokqTEBK1kyFQPUgL8xNOw0Gyy9vfUlw1s-vuX8mESZHMqK7GxNsd3XxVoCA",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "malformed-empty",
+   "title": "an empty object",
+   "why": "",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {}
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "malformed-array",
+   "title": "a JSON array",
+   "why": "",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": []
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "malformed-text",
+   "title": "not JSON",
+   "why": "",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "text": "<html>maintenance</html>"
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "http-500",
+   "title": "CrawlCheck answers 500",
+   "why": "fail closed",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 500,
+    "text": "{\"error\":\"internal\"}"
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "http-429",
+   "title": "CrawlCheck answers 429",
+   "why": "fail closed",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 429,
+    "text": "{\"error\":\"slow down\"}"
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "unreachable",
+   "title": "CrawlCheck cannot be reached",
+   "why": "fail closed",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "unreachable": true
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "fetch-ok",
+   "title": "a guarded fetch with no redirect",
+   "why": "positive control",
+   "request": {
+    "url": "https://good.example/page",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z",
+    "max_hops": 10
+   },
+   "crawlcheck": {
+    "by_op": {
+     "GET https://good.example/page": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/page"
+      },
+      "sha256": "ffd4756d7562c0a72d2fb88310727c57ed43c7bbcd3f9992fd08fcd09a24539d",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\nffd4756d7562c0a72d2fb88310727c57ed43c7bbcd3f9992fd08fcd09a24539d",
+       "sig": "xhDC2hRhYMV_6jXKjz4F7q5c6R-7cUnZXqMJtLpplVdErDxDZLhsYNY0aPXzeOyYw5Te7-TJrrugUqMnuIuBAw",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     }
+    }
+   },
+   "sites": {
+    "https://good.example/page": {
+     "status": 200,
+     "body": "ok"
+    }
+   },
+   "expect": {
+    "proceed": true,
+    "fetched": [
+     "https://good.example/page"
+    ],
+    "receipt_header_to": [
+     "good.example"
+    ]
+   }
+  },
+  {
+   "id": "fetch-blocked",
+   "title": "a blocked domain is never contacted",
+   "why": "the check runs before the request",
+   "request": {
+    "url": "https://evil.example/",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z",
+    "max_hops": 10
+   },
+   "crawlcheck": {
+    "by_op": {
+     "GET https://evil.example/": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "evil.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "block",
+      "base_decision": "block",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "block",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://evil.example/"
+      },
+      "sha256": "c097927fe6ff66482496da283537d16115155e5f99274b4349c14e741baacd11",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\nc097927fe6ff66482496da283537d16115155e5f99274b4349c14e741baacd11",
+       "sig": "brT6jiLoeeIHNp6vOGpPjw_az2sV5FZAWuMXAWfloBG146MawxYgGZE0162fZB4pesgSdWD5ijVCAc43GOxrCQ",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     }
+    }
+   },
+   "sites": {},
+   "expect": {
+    "proceed": false,
+    "fetched": []
+   }
+  },
+  {
+   "id": "redirect-to-blocked",
+   "title": "an allowed page redirects to a blocked domain",
+   "why": "every hop is re-checked; the blocked hop is never requested",
+   "request": {
+    "url": "https://good.example/go",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z",
+    "max_hops": 10
+   },
+   "crawlcheck": {
+    "by_op": {
+     "GET https://good.example/go": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/go"
+      },
+      "sha256": "0799f5d9b9c05780b606a572cdadd2be8f17a19b27932b635ab3b652c66a1aa0",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n0799f5d9b9c05780b606a572cdadd2be8f17a19b27932b635ab3b652c66a1aa0",
+       "sig": "tTIdOx_4SRShrptBZB4Bjgzgu0aM0bMnsOy18geAxOGxH3chd_MQvBlUy8Q3dQYmpw4UcfSZOwm_psuqSDwqDg",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     },
+     "GET https://evil.example/x": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "evil.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "block",
+      "base_decision": "block",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "block",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://evil.example/x"
+      },
+      "sha256": "278bd89a92a2bd8f8e6b226fbee8dc7630caa9fb49bf5ad408017dd2a837c103",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n278bd89a92a2bd8f8e6b226fbee8dc7630caa9fb49bf5ad408017dd2a837c103",
+       "sig": "M_nxMMCbA0Rj1sp5vK1x-gpvoiXd1SKNDli9o0cC57XsagS5Jc7iY_L9uqQpsPKLFunWSw6WhLsIK_x_SWh2BQ",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     }
+    }
+   },
+   "sites": {
+    "https://good.example/go": {
+     "status": 302,
+     "location": "https://evil.example/x"
+    }
+   },
+   "expect": {
+    "proceed": false,
+    "fetched": [
+     "https://good.example/go"
+    ]
+   }
+  },
+  {
+   "id": "redirect-to-allowed",
+   "title": "an allowed page redirects to another allowed domain",
+   "why": "each domain gets its own receipt",
+   "request": {
+    "url": "https://good.example/go",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z",
+    "max_hops": 10
+   },
+   "crawlcheck": {
+    "by_op": {
+     "GET https://good.example/go": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/go"
+      },
+      "sha256": "0799f5d9b9c05780b606a572cdadd2be8f17a19b27932b635ab3b652c66a1aa0",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n0799f5d9b9c05780b606a572cdadd2be8f17a19b27932b635ab3b652c66a1aa0",
+       "sig": "tTIdOx_4SRShrptBZB4Bjgzgu0aM0bMnsOy18geAxOGxH3chd_MQvBlUy8Q3dQYmpw4UcfSZOwm_psuqSDwqDg",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     },
+     "GET https://also-good.example/y": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "also-good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://also-good.example/y"
+      },
+      "sha256": "58926fcaf74ab6664fde403b57434686e78c3cd0be586bddd7531dda395fc0df",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n58926fcaf74ab6664fde403b57434686e78c3cd0be586bddd7531dda395fc0df",
+       "sig": "ZY6C7z6Cmq_fhSlPKuq5OvD9ROyZwsi4ShGchRH0CUwD1pxPfYgfcBlUfrcriGPM-74QK2oBoyR9MQwEcLjYCg",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     }
+    }
+   },
+   "sites": {
+    "https://good.example/go": {
+     "status": 301,
+     "location": "https://also-good.example/y"
+    },
+    "https://also-good.example/y": {
+     "status": 200,
+     "body": "ok"
+    }
+   },
+   "expect": {
+    "proceed": true,
+    "fetched": [
+     "https://good.example/go",
+     "https://also-good.example/y"
+    ],
+    "receipt_header_to": [
+     "good.example",
+     "also-good.example"
+    ]
+   }
+  },
+  {
+   "id": "redirect-relative",
+   "title": "a relative redirect stays on the checked domain",
+   "why": "",
+   "request": {
+    "url": "https://good.example/a",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z",
+    "max_hops": 10
+   },
+   "crawlcheck": {
+    "by_op": {
+     "GET https://good.example/a": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/a"
+      },
+      "sha256": "52ee5980ea3a45f938f9749bd6dd7fe4ea44baa3cc33ad68147da216f1ddbb7d",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n52ee5980ea3a45f938f9749bd6dd7fe4ea44baa3cc33ad68147da216f1ddbb7d",
+       "sig": "e4FDzMvLaGkBv9iHlI0YMfxIax54-6tVvjUlFKKFTVV9dez1wkrHKVod9u2Ecs0RzIDY7H4dFncm8cQ0iRtyBw",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     },
+     "GET https://good.example/b": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/b"
+      },
+      "sha256": "dd4231d4daa44acd9033c70dfe05a201f2540c43c9cad322480746b9610b77e4",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\ndd4231d4daa44acd9033c70dfe05a201f2540c43c9cad322480746b9610b77e4",
+       "sig": "o6bM9TTpxqvMzFDBY1bitjqUyZu1nOX-U9MoeG6CJ_NoOsNIrciP-py7qyRmow8hxdM40O8UHz1H8WDtfEWYBw",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     }
+    }
+   },
+   "sites": {
+    "https://good.example/a": {
+     "status": 307,
+     "location": "/b"
+    },
+    "https://good.example/b": {
+     "status": 200,
+     "body": "ok"
+    }
+   },
+   "expect": {
+    "proceed": true,
+    "fetched": [
+     "https://good.example/a",
+     "https://good.example/b"
+    ]
+   }
+  },
+  {
+   "id": "redirect-scheme",
+   "title": "a redirect to a file: URL",
+   "why": "only http(s)",
+   "request": {
+    "url": "https://good.example/a",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z",
+    "max_hops": 10
+   },
+   "crawlcheck": {
+    "by_op": {
+     "GET https://good.example/a": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/a"
+      },
+      "sha256": "52ee5980ea3a45f938f9749bd6dd7fe4ea44baa3cc33ad68147da216f1ddbb7d",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n52ee5980ea3a45f938f9749bd6dd7fe4ea44baa3cc33ad68147da216f1ddbb7d",
+       "sig": "e4FDzMvLaGkBv9iHlI0YMfxIax54-6tVvjUlFKKFTVV9dez1wkrHKVod9u2Ecs0RzIDY7H4dFncm8cQ0iRtyBw",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     }
+    }
+   },
+   "sites": {
+    "https://good.example/a": {
+     "status": 302,
+     "location": "file:///etc/passwd"
+    }
+   },
+   "expect": {
+    "proceed": false,
+    "fetched": [
+     "https://good.example/a"
+    ]
+   }
+  },
+  {
+   "id": "redirect-loop",
+   "title": "more than the hop limit",
+   "why": "at most 10 redirects",
+   "request": {
+    "url": "https://good.example/l0",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z",
+    "max_hops": 10
+   },
+   "crawlcheck": {
+    "by_op": {
+     "GET https://good.example/l0": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/l0"
+      },
+      "sha256": "98bd19750f3670f4285238cf44dba630313a98bb827441a6a47c1adef45fc876",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n98bd19750f3670f4285238cf44dba630313a98bb827441a6a47c1adef45fc876",
+       "sig": "xMFSWftcG4bzi5MRdgf72eF-BH4MjrMuLUqbDFaewnvXSk3gQDh2NSnQ2qGRK1QywrqyIZprk0ezkfbfEfSdBw",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     },
+     "GET https://good.example/l1": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/l1"
+      },
+      "sha256": "73ed86063006f837c9ccdc5676a6175abb4aaff781b2293cec39a01a3df1fba9",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n73ed86063006f837c9ccdc5676a6175abb4aaff781b2293cec39a01a3df1fba9",
+       "sig": "og8TUoSQ5JdgeVgxKNzGlYEVAFABy6H4m2whqfV3Qk44SiRGPe3nYWFzmoqZm0VMduS_QBMidnAyCCcMzcQODA",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     },
+     "GET https://good.example/l2": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/l2"
+      },
+      "sha256": "fcac706f97c740392c2844913f5db02dc8430f78394b727f4aa0c046b5733a8f",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\nfcac706f97c740392c2844913f5db02dc8430f78394b727f4aa0c046b5733a8f",
+       "sig": "WtHkvV0WDGiNawtm2rh_n1ZiNlR4A0Dn4fLiJQmXTrw33ItWtgr4PtIR62si6tR2s1q3I_b5HX82Fdo3lsFXCw",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     },
+     "GET https://good.example/l3": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/l3"
+      },
+      "sha256": "89b576de27f6c92f77d8772df39cbc713e3118aa39aff961fad41c6c53a43399",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n89b576de27f6c92f77d8772df39cbc713e3118aa39aff961fad41c6c53a43399",
+       "sig": "cTnfFEj39tWezcclTaBIgy8MLqw3aaQyoDk_BCM0TZ5VXFu6WpGyeUcGf97tpK-FFMKtdcIDqp3rIfsckXc0DQ",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     },
+     "GET https://good.example/l4": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/l4"
+      },
+      "sha256": "35638449b08fb3fc560910c3a72af8a7c3e7e85d42b165858c69256f710556c7",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n35638449b08fb3fc560910c3a72af8a7c3e7e85d42b165858c69256f710556c7",
+       "sig": "Uw2Df5CPziRtURFlabQI2-ZFVBSKYiU2uYZJctSfXr-Z7uit1lKdls5Y_yUf7b2TdPyAtDNNaemxIEgbHbasAw",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     },
+     "GET https://good.example/l5": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/l5"
+      },
+      "sha256": "f2333cd4673aa18ca81cf7dee60722e1484d092b68809fed646efb6a3b4ed7ba",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\nf2333cd4673aa18ca81cf7dee60722e1484d092b68809fed646efb6a3b4ed7ba",
+       "sig": "gSfmq1mXnYG8107SjeTZJO_GIHribnxCSNmSKy9QSAFVc0ZV4X1bFYnVa7_G_M5iqFvemTp8W2uvSlD9hNN2CQ",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     },
+     "GET https://good.example/l6": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/l6"
+      },
+      "sha256": "8de4ae7e0af5f9fbd89dec5295d5cfa65580f4e34d0dde9fdde311f00f71e8ae",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n8de4ae7e0af5f9fbd89dec5295d5cfa65580f4e34d0dde9fdde311f00f71e8ae",
+       "sig": "G_gMrjaeOIpXsVv4Fh7weRUo5k-TXIMphez8tBfLnOuYgtoGrMY3BVphUfaLqP1-ueqKC51D1QxrV2adeaSXCg",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     },
+     "GET https://good.example/l7": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/l7"
+      },
+      "sha256": "a6a148364e73574c574313caa4643259d48249def97a3c9966d219ada13ee46a",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\na6a148364e73574c574313caa4643259d48249def97a3c9966d219ada13ee46a",
+       "sig": "5LeHKn-CpsclCgcYAGXRW7ChaKK30S_mYEPnIK9A1zVtD-OUT5GETFmh_Jy-EMYkIau_SbCJKuqIcKExKdVtCw",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     },
+     "GET https://good.example/l8": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/l8"
+      },
+      "sha256": "b77b5aabb173b4af235b50898269001b7aff374f8b45160ac5474bc18b34c048",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\nb77b5aabb173b4af235b50898269001b7aff374f8b45160ac5474bc18b34c048",
+       "sig": "g_Zelo7Yr1ncXfGeMMEApJXb1Iwjr8EGpn6Q4buO_ETquTgqkUG6llK3m8BCTw6pjWqSbHjDzO_v3awxZdLdCQ",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     },
+     "GET https://good.example/l9": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/l9"
+      },
+      "sha256": "0cb8b93d423c4ef69fbd9866689b46e80c0d3f308839f7ecbde679acb891b9b8",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n0cb8b93d423c4ef69fbd9866689b46e80c0d3f308839f7ecbde679acb891b9b8",
+       "sig": "r_HNGRTbituhqq4mZvoOssFqxE3SD5i0MH9S0YBzroHycQyBsp6kYt1Hr2F5I3HTsjWCJVX1Ns5LRNYPBgcbAw",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     },
+     "GET https://good.example/l10": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/l10"
+      },
+      "sha256": "cbd508a7f0633e1d345dbbb77b90753df65a434acdb1d0c9f746abd331da0c8d",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\ncbd508a7f0633e1d345dbbb77b90753df65a434acdb1d0c9f746abd331da0c8d",
+       "sig": "zAmJIpb6CC4Q49W3RoaOiC4nkBfzGs88oguT4A9nWcPII3LALglyFx_I2kyX0Uktx7i-YBW1oBIzr1V6-hWnBQ",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     },
+     "GET https://good.example/l11": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/l11"
+      },
+      "sha256": "c390bb5309cff341dac03646a7931438a1b0bcc3d5173e2cd0e4ed05e2c80b9c",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\nc390bb5309cff341dac03646a7931438a1b0bcc3d5173e2cd0e4ed05e2c80b9c",
+       "sig": "vKZ8CbZmgwSEOydBRChbugaY9VN-4FwQIwIHHDfWKNOVj8C2FNkDzQTFuJE6DPNjwIk-jDwVAkL0s2DrOYFmCg",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     },
+     "GET https://good.example/l12": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/l12"
+      },
+      "sha256": "64cf94c935eb682062bf601dc18ef77b97e988f6d7158094bea2d04873b4a791",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n64cf94c935eb682062bf601dc18ef77b97e988f6d7158094bea2d04873b4a791",
+       "sig": "H8jKiObY2L1nbw_6YSQSxj3ZGWz6M9K6TqKeHCKbTwdylw7GeiAclOuhaR6kZBQa-T-18lwDmV0MT_kibYBiBw",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     }
+    }
+   },
+   "sites": {
+    "https://good.example/l0": {
+     "status": 302,
+     "location": "https://good.example/l1"
+    },
+    "https://good.example/l1": {
+     "status": 302,
+     "location": "https://good.example/l2"
+    },
+    "https://good.example/l2": {
+     "status": 302,
+     "location": "https://good.example/l3"
+    },
+    "https://good.example/l3": {
+     "status": 302,
+     "location": "https://good.example/l4"
+    },
+    "https://good.example/l4": {
+     "status": 302,
+     "location": "https://good.example/l5"
+    },
+    "https://good.example/l5": {
+     "status": 302,
+     "location": "https://good.example/l6"
+    },
+    "https://good.example/l6": {
+     "status": 302,
+     "location": "https://good.example/l7"
+    },
+    "https://good.example/l7": {
+     "status": 302,
+     "location": "https://good.example/l8"
+    },
+    "https://good.example/l8": {
+     "status": 302,
+     "location": "https://good.example/l9"
+    },
+    "https://good.example/l9": {
+     "status": 302,
+     "location": "https://good.example/l10"
+    },
+    "https://good.example/l10": {
+     "status": 302,
+     "location": "https://good.example/l11"
+    },
+    "https://good.example/l11": {
+     "status": 302,
+     "location": "https://good.example/l12"
+    }
+   },
+   "expect": {
+    "proceed": false,
+    "fetched_count": 11
+   }
+  },
+  {
+   "id": "redirect-ip",
+   "title": "a redirect to a bare IP address",
+   "why": "an address is not a domain CrawlCheck can vouch for",
+   "request": {
+    "url": "https://good.example/a",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z",
+    "max_hops": 10
+   },
+   "crawlcheck": {
+    "by_op": {
+     "GET https://good.example/a": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/a"
+      },
+      "sha256": "52ee5980ea3a45f938f9749bd6dd7fe4ea44baa3cc33ad68147da216f1ddbb7d",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n52ee5980ea3a45f938f9749bd6dd7fe4ea44baa3cc33ad68147da216f1ddbb7d",
+       "sig": "e4FDzMvLaGkBv9iHlI0YMfxIax54-6tVvjUlFKKFTVV9dez1wkrHKVod9u2Ecs0RzIDY7H4dFncm8cQ0iRtyBw",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     }
+    }
+   },
+   "sites": {
+    "https://good.example/a": {
+     "status": 302,
+     "location": "http://169.254.169.254/latest"
+    }
+   },
+   "expect": {
+    "proceed": false,
+    "fetched": [
+     "https://good.example/a"
+    ]
+   }
+  },
+  {
+   "id": "fetch-receipt-reuse",
+   "title": "a receipt for one page used for another page on the same domain",
+   "why": "each hop asks again; the first page's receipt never covers the second",
+   "request": {
+    "url": "https://good.example/one",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z",
+    "max_hops": 10
+   },
+   "crawlcheck": {
+    "by_op": {
+     "GET https://good.example/one": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/one"
+      },
+      "sha256": "ad1a6a2cd99e0af57ff63f4d51a2192a320a738ed0e1d6b572b837f5db3418b6",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\nad1a6a2cd99e0af57ff63f4d51a2192a320a738ed0e1d6b572b837f5db3418b6",
+       "sig": "6QPLepy7EJRRLYvpIV0Zw8FhdT6GGF1yB7NewryRJC3Uo5aOzERkuhF0hOKXf1aS2Zm2LCr2ZwyxgUC794ZPDA",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     },
+     "GET https://good.example/two": {
+      "kind": "crawlcheck-decision",
+      "v": 1,
+      "decided_at": "2026-10-10T15:59:00.000Z",
+      "expires_at": "2026-10-11T15:59:00.000Z",
+      "clock_skew_s": 300,
+      "nonce": "ccguard-acceptance-0001",
+      "domain": "good.example",
+      "action": "read",
+      "agent": null,
+      "template": null,
+      "policy": {
+       "max_age_hours": null,
+       "on_warn": "warn",
+       "require_entity": false,
+       "human_approval": [],
+       "allow": [],
+       "deny": []
+      },
+      "policy_id": null,
+      "engine": {
+       "version": "pf4",
+       "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+      },
+      "decision": "allow",
+      "base_decision": "allow",
+      "human_confirmation_required": false,
+      "reason_codes": [
+       "resolve.actions.read"
+      ],
+      "steps": [
+       {
+        "rule": "resolve.actions.read",
+        "effect": "allow",
+        "why": "suite fixture"
+       }
+      ],
+      "alternatives": [],
+      "evidence": {
+       "report": "https://crawlcheck.io/r/suitefixture",
+       "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "resolve": {
+       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "operation": {
+       "method": "GET",
+       "url": "https://good.example/two"
+      },
+      "sha256": "7afbaa3ec9d6f1ad1d131fe7bbe348ec42e18fa77b5d6a576d6f175d0656666d",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n7afbaa3ec9d6f1ad1d131fe7bbe348ec42e18fa77b5d6a576d6f175d0656666d",
+       "sig": "ZXc5PawmHmIXzLGyRmWl7vBd7GfTYS1h1UlZLuWXFzHInNe6kX2uQb08NNKj-0WLiBQycWWwf9Ff7LlZm2WMCQ",
+       "signed_at": "2026-10-10T15:59:00.000Z",
+       "key": {
+        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        },
+        "published_in": "the suite's directory"
+       }
+      }
+     }
+    }
+   },
+   "sites": {
+    "https://good.example/one": {
+     "status": 302,
+     "location": "/two"
+    },
+    "https://good.example/two": {
+     "status": 200,
+     "body": "ok"
+    }
+   },
+   "expect": {
+    "proceed": true,
+    "fetched": [
+     "https://good.example/one",
+     "https://good.example/two"
+    ],
+    "receipt_header_to": [
+     "good.example",
+     "good.example"
+    ]
+   }
+  }
+ ]
+}

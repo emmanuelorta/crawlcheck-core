@@ -1,0 +1,47 @@
+{
+  "name": "@crawlcheck/sdk",
+  "version": "1.5.1",
+  "description": "Typed client for the CrawlCheck API (generated from its OpenAPI document) and the zero-dependency offline verifier for evidence bundles and remediation receipts.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "test",
+    "examples",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false,
+  "homepage": "https://crawlcheck.io/sdk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/emmanuelorta/crawlcheck-core.git",
+    "directory": "sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/emmanuelorta/crawlcheck-core/issues"
+  },
+  "keywords": [
+    "crawlcheck",
+    "verification",
+    "evidence",
+    "ai-crawlers",
+    "openapi",
+    "ed25519",
+    "merkle",
+    "opentimestamps"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "license": "MIT"
+}
