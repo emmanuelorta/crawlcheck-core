@@ -563,4 +563,63 @@ export class CrawlCheck {
         return j;
     }
 }
+const AT_ACTIONS = ["read", "cite", "connect", "transact", "administer"];
+function atDomain(v) { const s = String(v ?? "").trim(); try {
+    return normalizeDomain(/^[a-z][a-z0-9+.-]*:\/\//i.test(s) ? new URL(s).hostname : s);
+}
+catch {
+    return "";
+} }
+function atAction(v) { return AT_ACTIONS.includes(String(v)) ? String(v) : "read"; }
+export function agentTools(cc, opts = {}) {
+    const max = opts.maxChars ?? 20000;
+    return [
+        { name: "crawlcheck_check_site",
+            description: "Before acting on a website, get CrawlCheck's signed decision for that action: allow, warn, require_confirmation, block or unsupported, with the reasons. Use it before reading, citing, connecting to, buying from or administering a site you have not checked. proceed is false whenever the site should not be used for that action.",
+            parameters: { type: "object", additionalProperties: false, required: ["site"], properties: {
+                    site: { type: "string", description: "The site's domain or any URL on it, e.g. example.com or https://example.com/page" },
+                    action: { type: "string", enum: AT_ACTIONS, description: "What you are about to do: read (default), cite, connect (an API or MCP server), transact (pay, book, submit personal data) or administer" }
+                } },
+            execute: async (a) => {
+                const domain = atDomain(a?.site), action = atAction(a?.action);
+                if (!domain)
+                    return { proceed: false, why: ["not a public domain name: " + String(a?.site ?? "")] };
+                const g = await cc.guard(domain, action, opts);
+                return { domain, action, proceed: g.proceed, decision: g.receipt ? String(g.receipt.decision) : null, why: g.why, reasons: Array.isArray(g.receipt?.steps) ? g.receipt.steps.map((x) => String(x?.why ?? "")).filter(Boolean) : [], reason_codes: g.receipt?.reason_codes ?? [],
+                    receipt_sha256: g.receipt?.sha256 ?? null, verified: g.verification ? g.verification.accepted : false, alternatives: g.receipt?.alternatives ?? null };
+            } },
+        { name: "crawlcheck_fetch",
+            description: "Fetch a web page only if CrawlCheck allows reading that site; every redirect to a new domain is checked again before it is followed. Returns the page text (truncated) or, when refused, why. Prefer this over a plain fetch for sites you have not checked.",
+            parameters: { type: "object", additionalProperties: false, required: ["url"], properties: {
+                    url: { type: "string", description: "The http(s) URL to fetch" },
+                    action: { type: "string", enum: ["read", "cite"], description: "read (default) or cite, if the text will be quoted back to someone" }
+                } },
+            execute: async (a) => {
+                const r = await cc.guardedFetch(String(a?.url ?? ""), Object.assign({}, opts, { action: (a?.action === "cite" ? "cite" : "read") }));
+                const hops = r.hops.map((h) => ({ url: h.url, domain: h.domain, decision: h.decision, proceed: h.proceed, status: h.status ?? null }));
+                if (!r.proceed || !r.response)
+                    return { proceed: false, url: r.url, why: r.why, hops };
+                const text = await r.response.text();
+                return { proceed: true, url: r.url, status: r.response.status, content_type: r.response.headers.get("content-type"), text: text.slice(0, max), truncated: text.length > max, chars: text.length, hops };
+            } }
+    ];
+}
+/** Shape agentTools() for a framework. call(name, args) runs a tool by name for formats that hand you the call (OpenAI, Anthropic, MCP). For the Vercel AI SDK wrap each parameters object: tool({ description, parameters: jsonSchema(t.parameters), execute: t.execute }). */
+export function toolsFor(format, tools) {
+    const by = new Map(tools.map((t) => [t.name, t]));
+    const call = async (name, args) => { const t = by.get(name); if (!t)
+        return { proceed: false, why: ["no CrawlCheck tool named " + name] }; return t.execute(typeof args === "string" ? (() => { try {
+        return JSON.parse(args);
+    }
+    catch {
+        return {};
+    } })() : (args ?? {})); };
+    if (format === "openai")
+        return { tools: tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } })), call };
+    if (format === "anthropic")
+        return { tools: tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters })), call };
+    if (format === "mcp")
+        return { tools: tools.map((t) => ({ name: t.name, description: t.description, inputSchema: t.parameters, annotations: { readOnlyHint: true, openWorldHint: true } })), call };
+    return { tools: Object.fromEntries(tools.map((t) => [t.name, { description: t.description, parameters: t.parameters, execute: t.execute }])), call };
+}
 export default CrawlCheck;
