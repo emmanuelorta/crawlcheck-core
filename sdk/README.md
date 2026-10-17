@@ -22,7 +22,7 @@ Every verification returns `integrity_valid`, `issuer_trusted` and `accepted`. A
 
 ## Give your agent the check as a tool
 
-Two tools your agent can call itself: `crawlcheck_check_site` (the signed, verified decision for an action on a site) and `crawlcheck_fetch` (fetches a page only after its domain, and every redirect hop, is allowed). Both fail closed.
+Three tools your agent can call itself: `crawlcheck_check_site` (the signed, verified decision for an action on a site, including the business facts the site publishes and which AI engines get them wrong), `crawlcheck_verify_fact` (one signed verdict on a phone number, address, hours or service area you hold: does the business publish it, did it once, or whose is it) and `crawlcheck_fetch` (fetches a page only after its domain, and every redirect hop, is allowed). All fail closed.
 
 ```js
 import { CrawlCheck, agentTools, toolsFor } from "@crawlcheck/sdk";

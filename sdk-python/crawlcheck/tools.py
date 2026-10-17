@@ -1,13 +1,16 @@
-"""Agent tools (1.6.0): CrawlCheck as two tools any agent framework can register, so the check happens inside the
-agent's own tool loop. crawlcheck_check_site returns the signed, verified decision for an action on a site;
+"""Agent tools (1.6.0; crawlcheck_verify_fact and decision facts 1.7.0): CrawlCheck as tools any agent framework can register, so the check happens inside the
+agent's own tool loop. crawlcheck_check_site returns the signed, verified decision for an action on a site (with the business facts the site
+publishes); crawlcheck_verify_fact checks one phone, address, hours or service-area value against the business;
 crawlcheck_fetch fetches a page only after its domain (and every redirect hop) proceeds. Both fail closed, like guard().
 tools_for() shapes them for OpenAI function calling, Anthropic tool use or an MCP server; each tool's parameters are
 plain JSON Schema, so LangChain (StructuredTool.from_function with args_schema=...) and others take them as they are."""
 import json
 from urllib.parse import urlparse
 from .client import normalize_domain
+from .verify import verify_document
 
 _ACTIONS = ["read", "cite", "connect", "transact", "administer"]
+_FACT_FIELDS = ["phone", "address", "hours", "service_area"]
 
 
 def _domain(v):
@@ -19,7 +22,7 @@ def _domain(v):
 
 
 def agent_tools(cc, agent=None, allow_warn=False, confirm=None, max_chars=20000):
-    """Return [{"name", "description", "parameters", "execute"}] for crawlcheck_check_site and crawlcheck_fetch."""
+    """Return [{"name", "description", "parameters", "execute"}] for crawlcheck_check_site, crawlcheck_verify_fact and crawlcheck_fetch."""
     def check_site(args):
         args = args or {}
         domain, action = _domain(args.get("site")), args.get("action") if args.get("action") in _ACTIONS else "read"
@@ -33,7 +36,27 @@ def agent_tools(cc, agent=None, allow_warn=False, confirm=None, max_chars=20000)
         last = getattr(cc, "last_guard", None) or {}
         return {"domain": domain, "action": action, "proceed": bool(proceed), "decision": rc.get("decision"), "why": last.get("why", []),
                 "reasons": [s.get("why") for s in rc.get("steps", []) if isinstance(s, dict) and s.get("why")], "reason_codes": rc.get("reason_codes", []),
-                "receipt_sha256": rc.get("sha256"), "alternatives": rc.get("alternatives")}
+                "receipt_sha256": rc.get("sha256"), "alternatives": rc.get("alternatives"), "facts": rc.get("facts")}
+
+    def verify_fact(args):
+        args = args or {}
+        domain, field, value = _domain(args.get("site")), str(args.get("field") or ""), str(args.get("value") or "").strip()[:200]
+        if not domain:
+            return {"ok": False, "why": ["not a public domain name: %s" % args.get("site")]}
+        if field not in _FACT_FIELDS or not value:
+            return {"ok": False, "why": ["give field (phone, address, hours or service_area) and value"]}
+        try:
+            doc = cc.field_check(domain, field, value)
+        except Exception as e:
+            return {"ok": False, "domain": domain, "field": field, "value": value, "why": [str(e)]}
+        try:
+            v = verify_document(doc)
+            ok = bool(v.get("verified"))
+        except Exception:
+            ok = False
+        out = dict(doc)
+        out.update({"ok": True, "verified": ok})
+        return out
 
     def fetch(args):
         args = args or {}
@@ -53,6 +76,13 @@ def agent_tools(cc, agent=None, allow_warn=False, confirm=None, max_chars=20000)
              "site": {"type": "string", "description": "The site's domain or any URL on it, e.g. example.com or https://example.com/page"},
              "action": {"type": "string", "enum": _ACTIONS, "description": "What you are about to do: read (default), cite, connect (an API or MCP server), transact (pay, book, submit personal data) or administer"}}},
          "execute": check_site},
+        {"name": "crawlcheck_verify_fact",
+         "description": "Check one fact you hold about a business against what the business itself publishes: its phone number, street address, opening hours or a place it serves. Returns CrawlCheck's signed verdict (published now, published before, or not this business, and who does publish it). Use it before giving someone a phone number, address or hours, especially ones that came from an AI answer or a directory.",
+         "parameters": {"type": "object", "additionalProperties": False, "required": ["site", "field", "value"], "properties": {
+             "site": {"type": "string", "description": "The business's website domain or any URL on it"},
+             "field": {"type": "string", "enum": _FACT_FIELDS, "description": "Which fact the value is"},
+             "value": {"type": "string", "description": "The value you hold, e.g. (720) 555-0100, 1200 Main St, Mon 8am, or a city name"}}},
+         "execute": verify_fact},
         {"name": "crawlcheck_fetch",
          "description": "Fetch a web page only if CrawlCheck allows reading that site; every redirect to a new domain is checked again before it is followed. Returns the page text (truncated) or, when refused, why. Prefer this over a plain fetch for sites you have not checked.",
          "parameters": {"type": "object", "additionalProperties": False, "required": ["url"], "properties": {

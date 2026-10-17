@@ -128,8 +128,10 @@ def verify_document(doc, published_kids=None):
     def C(i, ok, why):
         checks.append({"id": i, "ok": ok, "why": why})
 
-    if not isinstance(doc, dict) or doc.get("kind") not in DATA_KINDS or not doc.get("signature"):
-        raise ValueError("not a CrawlCheck data inventory, export part, deletion record, resolve answer, decision receipt or snapshot manifest")
+    # 1.7.0: every kind the service signs with this scheme verifies; trust still rests on key_published
+    sig0 = doc.get("signature") if isinstance(doc, dict) else None
+    if not isinstance(doc, dict) or not re.match(r"^crawlcheck-[a-z0-9]+(-[a-z0-9]+){0,6}$", str(doc.get("kind") or "")) or not isinstance(sig0, dict) or not str(sig0.get("message") or "").startswith(DATA_SIG_PREFIX):
+        raise ValueError("not a signed CrawlCheck document (kind crawlcheck-*, signed with the crawlcheck-data-v1 scheme)")
     body = {k: v for k, v in doc.items() if k not in ("sha256", "signature")}
     sha = hashlib.sha256(canon(body).encode("utf-8")).hexdigest()
     C("document_hash", sha == doc.get("sha256"), "the document hashes to its stated digest" if sha == doc.get("sha256") else "the document hashes to %s, it states %s - a field was changed" % (sha, doc.get("sha256")))

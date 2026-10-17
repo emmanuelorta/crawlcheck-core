@@ -637,6 +637,8 @@ export declare class CrawlCheck {
     guardedFetch(url: string, opts?: GuardedFetchOptions): Promise<GuardedFetchResult>;
     /** Look a domain up without sending it: only the first prefixLen hex characters of sha256(domain) leave this process (one more character per 413, up to 8). found false with ready true means no public measurement. */
     /** Make a signed lockfile for an MCP server (CrawlCheck reads tools/list; no tool is called). Save it; check with checkLock before every connect. */
+    /** One signed verdict on a business fact (phone, address, hours, service_area) against what the business publishes: GET /api/v1/field-check. */
+    fieldCheck(domain: string, field: FactField, value: string): Promise<JsonObject>;
     mcpLock(url: string): Promise<McpLock & JsonObject>;
     /** Read the server's tools now (through CrawlCheck) and compare with a lockfile; the answer is signed. For a fully offline check, list the tools yourself and call checkLock. */
     mcpLockCheck(lock: McpLock, url?: string): Promise<McpLockCheck & JsonObject>;
@@ -687,11 +689,12 @@ export declare class CrawlCheck {
     private req;
 }
 /**
- * Agent tools (1.6.0): CrawlCheck as two tools any agent framework can register, so the check happens inside the agent's
- * own tool loop. crawlcheck_check_site returns the signed, verified decision for an action on a site; crawlcheck_fetch
+ * Agent tools (1.6.0; crawlcheck_verify_fact and decision facts 1.7.0): CrawlCheck as tools any agent framework can register, so the check happens inside the agent's
+ * own tool loop. crawlcheck_check_site returns the signed, verified decision for an action on a site (with the business facts the site publishes); crawlcheck_verify_fact checks one phone, address or hours value; crawlcheck_fetch
  * fetches a page only after its domain (and every redirect hop) proceeds. Both fail closed, exactly like guard().
  * toolsFor() shapes them for OpenAI function calling, Anthropic tool use, the Vercel AI SDK or an MCP server.
  */
+export type FactField = "phone" | "address" | "hours" | "service_area";
 export interface AgentTool {
     name: string;
     description: string;
