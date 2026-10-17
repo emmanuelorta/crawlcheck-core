@@ -686,4 +686,26 @@ export declare class CrawlCheck {
     }>;
     private req;
 }
+/**
+ * Agent tools (1.6.0): CrawlCheck as two tools any agent framework can register, so the check happens inside the agent's
+ * own tool loop. crawlcheck_check_site returns the signed, verified decision for an action on a site; crawlcheck_fetch
+ * fetches a page only after its domain (and every redirect hop) proceeds. Both fail closed, exactly like guard().
+ * toolsFor() shapes them for OpenAI function calling, Anthropic tool use, the Vercel AI SDK or an MCP server.
+ */
+export interface AgentTool {
+    name: string;
+    description: string;
+    parameters: JsonObject;
+    execute: (args: any) => Promise<JsonObject>;
+}
+export interface AgentToolOptions extends GuardOptions {
+    maxChars?: number;
+}
+export declare function agentTools(cc: CrawlCheck, opts?: AgentToolOptions): AgentTool[];
+export type ToolFormat = "openai" | "anthropic" | "vercel" | "mcp";
+/** Shape agentTools() for a framework. call(name, args) runs a tool by name for formats that hand you the call (OpenAI, Anthropic, MCP). For the Vercel AI SDK wrap each parameters object: tool({ description, parameters: jsonSchema(t.parameters), execute: t.execute }). */
+export declare function toolsFor(format: ToolFormat, tools: AgentTool[]): {
+    tools: unknown;
+    call: (name: string, args: unknown) => Promise<JsonObject>;
+};
 export default CrawlCheck;

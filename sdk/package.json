@@ -1,6 +1,6 @@
 {
   "name": "@crawlcheck/sdk",
-  "version": "1.5.2",
+  "version": "1.6.0",
   "description": "Typed client for the CrawlCheck API (generated from its OpenAPI document) and the zero-dependency offline verifier for evidence bundles and remediation receipts.",
   "type": "module",
   "main": "./dist/index.js",

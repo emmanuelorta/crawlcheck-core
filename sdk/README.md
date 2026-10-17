@@ -20,6 +20,25 @@ Every verification returns `integrity_valid`, `issuer_trusted` and `accepted`. A
 
 `preflight(domain, action, { agent, template, policy })` returns the signed receipt without deciding for you; `verifyDocument(doc)` verifies any signed resolve answer or decision receipt offline. `resolve(domain)` returns the full signed ResolveV1 answer.
 
+## Give your agent the check as a tool
+
+Two tools your agent can call itself: `crawlcheck_check_site` (the signed, verified decision for an action on a site) and `crawlcheck_fetch` (fetches a page only after its domain, and every redirect hop, is allowed). Both fail closed.
+
+```js
+import { CrawlCheck, agentTools, toolsFor } from "@crawlcheck/sdk";
+const tools = agentTools(new CrawlCheck(), { agent: "MyAgentBot" });
+
+// OpenAI function calling
+const oa = toolsFor("openai", tools);          // oa.tools → tools: [...]; on a tool call: await oa.call(name, argumentsJson)
+// Anthropic tool use
+const an = toolsFor("anthropic", tools);       // an.tools → tools: [...]; on tool_use: await an.call(block.name, block.input)
+// Vercel AI SDK
+import { tool, jsonSchema } from "ai";
+const vt = Object.fromEntries(tools.map((t) => [t.name, tool({ description: t.description, parameters: jsonSchema(t.parameters), execute: t.execute })]));
+// An MCP server you run
+const mc = toolsFor("mcp", tools);             // list mc.tools; answer tools/call with mc.call(name, args)
+```
+
 ## Read a record
 
 ```js
