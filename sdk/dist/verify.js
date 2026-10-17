@@ -612,8 +612,10 @@ async function verifyDataDoc0(x) {
         throw new Error("this runtime has no WebCrypto (crypto.subtle)");
     const checks = [];
     const C = (id, ok, why) => checks.push({ id, ok, why });
-    if (!x || !/^crawlcheck-(data-inventory|data-export-part|deletion-record|resolve|decision|snapshot|visitor|conduct|traffic-index|anchor|anchor-check|content-clock|origin|claims|read-equivalence|rights|rights-feed|mcp-scan|mcp-lock|mcp-lock-check|mcp-shadow|mcp-auth|impersonation|task-canaries|agent-safety-benchmark|compliance-pack|share-of-preflight|incident|revocations|high-risk|log-sth|threshold-verdict|resolve-as-of)$/.test(String(x.kind)) || !x.signature)
-        throw new Error("not a CrawlCheck data inventory, export part, deletion record, resolve answer, decision receipt, snapshot manifest, visitor verdict, conduct record, traffic index, citation anchor, content clock, origin decision, claim ledger, read-equivalence certificate, rights answer, rights-feed manifest, MCP tool scan, MCP lockfile or lockfile check");
+    // 1.7.0: every kind the service signs with this scheme verifies (field checks, opt-out records, AI-visibility and what-moved
+    // readings were refused by the old fixed list though their signatures were valid); trust still rests on key_published.
+    if (!x || !/^crawlcheck-[a-z0-9]+(-[a-z0-9]+){0,6}$/.test(String(x.kind)) || !x.signature || !x.signature.message || String(x.signature.message).indexOf(DATA_SIG_PREFIX) !== 0)
+        throw new Error("not a signed CrawlCheck document (kind crawlcheck-*, signed with the crawlcheck-data-v1 scheme)");
     const body = {};
     for (const k of Object.keys(x))
         if (k !== "sha256" && k !== "signature")

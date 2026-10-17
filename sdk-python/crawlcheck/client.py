@@ -13,7 +13,7 @@ from . import log as _log
 from .staple import staple_check, staple_from_headers
 from .revocations import new_revocation_store, apply_revocations, revoked_for
 
-VERSION = "1.6.0"
+VERSION = "1.7.0"
 ACTIONS = ("read", "cite", "connect", "transact", "administer")
 
 
@@ -397,6 +397,10 @@ class CrawlCheck:
         return _log.log_gossip(self.log, sths)
 
     # --- private lookup and receipt headers (1.0.3) ---
+    def field_check(self, domain, field, value):
+        """One signed verdict on a business fact (phone, address, hours, service_area) against what the business publishes."""
+        return self._req("GET", "/api/v1/field-check", {"domain": normalize_domain(domain), "field": field, "value": value})
+
     def mcp_lock(self, url):
         """A signed lockfile for an MCP server (CrawlCheck reads tools/list; no tool is called). Check it with check_lock before every connect."""
         return self._req("GET", "/api/v1/mcp/lock", {"url": url})

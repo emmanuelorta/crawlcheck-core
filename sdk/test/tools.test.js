@@ -5,7 +5,7 @@ const cc = new CrawlCheck();
 const tools = agentTools(cc);
 
 test("agent tools: two tools, each with a JSON-schema object and an execute()", () => {
-  assert.deepEqual(tools.map((t) => t.name), ["crawlcheck_check_site", "crawlcheck_fetch"]);
+  assert.deepEqual(tools.map((t) => t.name), ["crawlcheck_check_site", "crawlcheck_verify_fact", "crawlcheck_fetch"]);
   for (const t of tools) { assert.equal(t.parameters.type, "object"); assert.equal(typeof t.execute, "function"); assert.ok(t.description.length > 40); }
 });
 
@@ -31,7 +31,16 @@ test("live: check_site returns a verified, signed decision for crawlcheck.io", a
 });
 
 test("live: fetch returns page text only after the check proceeds", async () => {
-  const r = await tools[1].execute({ url: "https://crawlcheck.io/llms.txt" });
+  const r = await tools[2].execute({ url: "https://crawlcheck.io/llms.txt" });
   if (r.proceed) { assert.equal(r.status, 200); assert.ok(r.text.length > 100); assert.ok(r.hops.length >= 1 && r.hops[0].proceed); }
   else assert.ok(r.why.length, "a refusal names why");
+});
+test("verify_fact refuses bad input without a request", async () => {
+  assert.equal((await tools[1].execute({ site: "not a domain", field: "phone", value: "1" })).ok, false);
+  assert.equal((await tools[1].execute({ site: "example.com", field: "email", value: "x" })).ok, false);
+});
+test("live: verify_fact returns a signed verdict that verifies", async () => {
+  const r = await tools[1].execute({ site: "crawlcheck.io", field: "phone", value: "(720) 555-0100" });
+  if (r.ok) { assert.equal(r.kind, "crawlcheck-field-check"); assert.equal(r.verified, true); assert.ok(r.verdict); }
+  else assert.ok(r.why.length);
 });

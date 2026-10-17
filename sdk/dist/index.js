@@ -423,6 +423,8 @@ export class CrawlCheck {
     }
     /** Look a domain up without sending it: only the first prefixLen hex characters of sha256(domain) leave this process (one more character per 413, up to 8). found false with ready true means no public measurement. */
     /** Make a signed lockfile for an MCP server (CrawlCheck reads tools/list; no tool is called). Save it; check with checkLock before every connect. */
+    /** One signed verdict on a business fact (phone, address, hours, service_area) against what the business publishes: GET /api/v1/field-check. */
+    async fieldCheck(domain, field, value) { return this.req("GET", "/api/v1/field-check", { domain: normalizeDomain(domain), field, value }); }
     async mcpLock(url) { return this.req("GET", "/api/v1/mcp/lock", { url }); }
     /** Read the server's tools now (through CrawlCheck) and compare with a lockfile; the answer is signed. For a fully offline check, list the tools yourself and call checkLock. */
     async mcpLockCheck(lock, url) { return this.req("POST", "/api/v1/mcp/lock/check", undefined, { lock, url: url ?? lock?.server?.url ?? undefined }); }
@@ -586,7 +588,31 @@ export function agentTools(cc, opts = {}) {
                     return { proceed: false, why: ["not a public domain name: " + String(a?.site ?? "")] };
                 const g = await cc.guard(domain, action, opts);
                 return { domain, action, proceed: g.proceed, decision: g.receipt ? String(g.receipt.decision) : null, why: g.why, reasons: Array.isArray(g.receipt?.steps) ? g.receipt.steps.map((x) => String(x?.why ?? "")).filter(Boolean) : [], reason_codes: g.receipt?.reason_codes ?? [],
-                    receipt_sha256: g.receipt?.sha256 ?? null, verified: g.verification ? g.verification.accepted : false, alternatives: g.receipt?.alternatives ?? null };
+                    receipt_sha256: g.receipt?.sha256 ?? null, verified: g.verification ? g.verification.accepted : false, alternatives: g.receipt?.alternatives ?? null,
+                    facts: g.receipt?.facts ?? null };
+            } },
+        { name: "crawlcheck_verify_fact",
+            description: "Check one fact you hold about a business against what the business itself publishes: its phone number, street address, opening hours or a place it serves. Returns CrawlCheck's signed verdict (published now, published before, or not this business, and who does publish it). Use it before giving someone a phone number, address or hours, especially ones that came from an AI answer or a directory.",
+            parameters: { type: "object", additionalProperties: false, required: ["site", "field", "value"], properties: {
+                    site: { type: "string", description: "The business's website domain or any URL on it" },
+                    field: { type: "string", enum: ["phone", "address", "hours", "service_area"], description: "Which fact the value is" },
+                    value: { type: "string", description: "The value you hold, e.g. (720) 555-0100, 1200 Main St, Mon 8am, or a city name" }
+                } },
+            execute: async (a) => {
+                const domain = atDomain(a?.site), field = String(a?.field ?? ""), value = String(a?.value ?? "").trim().slice(0, 200);
+                if (!domain)
+                    return { ok: false, why: ["not a public domain name: " + String(a?.site ?? "")] };
+                if (!["phone", "address", "hours", "service_area"].includes(field) || !value)
+                    return { ok: false, why: ["give field (phone, address, hours or service_area) and value"] };
+                let doc;
+                try {
+                    doc = await cc.fieldCheck(domain, field, value);
+                }
+                catch (e) {
+                    return { ok: false, domain, field, value, why: [String(e?.message ?? e)] };
+                }
+                const v = await cc.verifyDocument(doc).catch(() => null);
+                return Object.assign({}, doc, { ok: true, verified: v ? (v.accepted ?? v.verified) === true : false, verification: v ? v.summary : "could not verify" });
             } },
         { name: "crawlcheck_fetch",
             description: "Fetch a web page only if CrawlCheck allows reading that site; every redirect to a new domain is checked again before it is followed. Returns the page text (truncated) or, when refused, why. Prefer this over a plain fetch for sites you have not checked.",

@@ -447,6 +447,8 @@ export class CrawlCheck {
   }
   /** Look a domain up without sending it: only the first prefixLen hex characters of sha256(domain) leave this process (one more character per 413, up to 8). found false with ready true means no public measurement. */
   /** Make a signed lockfile for an MCP server (CrawlCheck reads tools/list; no tool is called). Save it; check with checkLock before every connect. */
+  /** One signed verdict on a business fact (phone, address, hours, service_area) against what the business publishes: GET /api/v1/field-check. */
+  async fieldCheck(domain: string, field: FactField, value: string): Promise<JsonObject> { return this.req("GET", "/api/v1/field-check", { domain: normalizeDomain(domain), field, value }) as Promise<JsonObject>; }
   async mcpLock(url: string): Promise<McpLock & JsonObject> { return this.req("GET", "/api/v1/mcp/lock", { url }) as Promise<McpLock & JsonObject>; }
   /** Read the server's tools now (through CrawlCheck) and compare with a lockfile; the answer is signed. For a fully offline check, list the tools yourself and call checkLock. */
   async mcpLockCheck(lock: McpLock, url?: string): Promise<McpLockCheck & JsonObject> { return this.req("POST", "/api/v1/mcp/lock/check", undefined, { lock, url: url ?? lock?.server?.url ?? undefined }) as Promise<McpLockCheck & JsonObject>; }
@@ -560,11 +562,12 @@ export class CrawlCheck {
 }
 
 /**
- * Agent tools (1.6.0): CrawlCheck as two tools any agent framework can register, so the check happens inside the agent's
- * own tool loop. crawlcheck_check_site returns the signed, verified decision for an action on a site; crawlcheck_fetch
+ * Agent tools (1.6.0; crawlcheck_verify_fact and decision facts 1.7.0): CrawlCheck as tools any agent framework can register, so the check happens inside the agent's
+ * own tool loop. crawlcheck_check_site returns the signed, verified decision for an action on a site (with the business facts the site publishes); crawlcheck_verify_fact checks one phone, address or hours value; crawlcheck_fetch
  * fetches a page only after its domain (and every redirect hop) proceeds. Both fail closed, exactly like guard().
  * toolsFor() shapes them for OpenAI function calling, Anthropic tool use, the Vercel AI SDK or an MCP server.
  */
+export type FactField = "phone" | "address" | "hours" | "service_area";
 export interface AgentTool { name: string; description: string; parameters: JsonObject; execute: (args: any) => Promise<JsonObject> }
 export interface AgentToolOptions extends GuardOptions { /** Characters of page text returned by crawlcheck_fetch (default 20000). */ maxChars?: number }
 const AT_ACTIONS: Action[] = ["read", "cite", "connect", "transact", "administer"];
@@ -583,7 +586,23 @@ export function agentTools(cc: CrawlCheck, opts: AgentToolOptions = {}): AgentTo
         if (!domain) return { proceed: false, why: ["not a public domain name: " + String(a?.site ?? "")] };
         const g = await cc.guard(domain, action, opts);
         return { domain, action, proceed: g.proceed, decision: g.receipt ? String(g.receipt.decision) : null, why: g.why, reasons: Array.isArray((g.receipt as any)?.steps) ? (g.receipt as any).steps.map((x: any) => String(x?.why ?? "")).filter(Boolean) : [], reason_codes: (g.receipt as any)?.reason_codes ?? [],
-          receipt_sha256: g.receipt?.sha256 ?? null, verified: g.verification ? g.verification.accepted : false, alternatives: g.receipt?.alternatives ?? null };
+          receipt_sha256: g.receipt?.sha256 ?? null, verified: g.verification ? g.verification.accepted : false, alternatives: g.receipt?.alternatives ?? null,
+          facts: (g.receipt as any)?.facts ?? null };
+      } },
+    { name: "crawlcheck_verify_fact",
+      description: "Check one fact you hold about a business against what the business itself publishes: its phone number, street address, opening hours or a place it serves. Returns CrawlCheck's signed verdict (published now, published before, or not this business, and who does publish it). Use it before giving someone a phone number, address or hours, especially ones that came from an AI answer or a directory.",
+      parameters: { type: "object", additionalProperties: false, required: ["site", "field", "value"], properties: {
+        site: { type: "string", description: "The business's website domain or any URL on it" },
+        field: { type: "string", enum: ["phone", "address", "hours", "service_area"], description: "Which fact the value is" },
+        value: { type: "string", description: "The value you hold, e.g. (720) 555-0100, 1200 Main St, Mon 8am, or a city name" } } },
+      execute: async (a: any) => {
+        const domain = atDomain(a?.site), field = String(a?.field ?? ""), value = String(a?.value ?? "").trim().slice(0, 200);
+        if (!domain) return { ok: false, why: ["not a public domain name: " + String(a?.site ?? "")] };
+        if (!["phone", "address", "hours", "service_area"].includes(field) || !value) return { ok: false, why: ["give field (phone, address, hours or service_area) and value"] };
+        let doc: any;
+        try { doc = await cc.fieldCheck(domain, field as FactField, value); } catch (e: any) { return { ok: false, domain, field, value, why: [String(e?.message ?? e)] }; }
+        const v = await cc.verifyDocument(doc).catch(() => null);
+        return Object.assign({}, doc, { ok: true, verified: v ? ((v as any).accepted ?? v.verified) === true : false, verification: v ? v.summary : "could not verify" }) as JsonObject;
       } },
     { name: "crawlcheck_fetch",
       description: "Fetch a web page only if CrawlCheck allows reading that site; every redirect to a new domain is checked again before it is followed. Returns the page text (truncated) or, when refused, why. Prefer this over a plain fetch for sites you have not checked.",

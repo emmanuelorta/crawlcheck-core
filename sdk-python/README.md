@@ -28,6 +28,17 @@ Decisions: `allow`, `warn`, `require_confirmation`, `block`, `unsupported`. A po
 
 `verify_document(doc)` and `CrawlCheck.verify(doc)` return `verified`, `integrity_valid`, `issuer_trusted` and `accepted`. Act on `accepted`: offline, `issuer_trusted` is `None` and `accepted` is `False`, because a document signed with someone else's key can be self-consistent. `CrawlCheck.verify` and `guard` check the published key directory, so `accepted` is decided there.
 
+## Give your agent the check as a tool
+
+`agent_tools(cc)` returns three tools: `crawlcheck_check_site` (the signed, verified decision for an action on a site, including the business facts the site publishes and which AI engines get them wrong), `crawlcheck_verify_fact` (one signed verdict on a phone number, address, hours or service area you hold) and `crawlcheck_fetch` (fetches a page only after its domain and every redirect hop are allowed). All fail closed.
+
+```python
+from crawlcheck import CrawlCheck, agent_tools, tools_for
+tools = agent_tools(CrawlCheck(), agent="MyAgentBot")
+defs, call = tools_for("anthropic", tools)   # or "openai", "mcp"; on a tool call: call(name, args)
+print(call("crawlcheck_verify_fact", {"site": "example.com", "field": "phone", "value": "(720) 555-0100"})["verdict"])
+```
+
 ## Preflight inside your MCP client
 
 Wrap an MCP `ClientSession` so `initialize` and `call_tool` are decided before anything is sent ([proposal](https://crawlcheck.io/spec/mcp-preflight)):
