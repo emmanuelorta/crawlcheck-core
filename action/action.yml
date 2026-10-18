@@ -1,0 +1,41 @@
+name: CrawlCheck fixes
+description: Opens a pull request with a corrected robots.txt (and sitemap, for static sites) when CrawlCheck finds a defect in the live files.
+author: CrawlCheck (crawlcheck.io)
+branding:
+  icon: check-circle
+  color: yellow
+inputs:
+  domain:
+    description: The site to check, e.g. example.com
+    required: true
+  robots-path:
+    description: Path of robots.txt in this repository. Empty skips robots.txt.
+    default: robots.txt
+  sitemap-path:
+    description: Path of a static sitemap.xml in this repository. Empty (the default) skips the sitemap; leave it empty when a CMS or plugin generates the sitemap.
+    default: ""
+  branch:
+    description: Branch the fixes are pushed to.
+    default: crawlcheck/fixes
+  token:
+    description: Token used to push and open the pull request. Needs contents and pull-requests write.
+    default: ${{ github.token }}
+outputs:
+  changed:
+    description: "true when a fix was written and a pull request opened or updated"
+    value: ${{ steps.run.outputs.changed }}
+  pr-url:
+    description: The pull request, when one was opened or updated
+    value: ${{ steps.run.outputs.pr_url }}
+runs:
+  using: composite
+  steps:
+    - id: run
+      shell: bash
+      env:
+        CC_DOMAIN: ${{ inputs.domain }}
+        CC_ROBOTS: ${{ inputs.robots-path }}
+        CC_SITEMAP: ${{ inputs.sitemap-path }}
+        CC_BRANCH: ${{ inputs.branch }}
+        GH_TOKEN: ${{ inputs.token }}
+      run: bash "$GITHUB_ACTION_PATH/run.sh"
