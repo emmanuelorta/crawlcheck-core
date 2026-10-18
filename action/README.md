@@ -37,4 +37,4 @@ Outputs: `changed` (`true`/`false`) and `pr-url`.
 
 The corrected files come from the live site, not from the file in your repository, so review the diff: if your repository holds changes that are not deployed yet, the pull request will not include them. Every change is listed in comments at the top of the corrected robots.txt and in the pull request body.
 
-Docs: https://crawlcheck.io/docs/github-action
+Docs: https://github.com/emmanuelorta/crawlcheck-core/tree/main/action
