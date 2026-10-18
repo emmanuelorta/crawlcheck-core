@@ -6,7 +6,7 @@ API="${CC_API:-https://crawlcheck.io}"
 DOMAIN="$(printf '%s' "${CC_DOMAIN:?domain is required}" | sed -E 's#^https?://##; s#/.*$##' | tr 'A-Z' 'a-z')"
 OUT="${GITHUB_OUTPUT:-/dev/null}"
 NOTES="$(mktemp)"; WROTE=0
-ua="crawlcheck-action/1 (+https://crawlcheck.io/docs/github-action)"
+ua="crawlcheck-action/1 (+https://github.com/emmanuelorta/crawlcheck-core/tree/main/action)"
 
 fetch() { curl -fsS --retry 2 --max-time 120 -A "$ua" "$1"; }
 field() { python3 -c 'import json,sys; d=json.load(sys.stdin); v=d.get(sys.argv[1]); print("" if v is None else (json.dumps(v) if isinstance(v,(bool,list,dict)) else v), end="")' "$1"; }
