@@ -31,8 +31,8 @@ if [ -n "${CC_SITEMAP:-}" ]; then
   else echo "sitemap: no change needed (or not available: $(printf '%s' "$j" | field note)$(printf '%s' "$j" | field error))"; fi
 fi
 
-if [ "$WROTE" = 0 ] || git diff --quiet; then echo "changed=false" >> "$OUT"; echo "Nothing to fix."; exit 0; fi
-[ "${CC_DRY_RUN:-}" = 1 ] && { git --no-pager diff --stat; cat "$NOTES"; echo "changed=true" >> "$OUT"; exit 0; }
+if [ "$WROTE" = 0 ] || [ -z "$(git status --porcelain -- ${CC_ROBOTS:+"$CC_ROBOTS"} ${CC_SITEMAP:+"$CC_SITEMAP"})" ]; then echo "changed=false" >> "$OUT"; echo "Nothing to fix."; exit 0; fi
+[ "${CC_DRY_RUN:-}" = 1 ] && { git status --short; cat "$NOTES"; echo "changed=true" >> "$OUT"; exit 0; }
 
 BASE="$(git rev-parse --abbrev-ref HEAD)"
 git config user.name "crawlcheck-fixes[bot]"
