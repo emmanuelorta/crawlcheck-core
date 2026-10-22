@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "crawlcheck"
-version = "1.8.0"
+version = "1.9.0"
 description = "CrawlCheck client: resolve a domain, get a signed decision for an agent action, verify CrawlCheck evidence offline. No dependencies."
 readme = "README.md"
 requires-python = ">=3.8"

@@ -110,6 +110,7 @@ export function verifyWitnessToken(token: any, sthSha256: any, jwks: any): Promi
  * holds (at most opts.maxWalk batches), observing every link, so any head this client was shown that the witness's
  * chain does not contain surfaces as a fork. Heads newer than the witnessed one are listed as unwitnessed.
  */
+export function walkHeads(get: any, hi: any, lo: any): Promise<any[]>;
 export function logCheck(store: any, get: any, opts?: {}): Promise<{
     consistent: boolean;
     forks: any;
