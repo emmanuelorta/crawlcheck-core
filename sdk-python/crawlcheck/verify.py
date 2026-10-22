@@ -245,7 +245,14 @@ def key_policy_from(directory, rotation=None):
     for r in (rotation or {}).get("retired") or []:
         if isinstance(r, dict) and r.get("thumbprint"):
             st = _kp_ms(r.get("stopped_signing_at"))
-            retired[r["thumbprint"]] = {"purpose": _kp_purpose(r.get("purpose")), "stopped": st if st is not None else _kp_ms(r.get("retired_at"))}
+            rp = _kp_purpose(r.get("purpose"))
+            rs = _kp_ms(r.get("crawlcheck_signs_from"))
+            if rs is None:
+                rs = _kp_ms(r.get("not_before"))
+            if rs is None:
+                rs = _kp_ms(KEY_POLICY["starts"].get(rp))
+            # conf3: a retired key keeps its signing window
+            retired[r["thumbprint"]] = {"purpose": rp, "start": rs, "stopped": st if st is not None else _kp_ms(r.get("retired_at"))}
     for c in (rotation or {}).get("compromised") or []:
         if isinstance(c, dict) and c.get("thumbprint"):
             compromised[c["thumbprint"]] = _kp_ms(c.get("compromised_since")) or 0
@@ -299,6 +306,9 @@ def _kp_expected(obj_purpose, t, kp):
         if p == "requests":
             return p
         if any(v["purpose"] == p and kid not in kp["compromised"] and (t is None or v["start"] is None or v["start"] <= t) for kid, v in kp["keys"].items()):
+            return p
+        # conf3: a key retired since still covered its own signing window
+        if t is not None and any(v["purpose"] == p and kid not in kp["compromised"] and (v.get("start") is None or v["start"] <= t) and v.get("stopped") is not None and t <= v["stopped"] for kid, v in (kp.get("retired") or {}).items()):
             return p
     return "requests"
 

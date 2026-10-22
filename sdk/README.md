@@ -18,6 +18,8 @@ const { proceed, receipt } = await cc.guard("example.com", "read", { agent: "MyA
 
 Every verification returns `integrity_valid`, `issuer_trusted` and `accepted`. Act on `accepted`: it needs the signing key to be one CrawlCheck publishes, so a document someone signed with their own key is `verified` offline but never `accepted`. The client methods (`verifyDocument`, `verifyOffline`, `verifyReceiptOffline`, `guard`) check the published key directory for you.
 
+Since 1.9.1 a key the rotation record lists as retired still counts for its own signing window when the expected purpose is worked out: after a decision-key rotation, receipts the old decision key signed inside its window verify, and no other key may sign a decision made while that key was live (key-policy suite cases retired-decision-key-*).
+
 Since 1.9.0 `logCheck` reads the chain of signed heads 200 per request (`/api/v1/log/sths`) instead of one per batch, so a first check on a client holding no heads takes one or two requests; an older server is still walked one head per request.
 
 Since 1.8.0 an MCP connect decision names the server and, with a lockfile, its approved `tools_sha256` (`preflight(domain, "connect", { mcp: { url, tools_sha256 } })`; `withPreflight` sends it for you). CrawlCheck reads the live tools from its own network: a changed tool list comes back as `block`, and the signed receipt's `assessed` block says exactly which endpoint and tool state it covered.
