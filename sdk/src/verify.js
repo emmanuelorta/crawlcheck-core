@@ -514,7 +514,7 @@ export async function keyPolicyFrom(directory, rotation) {
     const purpose = kpPurpose(k.crawlcheck_purpose);
     keys[kid] = { purpose, start: kpMs(k.crawlcheck_signs_from) ?? kpMs(k.nbf) ?? kpMs(KEY_POLICY.starts[purpose]) };
   }
-  for (const r of (rotation && rotation.retired) || []) if (r && r.thumbprint) retired[r.thumbprint] = { purpose: kpPurpose(r.purpose), stopped: kpMs(r.stopped_signing_at) ?? kpMs(r.retired_at) };
+  for (const r of (rotation && rotation.retired) || []) if (r && r.thumbprint) retired[r.thumbprint] = { purpose: kpPurpose(r.purpose), start: kpMs(r.crawlcheck_signs_from) ?? kpMs(r.not_before) ?? kpMs(KEY_POLICY.starts[kpPurpose(r.purpose)]), stopped: kpMs(r.stopped_signing_at) ?? kpMs(r.retired_at) };   // conf3: a retired key keeps its signing window
   for (const c of (rotation && rotation.compromised) || []) if (c && c.thumbprint) compromised[c.thumbprint] = kpMs(c.compromised_since) ?? 0;
   return { v: 2, kids: Object.keys(keys), keys, retired, compromised, rotation: !!rotation };
 }
@@ -542,6 +542,8 @@ function kpExpected(objPurpose, t, kp) {
   for (const p of KEY_POLICY.chains[objPurpose]) {
     if (p === "requests") return p;
     if (Object.keys(kp.keys).some((kid) => kp.keys[kid].purpose === p && kp.compromised[kid] === undefined && (t === null || kp.keys[kid].start === null || kp.keys[kid].start <= t))) return p;
+    // conf3: a key retired since still covered its own signing window: a decision made while a decision key was live expects that purpose
+    if (t !== null && Object.keys(kp.retired || {}).some((kid) => { const r = kp.retired[kid]; return r.purpose === p && kp.compromised[kid] === undefined && (r.start === null || r.start === undefined || r.start <= t) && r.stopped !== null && t <= r.stopped; })) return p;
   }
   return "requests";
 }
