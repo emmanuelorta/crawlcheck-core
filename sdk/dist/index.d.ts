@@ -16,8 +16,50 @@ export interface VerifyCheck {
 export interface Trust {
     integrity_valid: boolean;
     issuer_trusted: boolean | null;
-    accepted: boolean;
+    accepted: boolean; /** conf2: the signing policy accepts this key for this object at its signing time (purpose, retired, compromised). null: not decided. */
+    key_policy_valid?: boolean | null; /** conf2: stable reason: ok, ok_bound, key_wrong_purpose, key_not_yet_active, key_retired, key_compromised, key_unknown, no_signing_time, or related_<code> for a key the document leans on. */
+    key_policy_code?: string | null;
 }
+/** conf2: the key directory and rotation record as the signing policy reads them (keyPolicyFrom / publishedKeyPolicy). */
+export interface KeyPolicyInput {
+    v: 2;
+    kids: string[];
+    keys: Record<string, {
+        purpose: string;
+        start: number | null;
+    }>;
+    retired: Record<string, {
+        purpose: string;
+        stopped: number | null;
+    }>;
+    compromised: Record<string, number>;
+    rotation: boolean;
+    read_at?: string;
+    source?: string;
+}
+export interface KeyPolicyResult {
+    ok: boolean | null;
+    code: string;
+    known: boolean;
+    purpose: string | null;
+    expected: string | null;
+    why: string;
+}
+/** The signing policy as data (https://crawlcheck.io/keys#policy): object purposes, purpose chains, start times. */
+export declare const KEY_POLICY: {
+    v: 2;
+    object_purpose: Record<string, string>;
+    chains: Record<string, string[]>;
+    starts: Record<string, string | null>;
+    bound: Record<string, string>;
+    purpose_aliases: Record<string, string>;
+};
+/** Build the policy input from a key directory you hold and, optionally, the rotation record saved with it. */
+export declare const keyPolicyFrom: (directory: unknown, rotation?: unknown) => Promise<KeyPolicyInput>;
+/** Does the signing policy accept this document's signing key for this object at its signing time? */
+export declare const keyPolicyCheck: (doc: unknown, kp: KeyPolicyInput) => KeyPolicyResult;
+/** Apply the signing policy to a verification: key_published (retired keys included), key_purpose, and the trust fields. */
+export declare const applyKeyPolicy: <T>(res: T, doc: unknown, kp: KeyPolicyInput) => T & Trust;
 export interface BundleVerification extends Partial<Trust> {
     verified: boolean;
     summary: string;
@@ -197,7 +239,11 @@ export interface PreflightOptions {
     template?: string;
     policy?: PreflightPolicy; /** 8-128 characters of A-Z a-z 0-9 . _ : - signed into the receipt (replay binding). guard() sends a fresh one when you give none. */
     nonce?: string; /** The exact operation this decision is for (method + url, or an MCP tool); signed into the receipt. */
-    operation?: Operation;
+    operation?: Operation; /** An MCP server on this domain and the tool-list hash you approved (mcp-lockfile tools_sha256). The decision then reads the live tools, blocks when they differ, and its signed `assessed` block names exactly what it covered. https://crawlcheck.io/spec/mcp-lockfile */
+    mcp?: {
+        url: string;
+        tools_sha256?: string;
+    };
 }
 /** What a receipt can be scoped to. Send only the keys that apply; CrawlCheck signs them back exactly as sent. https://crawlcheck.io/spec/guard#operation */
 export interface Operation {
@@ -236,6 +282,8 @@ export interface GuardOptions extends PreflightOptions {
     onlineKeys?: boolean;
     /** Pinned CrawlCheck key ids, for offline use with onlineKeys: false. */
     publishedKids?: string[];
+    /** conf2: a pinned key policy (keyPolicyFrom(savedDirectory, savedRotation)), for offline use with onlineKeys: false. Checks key purpose too. */
+    keyPolicy?: KeyPolicyInput;
     /** Testing clock (ms since epoch). Default Date.now(). */
     now?: number;
 }
@@ -619,7 +667,10 @@ export declare class CrawlCheck {
     }): Promise<RevocationSync>;
     /** The policy engine: a signed decision receipt (allow | warn | require_confirmation | block | unsupported). A policy can only make the decision stricter. */
     preflight(domain: string, action?: Action, opts?: PreflightOptions): Promise<DecisionReceipt>;
-    /** Verify a signed document here. With onlineKeys (default), its signing key must also be in the published directory. */
+    private kpCache;
+    /** conf2: the key directory and rotation record, read now (cached 10 minutes), as the signing policy reads them. */
+    publishedKeyPolicy(): Promise<KeyPolicyInput>;
+    /** Verify a signed document here. With onlineKeys (default), its signing key must also be in the published directory and the signing policy must accept it. */
     verifyDocument(doc: unknown, onlineKeys?: boolean): Promise<DocumentVerification & Trust>;
     /**
      * Preflight, verify the receipt, check it is for THIS operation, and decide. Proceeds on allow; warn only with allowWarn;

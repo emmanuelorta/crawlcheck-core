@@ -1,8 +1,8 @@
 {
  "kind": "crawlcheck-guard-acceptance",
  "v": 1,
- "suite_version": "1.2.0",
- "built_at": "2026-10-10T17:53:14.660Z",
+ "suite_version": "1.3.0",
+ "built_at": "2026-10-18T19:40:16.907Z",
  "now": "2026-10-10T16:00:00.000Z",
  "nonce": "ccguard-acceptance-0001",
  "spec": "https://crawlcheck.io/spec/guard",
@@ -17,22 +17,59 @@
  "directory": {
   "keys": [
    {
-    "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
-    "crawlcheck_purpose": "documents",
+    "kid": "IhgBKn-7Ap3fPOt3w8PJmS9KqEw8kbGechR1vGfKg04",
+    "crawlcheck_purpose": "requests",
+    "nbf": 1789084800,
     "kty": "OKP",
     "crv": "Ed25519",
-    "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+    "x": "OsJcGUPIoXDDkc-ZHe4UaMahQexGv2gUx4TWugZpzoQ"
    },
    {
-    "kid": "r0X_XXpsP2-1P00GEj1tOmMIoTJ_w8H30oO6xo1NsRg",
-    "crawlcheck_purpose": "decisions",
+    "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
+    "crawlcheck_purpose": "documents",
+    "nbf": 1790812800,
     "kty": "OKP",
     "crv": "Ed25519",
-    "x": "DNDLnEKFsf8xmexG6JmEdHiq-O5Mn5Hn8p5wt3UvdiA"
+    "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
+   },
+   {
+    "kid": "vk7BW0P3cs5bpVbqFCJChi_NFso6V8WT4AiyyMm11WE",
+    "crawlcheck_purpose": "decisions",
+    "crawlcheck_signs_from": "2026-11-09T17:00:00Z",
+    "kty": "OKP",
+    "crv": "Ed25519",
+    "x": "Pesd8vAX5ZJ_HgHMp9VwpqibrN3KWquaTzZaKhB4ziE"
+   },
+   {
+    "kid": "KgOeW6fWJQJQPnacTHO_Drn_aIPsw2zcfZ2gb3ewcHM",
+    "crawlcheck_purpose": "documents",
+    "nbf": 1790812800,
+    "kty": "OKP",
+    "crv": "Ed25519",
+    "x": "Fg5ndP2SvCY9UZkKTdgCX90zZ0xVVAeJyPK0sP1PZig"
    }
   ]
  },
- "how": "For each case: serve directory at /.well-known/http-message-signatures-directory and answer POST /api/v1/preflight with crawlcheck (status + body or text; unreachable = refuse the connection; by_op = the receipt for the operation asked, keyed \"METHOD url\"). Call the guard with request (pin nonce and now; pass operation when given). A fetch case also serves sites (url -> status, location, body) and records each URL the guard requested and which domain got the CrawlCheck-Receipt header. expect.proceed must match; for fetch cases, fetched must match exactly.",
+ "rotation": {
+  "operator": "CrawlCheck (suite)",
+  "retired": [
+   {
+    "thumbprint": "0otJ5b3a_4yu1agw7RJQjC6hI1qzV1XG6g-rPMqq6Ag",
+    "purpose": "requests",
+    "stopped_signing_at": "2026-10-05T00:00:00.000Z",
+    "retired_at": "2026-10-05T00:00:00.000Z"
+   }
+  ],
+  "compromised": [
+   {
+    "thumbprint": "KgOeW6fWJQJQPnacTHO_Drn_aIPsw2zcfZ2gb3ewcHM",
+    "compromised_since": "2026-10-09T00:00:00.000Z",
+    "reason": "suite fixture"
+   }
+  ]
+ },
+ "key_policy": "https://crawlcheck.io/keys#policy",
+ "how": "For each case: serve directory at /.well-known/http-message-signatures-directory and rotation (or the case's crawlcheck.rotation) at /.well-known/security-key-rotation.json, and answer POST /api/v1/preflight with crawlcheck (status + body or text; unreachable = refuse the connection; by_op = the receipt for the operation asked, keyed \"METHOD url\"). Call the guard with request (pin nonce and now - request.now, which some key-policy cases move past 2026-11-09 17:00 UTC; pass operation when given). A fetch case also serves sites (url -> status, location, body) and records each URL the guard requested and which domain got the CrawlCheck-Receipt header. expect.proceed must match; for fetch cases, fetched must match exactly.",
  "cases": [
   {
    "id": "allow",
@@ -92,24 +129,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+     "sha256": "1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
-      "sig": "zyjvcHeLxg2Cbpdqv5Pjkwg1ABGD8WQaLyeKwFf59fdtJEbYgvaYIdnYkebB3BVSTiPHRlisr85dvTWH0JF3Dg",
+      "message": "crawlcheck-data-v1\n1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
+      "sig": "ZA59WlPDjqrkIO61tC0LWP7TqxHCuwSqRMpccGdcWzYXZ9TIMwgYVEhVDc7P2zBJ97r1bii1stiGdkDBIsLlBQ",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -178,24 +215,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "761afb029b266825f1375975a8cb9c9666799d67a1a799d77dd4ba6515d15b95",
+     "sha256": "9f6482768e34c200850a1a7c30bc871a5809bfd5b0953cfc3606b4e80881f111",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n761afb029b266825f1375975a8cb9c9666799d67a1a799d77dd4ba6515d15b95",
-      "sig": "hpC-X4lL02k6ElrOKNWviRfBALnPSx-PVoqZPUh-88zs4no44g2e5NnHxESOEY445guK7fPWoOjpjGVKi0TtAg",
+      "message": "crawlcheck-data-v1\n9f6482768e34c200850a1a7c30bc871a5809bfd5b0953cfc3606b4e80881f111",
+      "sig": "OMdKRzDVp5aVKrxpf4Pcco_bFI7H2RGsi-iZWb2MWC_Vy9L17_sh3fugWLo0DjG8G4kUVyN6IFI-p9G5P4P8CQ",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -264,24 +301,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "761afb029b266825f1375975a8cb9c9666799d67a1a799d77dd4ba6515d15b95",
+     "sha256": "9f6482768e34c200850a1a7c30bc871a5809bfd5b0953cfc3606b4e80881f111",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n761afb029b266825f1375975a8cb9c9666799d67a1a799d77dd4ba6515d15b95",
-      "sig": "hpC-X4lL02k6ElrOKNWviRfBALnPSx-PVoqZPUh-88zs4no44g2e5NnHxESOEY445guK7fPWoOjpjGVKi0TtAg",
+      "message": "crawlcheck-data-v1\n9f6482768e34c200850a1a7c30bc871a5809bfd5b0953cfc3606b4e80881f111",
+      "sig": "OMdKRzDVp5aVKrxpf4Pcco_bFI7H2RGsi-iZWb2MWC_Vy9L17_sh3fugWLo0DjG8G4kUVyN6IFI-p9G5P4P8CQ",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -350,24 +387,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "5b1bd1c43fa65d9901ea36d5a223f37a7a4c1fd2742144ae8e185efa6e2b5647",
+     "sha256": "a6e49ca0893b128ff0bad87dc887c03236de73d1222c53cb96dbec97ede55b86",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n5b1bd1c43fa65d9901ea36d5a223f37a7a4c1fd2742144ae8e185efa6e2b5647",
-      "sig": "esjVOrhtMOTmyoz2T8UbUsjs_11w2nQ7E2qHF_5bRJuapQPJf7iImL8wuPxK5xMchg2-IDzKkToO5MLYjlKOBw",
+      "message": "crawlcheck-data-v1\na6e49ca0893b128ff0bad87dc887c03236de73d1222c53cb96dbec97ede55b86",
+      "sig": "Y_Wtl6Tt-4QJJreFTwv5DlVe16ysN_zLPfA5tYZrttiPM7da2OQZI-pEkXr6QIMPmWCIiVoIBXa3Jv7_AjQ9DQ",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -436,24 +473,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "5b1bd1c43fa65d9901ea36d5a223f37a7a4c1fd2742144ae8e185efa6e2b5647",
+     "sha256": "a6e49ca0893b128ff0bad87dc887c03236de73d1222c53cb96dbec97ede55b86",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n5b1bd1c43fa65d9901ea36d5a223f37a7a4c1fd2742144ae8e185efa6e2b5647",
-      "sig": "esjVOrhtMOTmyoz2T8UbUsjs_11w2nQ7E2qHF_5bRJuapQPJf7iImL8wuPxK5xMchg2-IDzKkToO5MLYjlKOBw",
+      "message": "crawlcheck-data-v1\na6e49ca0893b128ff0bad87dc887c03236de73d1222c53cb96dbec97ede55b86",
+      "sig": "Y_Wtl6Tt-4QJJreFTwv5DlVe16ysN_zLPfA5tYZrttiPM7da2OQZI-pEkXr6QIMPmWCIiVoIBXa3Jv7_AjQ9DQ",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -522,24 +559,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "5b1bd1c43fa65d9901ea36d5a223f37a7a4c1fd2742144ae8e185efa6e2b5647",
+     "sha256": "a6e49ca0893b128ff0bad87dc887c03236de73d1222c53cb96dbec97ede55b86",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n5b1bd1c43fa65d9901ea36d5a223f37a7a4c1fd2742144ae8e185efa6e2b5647",
-      "sig": "esjVOrhtMOTmyoz2T8UbUsjs_11w2nQ7E2qHF_5bRJuapQPJf7iImL8wuPxK5xMchg2-IDzKkToO5MLYjlKOBw",
+      "message": "crawlcheck-data-v1\na6e49ca0893b128ff0bad87dc887c03236de73d1222c53cb96dbec97ede55b86",
+      "sig": "Y_Wtl6Tt-4QJJreFTwv5DlVe16ysN_zLPfA5tYZrttiPM7da2OQZI-pEkXr6QIMPmWCIiVoIBXa3Jv7_AjQ9DQ",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -608,24 +645,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "06d6327467764d8a0d4fca6aae52adbff928d7583b040c59d4ad072849f25390",
+     "sha256": "070c2e89ea975ff2b841f2659a6ec1aa1fb93e321b8acace342fd0cfddc5d6dd",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n06d6327467764d8a0d4fca6aae52adbff928d7583b040c59d4ad072849f25390",
-      "sig": "y0HF72RVSBJIJBfHyIbPLjnQ-tEZ2I7h35JEsfvOZxEPJ0oNAieEUy1BpIPryGS2vy7yRzJbG8njlYo77ZKnCA",
+      "message": "crawlcheck-data-v1\n070c2e89ea975ff2b841f2659a6ec1aa1fb93e321b8acace342fd0cfddc5d6dd",
+      "sig": "DsMt2Ey7XiFsfdFg_BHunOhGbHkWjJucBAkjWHUQUfFH8KOJbP5ESQcAl7oNDDl7e-1WO6hRcuv3xb0oQhFpAw",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -694,24 +731,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "ddd1072fd4b2672d9927813be25a097998f307df5c78446fe1f5e94dcf6754d4",
+     "sha256": "dedaa819b23a6faca061f2cb1a3aa632dfdc0293bfe1c7436bbf4a80202cad32",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\nddd1072fd4b2672d9927813be25a097998f307df5c78446fe1f5e94dcf6754d4",
-      "sig": "eL4NAQr2ZsKPz23ARP9anLoVSMZsNfjhWK6_Qu-hZqn7sWbrtsnbca943Or5gm-3v7nwTTazaPzBw8BWIDHpDw",
+      "message": "crawlcheck-data-v1\ndedaa819b23a6faca061f2cb1a3aa632dfdc0293bfe1c7436bbf4a80202cad32",
+      "sig": "Lf07sv7MfKdUi5_oTj6qDmFHgXxrec4SisZO121F0wWwi89oU7-_U4S8i71FtV4WrgYais25f_f_JrhOc0USDA",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -780,24 +817,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "bf9bee6109573c19c49294e9740dec13a800a87c5debfe8f3b243dc2c0c93acd",
+     "sha256": "63dbf702c70a5be31579df2952084b8b1a27e5a0ecde47d33b86ab74def7cd3d",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\nbf9bee6109573c19c49294e9740dec13a800a87c5debfe8f3b243dc2c0c93acd",
-      "sig": "D4l-hRAQx2J4jPiUm3xfnAtYGvP7wdqXPEsbltFsAylfsHIqyMGZoUxIsK1HusHHhmScB-1-1pZsRMP-QWhhBA",
+      "message": "crawlcheck-data-v1\n63dbf702c70a5be31579df2952084b8b1a27e5a0ecde47d33b86ab74def7cd3d",
+      "sig": "WiQZqir5rfmqa5vBlQEuCx8LZUf6y6TTztKe-dYvDUl-kfeJUaaw1mI3jQTGPcgSH8Gc7SEVL0pirUstke59CA",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -866,24 +903,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "67ee0da1d5db557920dc7c17ca5ea7f7d085eaa2000916517e9045210138c627",
+     "sha256": "d118b4439c4f8517964ec0f8fc00490e8fc5e2471b2ebcc7b19ba3aaeeb7c761",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n67ee0da1d5db557920dc7c17ca5ea7f7d085eaa2000916517e9045210138c627",
-      "sig": "rbJqN38K-QCxNVAkM-jkBJSD1cgF4VyMBLz2Sm99vrIq9G0ZKocwVgyNGjYmSr_mqUeqN-KlRBnJl5yk3-O4DA",
+      "message": "crawlcheck-data-v1\nd118b4439c4f8517964ec0f8fc00490e8fc5e2471b2ebcc7b19ba3aaeeb7c761",
+      "sig": "VFl0l-pqt7HJGfPjUPMXFn7Doz9wPWtqVCdm8R-DU5AboGnUYDq_rgNkFdtxquyEFp5ZSWQQR10gUG-WJcBsCw",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -952,24 +989,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+     "sha256": "1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
-      "sig": "zyjvcHeLxg2Cbpdqv5Pjkwg1ABGD8WQaLyeKwFf59fdtJEbYgvaYIdnYkebB3BVSTiPHRlisr85dvTWH0JF3Dg",
+      "message": "crawlcheck-data-v1\n1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
+      "sig": "ZA59WlPDjqrkIO61tC0LWP7TqxHCuwSqRMpccGdcWzYXZ9TIMwgYVEhVDc7P2zBJ97r1bii1stiGdkDBIsLlBQ",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -1038,24 +1075,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+     "sha256": "1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
-      "sig": "zyjvcHeLxg2Cbpdqv5Pjkwg1ABGD8WQaLyeKwFf59fdtJEbYgvaYIdnYkebB3BVSTiPHRlisr85dvTWH0JF3Dg",
+      "message": "crawlcheck-data-v1\n1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
+      "sig": "ZA59WlPDjqrkIO61tC0LWP7TqxHCuwSqRMpccGdcWzYXZ9TIMwgYVEhVDc7P2zBJ97r1bii1stiGdkDBIsLlBQ",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -1124,24 +1161,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+     "sha256": "1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
-      "sig": "zyjvcHeLxg2Cbpdqv5Pjkwg1ABGD8WQaLyeKwFf59fdtJEbYgvaYIdnYkebB3BVSTiPHRlisr85dvTWH0JF3Dg",
+      "message": "crawlcheck-data-v1\n1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
+      "sig": "ZA59WlPDjqrkIO61tC0LWP7TqxHCuwSqRMpccGdcWzYXZ9TIMwgYVEhVDc7P2zBJ97r1bii1stiGdkDBIsLlBQ",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -1210,24 +1247,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "625182b8dd264a0cce75427bc5d6008c40a4f0e8f0de9b16ea0c16252361c9ff",
+     "sha256": "a3904c2ea53c7ddd2338718168e68c73ad6ba446e29aa2232c1f461d6ef7549e",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n625182b8dd264a0cce75427bc5d6008c40a4f0e8f0de9b16ea0c16252361c9ff",
-      "sig": "clK_iPPD1wyGnsSn0cTV319jcAlwskP4e-rUmirpifXKfjcfO8bl8W5q8qjWa1g6Evk4AARvnR7ZVPeBv_BpAg",
+      "message": "crawlcheck-data-v1\na3904c2ea53c7ddd2338718168e68c73ad6ba446e29aa2232c1f461d6ef7549e",
+      "sig": "NW3JIMEKF41qGwG-_PhXiE6o-x6toEN2pYf87lv3H_rmt93Sdf7YzuU8dR_4REVkRzgZhm8DB1kU7Tw5JcOKCQ",
       "signed_at": "2026-10-09T15:00:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -1296,24 +1333,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "e4a24f66ce899f3756efa5f3bdd1f218c2b1fc7bdd005d2b1cbc41f70eb95031",
+     "sha256": "3d2a9d9d31e25edae10a0719b03f368cfc51dca14b8a2e8dc5feab50b5fba96e",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\ne4a24f66ce899f3756efa5f3bdd1f218c2b1fc7bdd005d2b1cbc41f70eb95031",
-      "sig": "isXNvywmCyChY5mIpP28fUsRTo4nNtCdjtmDuBtB5Upv-b7gue5iCzSXbjSfpfod4q84e61DJQ4dyP8t9kIpAg",
+      "message": "crawlcheck-data-v1\n3d2a9d9d31e25edae10a0719b03f368cfc51dca14b8a2e8dc5feab50b5fba96e",
+      "sig": "tXsA2x9JO-fMoj19RqwT20HVjo1r7eFKiDIPs2Bq9tlE4UVmg608D37fQHgx-J0vraYluADq7fm8aeEbXQSjBw",
       "signed_at": "2026-10-09T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -1382,24 +1419,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "a000f67936a9d86f77346639c913e09d17ed45d4dccf21bc1e5d3b6bb81f63af",
+     "sha256": "a8c9d0ff51f6479b42eda2206d7601223d8b5faf68a137946d552a1ce1c4f0fc",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\na000f67936a9d86f77346639c913e09d17ed45d4dccf21bc1e5d3b6bb81f63af",
-      "sig": "VhvcVmMkL6bFC1g07RQ6O-NwX4T3BRfpYk1t84OVWyl-BMr9NHgL2WqzcRXIGZLnfBmfAaB_WwUrvjGpA1FEDA",
+      "message": "crawlcheck-data-v1\na8c9d0ff51f6479b42eda2206d7601223d8b5faf68a137946d552a1ce1c4f0fc",
+      "sig": "Ek3qy9q8C1MFMNMddsRXIPPodu0YQ2oRhgZmBykwxkXGlCUCGu2aWHFEEQItTyF6_lxQemfDn_ha7WN0XPnBAw",
       "signed_at": "2026-10-09T10:00:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -1468,24 +1505,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "1cd550eb7eb80f4dfecb90c6ae60dbfe27fb7f03fe79dea4bb6499238abcd281",
+     "sha256": "ae7ff8f0cf219c8eeb0c3c77db0f1b6e76f32803c5b54a12c34df6580f914c93",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n1cd550eb7eb80f4dfecb90c6ae60dbfe27fb7f03fe79dea4bb6499238abcd281",
-      "sig": "Mevm7uqCG6WbD1-R53-YpYyJ-t17i-Xpp9fnqTLjEQ_ETLQXmpIQoJxg-k1Dw3mu9-EqiMePXYWgoBdb57ceBg",
+      "message": "crawlcheck-data-v1\nae7ff8f0cf219c8eeb0c3c77db0f1b6e76f32803c5b54a12c34df6580f914c93",
+      "sig": "8McDKUWSb1rYwLOf0svDWQQwIKLGUHavx-Ep4u0SP9o46GFqW_a1xl1-m99rVpGxZudy1VSpri0Ah-hTRmTGCw",
       "signed_at": "2026-10-10T17:00:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -1554,24 +1591,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "3db5db419cb4f69201989195c769b6046a33f536fd3f1bc0750b73b10822aa6d",
+     "sha256": "8428db6690f0fa187cae6752ee8af013bdc29c276a0429a9f874328c43b1fdb7",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n3db5db419cb4f69201989195c769b6046a33f536fd3f1bc0750b73b10822aa6d",
-      "sig": "LnzgUNN4ualijxNO4XDBVXpkKFHMLgrijCwIOvoH4xB3rUWZAchTw5Xvqyuvb1D8C215SlkZMd2Cl7gFLYFoCg",
+      "message": "crawlcheck-data-v1\n8428db6690f0fa187cae6752ee8af013bdc29c276a0429a9f874328c43b1fdb7",
+      "sig": "gLsTlQVVU1zmEOFhxxmhuFED4Cy6gIS5e33B3nrAcLyO5Hi9Y4A9pRZn1zQM6rW2HZZqcB-rST4v1bPyVdMUAA",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -1640,24 +1677,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "a77cc3ddf138c80c63309749c5e1bc6c79ecb3b0927642bc97e698a5fea3ade1",
+     "sha256": "e06dd38ed7920766d3f2263f6a1332a2ac1e509e030d7b109c0dcd56c7f396e5",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\na77cc3ddf138c80c63309749c5e1bc6c79ecb3b0927642bc97e698a5fea3ade1",
-      "sig": "t_ioKIlyonTjFfRbXjRFinIpSPqdpXJjjMEfPPQiSFKDDSECL44jxAUaHXEHtBMOxUlio5V7wHgnQWUCzsVuBA",
+      "message": "crawlcheck-data-v1\ne06dd38ed7920766d3f2263f6a1332a2ac1e509e030d7b109c0dcd56c7f396e5",
+      "sig": "xFzS7sD8yIPdQw8VyzAqlb7a8hggInx2w1gjfOhjKGwn2o_Qf790OJ7VIoGRohKMu9c8V2wox_5fpMqUEP50Aw",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -1725,24 +1762,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "b0f77a1f676935b69ffb4ce3101a7f85bad9ea5757f1743a68b5946fc34cf9fa",
+     "sha256": "ae0982e53ebfe3f9729b18837bbe716ddd4eb6f3e3359c0a36557bc9037154b0",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\nb0f77a1f676935b69ffb4ce3101a7f85bad9ea5757f1743a68b5946fc34cf9fa",
-      "sig": "cO-jYBNNUuI9RlKmm0wq6a82t_GOldcaTYVIdNSUQfOI-DNIBk4Hox--2MmnV3TH09A5meMLGQwPuqoCV0M6AA",
+      "message": "crawlcheck-data-v1\nae0982e53ebfe3f9729b18837bbe716ddd4eb6f3e3359c0a36557bc9037154b0",
+      "sig": "V9VNAtfrqrY9cVb4fbH85LWX_fnM7gX5zXI3UVQmsbEedkzD4nU_a_0z6iuDIwuPF50votElFsy-XwO1pUaeAA",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -1811,24 +1848,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "09f59c245bc53a39f385216fd9d237e53e1e66fe94d32630d63946ddde232548",
+     "sha256": "4d31cbe677e6fdebd70c87a325daa56edc969b33508abb63e37a0d3fc108f436",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n09f59c245bc53a39f385216fd9d237e53e1e66fe94d32630d63946ddde232548",
-      "sig": "WjvGxG-HlNgvC7TSZAMSypgBFw6WBP9kES9g6_mAU-WJbkgFOMYGYo54bVl8ZJdw7ooHQ2oIr3BKrjXHtlxsBQ",
+      "message": "crawlcheck-data-v1\n4d31cbe677e6fdebd70c87a325daa56edc969b33508abb63e37a0d3fc108f436",
+      "sig": "vTjQbbl9t6j8FzPOJbkSvNU3ee7j8x8InmbXLcLeuMNm7OWQ3C4A4xVey0tg4U1BLxGWMJUnHPe6BFdwWhQ9Cw",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -1896,24 +1933,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "4cafa7313f3543b4fa1bb93c5e4a98065cfc77a2a0c47b7850e4c1ec780a804c",
+     "sha256": "16c99b9b285083f146afef31cd37a6bbe7e00b42e266f349596c7e05b56ae590",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n4cafa7313f3543b4fa1bb93c5e4a98065cfc77a2a0c47b7850e4c1ec780a804c",
-      "sig": "AtO5EYqxQi_SXpA2F6_OvSyK6h9DLE8VAhfHb2a3NZwuJpNjzMjSmMFZ4i2DXPxOMK91UQzzU4uKYSTCSGx8Dw",
+      "message": "crawlcheck-data-v1\n16c99b9b285083f146afef31cd37a6bbe7e00b42e266f349596c7e05b56ae590",
+      "sig": "rofCvgckKZMMHl-5KUF1TzW7oCcsCqUQgx-GqRC_ShhViPdHm-UeWjzh5QA15CrKEoLZA5Vsz9YEO_wWLYfMAQ",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -1986,28 +2023,28 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
      "operation": {
       "method": "GET",
       "url": "https://good.example/a"
      },
-     "sha256": "52ee5980ea3a45f938f9749bd6dd7fe4ea44baa3cc33ad68147da216f1ddbb7d",
+     "sha256": "dcc2102248ebc214f59bdf878b7de821fa4930612fafe43eb37356c3b03a885b",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n52ee5980ea3a45f938f9749bd6dd7fe4ea44baa3cc33ad68147da216f1ddbb7d",
-      "sig": "e4FDzMvLaGkBv9iHlI0YMfxIax54-6tVvjUlFKKFTVV9dez1wkrHKVod9u2Ecs0RzIDY7H4dFncm8cQ0iRtyBw",
+      "message": "crawlcheck-data-v1\ndcc2102248ebc214f59bdf878b7de821fa4930612fafe43eb37356c3b03a885b",
+      "sig": "o0PNtqo9A0VTC6R1M_VYMVssU2yy5Asi6vuMaOTjOKhUi9VvWWe5N5BONc70MKuW-5n0Sq1h1zivSPPIjKupBA",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -2080,28 +2117,28 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
      "operation": {
       "method": "GET",
       "url": "https://good.example/b"
      },
-     "sha256": "dd4231d4daa44acd9033c70dfe05a201f2540c43c9cad322480746b9610b77e4",
+     "sha256": "80c066a63f397f7efefeb4dc71d77f06b0e4837a6197f3714faa19b63755f437",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\ndd4231d4daa44acd9033c70dfe05a201f2540c43c9cad322480746b9610b77e4",
-      "sig": "o6bM9TTpxqvMzFDBY1bitjqUyZu1nOX-U9MoeG6CJ_NoOsNIrciP-py7qyRmow8hxdM40O8UHz1H8WDtfEWYBw",
+      "message": "crawlcheck-data-v1\n80c066a63f397f7efefeb4dc71d77f06b0e4837a6197f3714faa19b63755f437",
+      "sig": "wB5N6Qzq-BUwUV72iUzw4Zndi90mA-kIxevU8SMeVP-tPefgrrKfZCTNBbZ1ZKz7TaX9FmVUdsPq2zJIquQQAw",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -2174,28 +2211,28 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
      "operation": {
       "method": "GET",
       "url": "https://good.example/a"
      },
-     "sha256": "52ee5980ea3a45f938f9749bd6dd7fe4ea44baa3cc33ad68147da216f1ddbb7d",
+     "sha256": "dcc2102248ebc214f59bdf878b7de821fa4930612fafe43eb37356c3b03a885b",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n52ee5980ea3a45f938f9749bd6dd7fe4ea44baa3cc33ad68147da216f1ddbb7d",
-      "sig": "e4FDzMvLaGkBv9iHlI0YMfxIax54-6tVvjUlFKKFTVV9dez1wkrHKVod9u2Ecs0RzIDY7H4dFncm8cQ0iRtyBw",
+      "message": "crawlcheck-data-v1\ndcc2102248ebc214f59bdf878b7de821fa4930612fafe43eb37356c3b03a885b",
+      "sig": "o0PNtqo9A0VTC6R1M_VYMVssU2yy5Asi6vuMaOTjOKhUi9VvWWe5N5BONc70MKuW-5n0Sq1h1zivSPPIjKupBA",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -2268,24 +2305,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+     "sha256": "1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
-      "sig": "zyjvcHeLxg2Cbpdqv5Pjkwg1ABGD8WQaLyeKwFf59fdtJEbYgvaYIdnYkebB3BVSTiPHRlisr85dvTWH0JF3Dg",
+      "message": "crawlcheck-data-v1\n1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
+      "sig": "ZA59WlPDjqrkIO61tC0LWP7TqxHCuwSqRMpccGdcWzYXZ9TIMwgYVEhVDc7P2zBJ97r1bii1stiGdkDBIsLlBQ",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -2358,28 +2395,28 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
      "operation": {
       "tool": "search",
       "tool_schema_sha256": "2222222222222222222222222222222222222222222222222222222222222222"
      },
-     "sha256": "74549f99fb0196109c6a9b93bb30286a72935362f1eef3b32911e75d4b2a4c4d",
+     "sha256": "76529137e864757147ea183c1d28f38740c87a04f2d3f5b75cf45fd7c8888de3",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n74549f99fb0196109c6a9b93bb30286a72935362f1eef3b32911e75d4b2a4c4d",
-      "sig": "5OOZM4oYf-4V_fpsrTpx_1__87Lwt1gSvvl-_v0Uy3psBwphvSkDcxToax3XVRNpebKBBNVMXhEkB4ohS0ftAQ",
+      "message": "crawlcheck-data-v1\n76529137e864757147ea183c1d28f38740c87a04f2d3f5b75cf45fd7c8888de3",
+      "sig": "CjY1bDQ2ujNIMfemNTDLvw3Exel-AQUB3zPHzshkPaXTBjk7YF__TkRgdvoPYU-PgTLsjlIUZ_-wZdE8LikSBw",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -2456,7 +2493,7 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
      "operation": {
@@ -2466,21 +2503,21 @@
        "read"
       ]
      },
-     "sha256": "ad621ec96c368ec1a8ad5f92d49154591e922a10fd831707c2b10921f0ef0e0b",
+     "sha256": "df34bf2d0a75cd211d33bdf606911d1051d7d898f1b7b4bd8161c33715fa1ca5",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\nad621ec96c368ec1a8ad5f92d49154591e922a10fd831707c2b10921f0ef0e0b",
-      "sig": "UGqt_1hlL4ONFvN2OjjUNeUCND2xnNrY16o4tKzw-crbAOF4uULmQ5gd1B3kJfH-jYCqGqWIN2MnwpZW0t2zCg",
+      "message": "crawlcheck-data-v1\ndf34bf2d0a75cd211d33bdf606911d1051d7d898f1b7b4bd8161c33715fa1ca5",
+      "sig": "goHi5b-w3zDBbqDgyspTiZ18_o7_cyureIsr9au-T8VJCv4l1AC1HlWUVVEDpmdVuJMssu5iy_MIzGyZRtimBw",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -2493,8 +2530,94 @@
   },
   {
    "id": "purpose-key-decision",
-   "title": "a decision signed by another published key than its resolve answer",
+   "title": "after the switch, a decision signed by the decision key; its resolve answer by the document key",
    "why": "keys are separated by purpose; both are published",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-11-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-11-10T15:59:00.000Z",
+     "expires_at": "2026-11-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "23568d08ef7ab8162188824804bcb4ee5593bc04a2608dd40675a9b21a9732ea",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "vk7BW0P3cs5bpVbqFCJChi_NFso6V8WT4AiyyMm11WE",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n23568d08ef7ab8162188824804bcb4ee5593bc04a2608dd40675a9b21a9732ea",
+      "sig": "xHYNM-FuLgTafgnWgprO9nI2WkHIaIBCF1JDYyjwXpFxDRE3Cr3_9Jl0il-xbPkW1imlOdFysf5rok6ZmE0QBw",
+      "signed_at": "2026-11-10T15:59:00.000Z",
+      "key": {
+       "kid": "vk7BW0P3cs5bpVbqFCJChi_NFso6V8WT4AiyyMm11WE",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "Pesd8vAX5ZJ_HgHMp9VwpqibrN3KWquaTzZaKhB4ziE"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": true
+   }
+  },
+  {
+   "id": "kp-decision-key-early",
+   "title": "the decision key signs before its signs_from",
+   "why": "a key never signs before its own start",
    "request": {
     "domain": "good.example",
     "action": "read",
@@ -2549,24 +2672,282 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+     "sha256": "1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "r0X_XXpsP2-1P00GEj1tOmMIoTJ_w8H30oO6xo1NsRg",
+      "kid": "vk7BW0P3cs5bpVbqFCJChi_NFso6V8WT4AiyyMm11WE",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
-      "sig": "sHDLgsAakNhhPTqSolIcKJkfTbxsMStIZo7kBVA-kZXZKXf6AgoXYo2mxTK9mtkEpdPo4gFruNOQHEhO-fCFCw",
+      "message": "crawlcheck-data-v1\n1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
+      "sig": "pXsidVVLfTC_o1_3ZF2fGs_ekzgSCouCfrzl-5S0yqsF3xMqjy6rQSO6_vLLlWwdaDitOAW_ZCdivbU4f2qHDQ",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "r0X_XXpsP2-1P00GEj1tOmMIoTJ_w8H30oO6xo1NsRg",
+       "kid": "vk7BW0P3cs5bpVbqFCJChi_NFso6V8WT4AiyyMm11WE",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "DNDLnEKFsf8xmexG6JmEdHiq-O5Mn5Hn8p5wt3UvdiA"
+        "x": "Pesd8vAX5ZJ_HgHMp9VwpqibrN3KWquaTzZaKhB4ziE"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "kp-document-key-after-switch",
+   "title": "the document key signs a decision after the decision key took over",
+   "why": "after 2026-11-09 17:00 UTC only the decision key signs decisions",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-11-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-11-10T15:59:00.000Z",
+     "expires_at": "2026-11-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "23568d08ef7ab8162188824804bcb4ee5593bc04a2608dd40675a9b21a9732ea",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n23568d08ef7ab8162188824804bcb4ee5593bc04a2608dd40675a9b21a9732ea",
+      "sig": "6wdopXGTgcwqXAm7zFFXbxLJ7_x-buhEJCD3pHUMAymmzIT7W3Qv0f9R5-JHp-gf4UVuFuUb0JVk5maVt2q1DQ",
+      "signed_at": "2026-11-10T15:59:00.000Z",
+      "key": {
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "kp-request-key-unbound",
+   "title": "the request key signs a decision whose answer the document key signed",
+   "why": "wrong purpose: the request key signs requests",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "IhgBKn-7Ap3fPOt3w8PJmS9KqEw8kbGechR1vGfKg04",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
+      "sig": "gNo9eDbcRm6j7fC6KUlHYnfjw_B1VsnE_TjOVwUrrhuAGvwptvFZtrbSaky0YSmdQrleFTEnxmIUl-pVncLoCA",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "IhgBKn-7Ap3fPOt3w8PJmS9KqEw8kbGechR1vGfKg04",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "OsJcGUPIoXDDkc-ZHe4UaMahQexGv2gUx4TWugZpzoQ"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "kp-request-key-bound",
+   "title": "before the switch, the request key signs a decision on an answer it signed itself",
+   "why": "a decision follows its answer's key until the decision key exists (answers logged before the document key)",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "IhgBKn-7Ap3fPOt3w8PJmS9KqEw8kbGechR1vGfKg04",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "d6785171b5e1fbb5184974705ba31ef30431916e33ae0e299667b526df7dd989",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "IhgBKn-7Ap3fPOt3w8PJmS9KqEw8kbGechR1vGfKg04",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\nd6785171b5e1fbb5184974705ba31ef30431916e33ae0e299667b526df7dd989",
+      "sig": "P3Y7SBXFB0fLkADEKbUHtJn3TbIGouSJ6DEc6haPeuNH_z69in1t5-YPwrmYJNj8PZvv7x6368ZebFGbI2AYAg",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "IhgBKn-7Ap3fPOt3w8PJmS9KqEw8kbGechR1vGfKg04",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "OsJcGUPIoXDDkc-ZHe4UaMahQexGv2gUx4TWugZpzoQ"
        },
        "published_in": "the suite's directory"
       }
@@ -2575,6 +2956,568 @@
    },
    "expect": {
     "proceed": true
+   }
+  },
+  {
+   "id": "kp-request-key-bound-after-switch",
+   "title": "the same, after the decision key took over",
+   "why": "the exception ends when the decision key starts",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-11-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-11-10T15:59:00.000Z",
+     "expires_at": "2026-11-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "IhgBKn-7Ap3fPOt3w8PJmS9KqEw8kbGechR1vGfKg04",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "1b2b99e64f2989673b38c2608178d430a883dd6eb8d7d42541fb9cbe858b36a1",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "IhgBKn-7Ap3fPOt3w8PJmS9KqEw8kbGechR1vGfKg04",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n1b2b99e64f2989673b38c2608178d430a883dd6eb8d7d42541fb9cbe858b36a1",
+      "sig": "cKQe4G3LvLjrfuKQ6Qxs9iXK6KuSx3yPvT-tutgcf1u2ypZUC4c82o4P_CkJp38-JzLTdTeGsGXLC3aKlEJ4AQ",
+      "signed_at": "2026-11-10T15:59:00.000Z",
+      "key": {
+       "kid": "IhgBKn-7Ap3fPOt3w8PJmS9KqEw8kbGechR1vGfKg04",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "OsJcGUPIoXDDkc-ZHe4UaMahQexGv2gUx4TWugZpzoQ"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "kp-retired",
+   "title": "a key that stopped signing on 2026-10-05 signs a decision on 2026-10-10",
+   "why": "a retired key signed nothing after it stopped",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "0otJ5b3a_4yu1agw7RJQjC6hI1qzV1XG6g-rPMqq6Ag",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "73839f2d87f8c9f7b4ac85a5db6ded523ae184b668791a30287d3fd220a42832",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "0otJ5b3a_4yu1agw7RJQjC6hI1qzV1XG6g-rPMqq6Ag",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n73839f2d87f8c9f7b4ac85a5db6ded523ae184b668791a30287d3fd220a42832",
+      "sig": "XpjP_LJoHx8odfyrSvIrJ27ZQiA-k-4pYi-RgEiT7js-IInHNnhIIPh9NylJEK6Vc2-RwTSwPStLbQWKdmHPDg",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "0otJ5b3a_4yu1agw7RJQjC6hI1qzV1XG6g-rPMqq6Ag",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "HfNPgttZxHIQWqKigZDyj_h7zTEJZwz5WrOITdaX6E0"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "kp-compromised-in-directory",
+   "title": "a key still in the directory but declared compromised in the rotation record",
+   "why": "compromise outranks the directory",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "KgOeW6fWJQJQPnacTHO_Drn_aIPsw2zcfZ2gb3ewcHM",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
+      "sig": "1o1FJzHRS0pgDEFGgpOVrV5itFnX7f0JF4TeCVGlCUPh7Ed2l17r6IuT91AK7daF7ovdzFd3BKDXcznYStu0Cg",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "KgOeW6fWJQJQPnacTHO_Drn_aIPsw2zcfZ2gb3ewcHM",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "Fg5ndP2SvCY9UZkKTdgCX90zZ0xVVAeJyPK0sP1PZig"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "kp-compromised-answer",
+   "title": "a decision whose resolve answer names a compromised key",
+   "why": "every key a receipt leans on must be acceptable",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-10-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-10-10T15:59:00.000Z",
+     "expires_at": "2026-10-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "KgOeW6fWJQJQPnacTHO_Drn_aIPsw2zcfZ2gb3ewcHM",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "df6fb0f3e770a089eafc01b376cac649fc2cf79b84db3c12ec623772159fd425",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\ndf6fb0f3e770a089eafc01b376cac649fc2cf79b84db3c12ec623772159fd425",
+      "sig": "3fEOA4izr2FGKeQSFw-E7IrBkCdZ0Hzwe7LfdllCDqGBrLDan_VTqgY-dZuyFP_00Q4YzMgxrvihYL0ip157CA",
+      "signed_at": "2026-10-10T15:59:00.000Z",
+      "key": {
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    }
+   },
+   "expect": {
+    "proceed": false
+   }
+  },
+  {
+   "id": "kp-fallback",
+   "title": "the decision key was compromised; the document key signs decisions until a new one is installed",
+   "why": "the next key in the policy takes over",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-11-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-11-10T15:59:00.000Z",
+     "expires_at": "2026-11-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "23568d08ef7ab8162188824804bcb4ee5593bc04a2608dd40675a9b21a9732ea",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n23568d08ef7ab8162188824804bcb4ee5593bc04a2608dd40675a9b21a9732ea",
+      "sig": "6wdopXGTgcwqXAm7zFFXbxLJ7_x-buhEJCD3pHUMAymmzIT7W3Qv0f9R5-JHp-gf4UVuFuUb0JVk5maVt2q1DQ",
+      "signed_at": "2026-11-10T15:59:00.000Z",
+      "key": {
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    },
+    "rotation": {
+     "operator": "CrawlCheck (suite)",
+     "retired": [
+      {
+       "thumbprint": "0otJ5b3a_4yu1agw7RJQjC6hI1qzV1XG6g-rPMqq6Ag",
+       "purpose": "requests",
+       "stopped_signing_at": "2026-10-05T00:00:00.000Z",
+       "retired_at": "2026-10-05T00:00:00.000Z"
+      }
+     ],
+     "compromised": [
+      {
+       "thumbprint": "KgOeW6fWJQJQPnacTHO_Drn_aIPsw2zcfZ2gb3ewcHM",
+       "compromised_since": "2026-10-09T00:00:00.000Z",
+       "reason": "suite fixture"
+      },
+      {
+       "thumbprint": "vk7BW0P3cs5bpVbqFCJChi_NFso6V8WT4AiyyMm11WE",
+       "compromised_since": "2026-11-10T00:00:00.000Z",
+       "reason": "suite fixture"
+      }
+     ]
+    }
+   },
+   "expect": {
+    "proceed": true
+   }
+  },
+  {
+   "id": "kp-fallback-compromised-key",
+   "title": "the compromised decision key signs after compromised_since",
+   "why": "nothing it signed after that moment is valid",
+   "request": {
+    "domain": "good.example",
+    "action": "read",
+    "allow_warn": false,
+    "confirm": null,
+    "nonce": "ccguard-acceptance-0001",
+    "now": "2026-11-10T16:00:00.000Z"
+   },
+   "crawlcheck": {
+    "status": 200,
+    "body": {
+     "kind": "crawlcheck-decision",
+     "v": 1,
+     "decided_at": "2026-11-10T15:59:00.000Z",
+     "expires_at": "2026-11-11T15:59:00.000Z",
+     "clock_skew_s": 300,
+     "nonce": "ccguard-acceptance-0001",
+     "domain": "good.example",
+     "action": "read",
+     "agent": null,
+     "template": null,
+     "policy": {
+      "max_age_hours": null,
+      "on_warn": "warn",
+      "require_entity": false,
+      "human_approval": [],
+      "allow": [],
+      "deny": []
+     },
+     "policy_id": null,
+     "engine": {
+      "version": "pf4",
+      "rules_sha256": "18dd5636e0896692ab518050cb401744edea2e6f1086dff94fead314959bdc3e"
+     },
+     "decision": "allow",
+     "base_decision": "allow",
+     "human_confirmation_required": false,
+     "reason_codes": [
+      "resolve.actions.read"
+     ],
+     "steps": [
+      {
+       "rule": "resolve.actions.read",
+       "effect": "allow",
+       "why": "suite fixture"
+      }
+     ],
+     "alternatives": [],
+     "evidence": {
+      "report": "https://crawlcheck.io/r/suitefixture",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "resolve": {
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
+      "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     },
+     "sha256": "23568d08ef7ab8162188824804bcb4ee5593bc04a2608dd40675a9b21a9732ea",
+     "signature": {
+      "v": 1,
+      "alg": "Ed25519",
+      "kid": "vk7BW0P3cs5bpVbqFCJChi_NFso6V8WT4AiyyMm11WE",
+      "over": "sha256",
+      "message": "crawlcheck-data-v1\n23568d08ef7ab8162188824804bcb4ee5593bc04a2608dd40675a9b21a9732ea",
+      "sig": "xHYNM-FuLgTafgnWgprO9nI2WkHIaIBCF1JDYyjwXpFxDRE3Cr3_9Jl0il-xbPkW1imlOdFysf5rok6ZmE0QBw",
+      "signed_at": "2026-11-10T15:59:00.000Z",
+      "key": {
+       "kid": "vk7BW0P3cs5bpVbqFCJChi_NFso6V8WT4AiyyMm11WE",
+       "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "Pesd8vAX5ZJ_HgHMp9VwpqibrN3KWquaTzZaKhB4ziE"
+       },
+       "published_in": "the suite's directory"
+      }
+     }
+    },
+    "rotation": {
+     "operator": "CrawlCheck (suite)",
+     "retired": [
+      {
+       "thumbprint": "0otJ5b3a_4yu1agw7RJQjC6hI1qzV1XG6g-rPMqq6Ag",
+       "purpose": "requests",
+       "stopped_signing_at": "2026-10-05T00:00:00.000Z",
+       "retired_at": "2026-10-05T00:00:00.000Z"
+      }
+     ],
+     "compromised": [
+      {
+       "thumbprint": "KgOeW6fWJQJQPnacTHO_Drn_aIPsw2zcfZ2gb3ewcHM",
+       "compromised_since": "2026-10-09T00:00:00.000Z",
+       "reason": "suite fixture"
+      },
+      {
+       "thumbprint": "vk7BW0P3cs5bpVbqFCJChi_NFso6V8WT4AiyyMm11WE",
+       "compromised_since": "2026-11-10T00:00:00.000Z",
+       "reason": "suite fixture"
+      }
+     ]
+    }
+   },
+   "expect": {
+    "proceed": false
    }
   },
   {
@@ -2635,24 +3578,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "lWm4_2MC43LVz6Tu0m3NS1djTuvTr2mB3jPqfG_JGMo",
+      "kid": "wVirYA4R4PRUXsTeGCj-_uSswxnOYuNx48FvMoLx7qs",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "b091fb3487bb0c5f5b37f94c8f20a4580a24260e85063a21c425e3ee063bef15",
+     "sha256": "956cdffdc838dab047a5068eb910854554386e62e8319708bdae51b064493439",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\nb091fb3487bb0c5f5b37f94c8f20a4580a24260e85063a21c425e3ee063bef15",
-      "sig": "RhJX-1rkMSwsULdAzo5s5QlnxlCQlOsj5fAX1OA5yajhERiUhnzBBtfrtqhZdJiLKCdHIBZcUa2N1N9j9lFzAQ",
+      "message": "crawlcheck-data-v1\n956cdffdc838dab047a5068eb910854554386e62e8319708bdae51b064493439",
+      "sig": "nLSLrGSqhlpdtOm7TRfa-pxZ8E9s8gZHIcV2VvshvhjEyRzpJUg118jZtTux3AoxDSKrj4Scng2TPVgqJQOBAQ",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -2721,24 +3664,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "06d6327467764d8a0d4fca6aae52adbff928d7583b040c59d4ad072849f25390",
+     "sha256": "070c2e89ea975ff2b841f2659a6ec1aa1fb93e321b8acace342fd0cfddc5d6dd",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n06d6327467764d8a0d4fca6aae52adbff928d7583b040c59d4ad072849f25390",
-      "sig": "y0HF72RVSBJIJBfHyIbPLjnQ-tEZ2I7h35JEsfvOZxEPJ0oNAieEUy1BpIPryGS2vy7yRzJbG8njlYo77ZKnCA",
+      "message": "crawlcheck-data-v1\n070c2e89ea975ff2b841f2659a6ec1aa1fb93e321b8acace342fd0cfddc5d6dd",
+      "sig": "DsMt2Ey7XiFsfdFg_BHunOhGbHkWjJucBAkjWHUQUfFH8KOJbP5ESQcAl7oNDDl7e-1WO6hRcuv3xb0oQhFpAw",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -2807,24 +3750,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+     "sha256": "1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
-      "sig": "zyjvcHeLxg2Cbpdqv5Pjkwg1ABGD8WQaLyeKwFf59fdtJEbYgvaYIdnYkebB3BVSTiPHRlisr85dvTWH0JF3Dg",
+      "message": "crawlcheck-data-v1\n1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
+      "sig": "ZA59WlPDjqrkIO61tC0LWP7TqxHCuwSqRMpccGdcWzYXZ9TIMwgYVEhVDc7P2zBJ97r1bii1stiGdkDBIsLlBQ",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -2894,27 +3837,27 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
      "x_future_field": {
       "a": 1
      },
-     "sha256": "62507775227f0ba54d1d36a0095d8db91104d855bc7ecfb4717ce39ce4a39894",
+     "sha256": "98bb8ead56889eb9b7c92803a412317e66b460ded2ce4f1f2e298a8494924cc0",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n62507775227f0ba54d1d36a0095d8db91104d855bc7ecfb4717ce39ce4a39894",
-      "sig": "RglYeWlQyjv1-hIenSmdsnMayrIMnazoHh27DfimfKdwKOA2mudQqmqGSEPMuNxuKLlAOr8vTaQj83an69dSDg",
+      "message": "crawlcheck-data-v1\n98bb8ead56889eb9b7c92803a412317e66b460ded2ce4f1f2e298a8494924cc0",
+      "sig": "82o6VbKTcB1P7ZrFaxZq7wSmsCK5oR-Ofj_N8TlkGOilozJDy5qPDfouEygkO-3sRrT-tsOThklJr5kxh6DEDQ",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -2983,24 +3926,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+     "sha256": "1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "lWm4_2MC43LVz6Tu0m3NS1djTuvTr2mB3jPqfG_JGMo",
+      "kid": "wVirYA4R4PRUXsTeGCj-_uSswxnOYuNx48FvMoLx7qs",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
-      "sig": "T4IPP7fZwfvgeTiOEP6q_U-mGZ7GgKkVEKog0X5rl44uT5gR-GNkDngN4zV1zq_xJvBuUeUBwhm1xAyyoFGRDg",
+      "message": "crawlcheck-data-v1\n1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
+      "sig": "0oZUnTafS-hj1gnBI0sAmCBUhczBlAoBwVeV0Ynh2Euq9jxnnblRmKgyacU3Qtd4KwoXfPU-MXus0lAMHOZzBQ",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "lWm4_2MC43LVz6Tu0m3NS1djTuvTr2mB3jPqfG_JGMo",
+       "kid": "wVirYA4R4PRUXsTeGCj-_uSswxnOYuNx48FvMoLx7qs",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "_5OBkFn4qsNKzUuLpq0nzN3MRyZOXy5YxbOPrxjNtMw"
+        "x": "_2yBxBeNYNSWX9ismXZJbulWU1xlymeQQjftJDz1hnk"
        },
        "published_in": "the suite's directory"
       }
@@ -3069,24 +4012,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
+     "sha256": "1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\n50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71",
-      "sig": "T4IPP7fZwfvgeTiOEP6q_U-mGZ7GgKkVEKog0X5rl44uT5gR-GNkDngN4zV1zq_xJvBuUeUBwhm1xAyyoFGRDg",
+      "message": "crawlcheck-data-v1\n1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737",
+      "sig": "0oZUnTafS-hj1gnBI0sAmCBUhczBlAoBwVeV0Ynh2Euq9jxnnblRmKgyacU3Qtd4KwoXfPU-MXus0lAMHOZzBQ",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "_5OBkFn4qsNKzUuLpq0nzN3MRyZOXy5YxbOPrxjNtMw"
+        "x": "_2yBxBeNYNSWX9ismXZJbulWU1xlymeQQjftJDz1hnk"
        },
        "published_in": "the suite's directory"
       }
@@ -3155,10 +4098,10 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "50d3f6f29675be47ea95321cc053ded2994af04aa181340c8b7ec835b9e9ee71"
+     "sha256": "1b140a50336160af91994f12f0b74020c829fbe03f50a25eb387ff44d9ef9737"
     }
    },
    "expect": {
@@ -3225,17 +4168,17 @@
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
       "message": "crawlcheck-data-v1\n5cb17bb16c0e5575318767d9c4a85b881a347c18e25976a90862e791061517c5",
-      "sig": "SiVwNmG7Uzm-PREUOH82JUadu0n7YDWR74Rj5yHvK5H9eCiFpXPS1SHJmbPN9rGAuL-osYqXlJOUEQa1v414Dg",
+      "sig": "tzRJN01szfq4PTxTNP2-FG0ibjC5G5O-U7kgLzF39SEA0hU_s3BAi5fn1M7Zd1_CwbFsX-ZMNRLgJGOFUgT7CQ",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -3304,24 +4247,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "fbdf40791795eb385e1800a08d8b988f708e7deb3dae7801da0ac966755c6d85",
+     "sha256": "c11b218b06b92742bd0138be563ec519bd4d869ca76cf8d51c7300ab7caf5bd4",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\nfbdf40791795eb385e1800a08d8b988f708e7deb3dae7801da0ac966755c6d85",
-      "sig": "s8eIvJCOeEz3M2DlNA3HIyuyOr6SUkYmWgUv3JMguO6rP-ykCPRopn_Cs12aLCcxfsWYzNoKRcvNhT9XmPPECA",
+      "message": "crawlcheck-data-v1\nc11b218b06b92742bd0138be563ec519bd4d869ca76cf8d51c7300ab7caf5bd4",
+      "sig": "R0IXs97DBW-yCHFXfltPuSpixYjpxmXGeOi-mb3rHdqVbErT2UI_hiYO5lvi9cmN6-99W2fjQbxvBVDEt2JwBw",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -3390,24 +4333,24 @@
      },
      "resolve": {
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
      },
-     "sha256": "f4eb2abc4faef0916b216d236eea1bcb63100f79c0da2d1876cf4912dbc4189b",
+     "sha256": "3563c40e987c0861c1ed018aae4c65aef44c83f8e6201019457f066d035dfba6",
      "signature": {
       "v": 1,
       "alg": "Ed25519",
-      "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+      "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
       "over": "sha256",
-      "message": "crawlcheck-data-v1\nf4eb2abc4faef0916b216d236eea1bcb63100f79c0da2d1876cf4912dbc4189b",
-      "sig": "bcS8ydxfvDRCctWbQvyNi8m6TSxokqTEBK1kyFQPUgL8xNOw0Gyy9vfUlw1s-vuX8mESZHMqK7GxNsd3XxVoCA",
+      "message": "crawlcheck-data-v1\n3563c40e987c0861c1ed018aae4c65aef44c83f8e6201019457f066d035dfba6",
+      "sig": "WcjcriUZs0m4Z2rnFml0S4vULcXOBVy3XIEMWWX71DePzJGf2vEEb6iqG7crpPpjAsOSeTlcRhlVkFOHZHBPCQ",
       "signed_at": "2026-10-10T15:59:00.000Z",
       "key": {
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "jwk": {
         "kty": "OKP",
         "crv": "Ed25519",
-        "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+        "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
        },
        "published_in": "the suite's directory"
       }
@@ -3596,28 +4539,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/page"
       },
-      "sha256": "ffd4756d7562c0a72d2fb88310727c57ed43c7bbcd3f9992fd08fcd09a24539d",
+      "sha256": "97e76d65162c4145e58e099cca8bde502cda783fc16bdabbb74ff01088ee0597",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\nffd4756d7562c0a72d2fb88310727c57ed43c7bbcd3f9992fd08fcd09a24539d",
-       "sig": "xhDC2hRhYMV_6jXKjz4F7q5c6R-7cUnZXqMJtLpplVdErDxDZLhsYNY0aPXzeOyYw5Te7-TJrrugUqMnuIuBAw",
+       "message": "crawlcheck-data-v1\n97e76d65162c4145e58e099cca8bde502cda783fc16bdabbb74ff01088ee0597",
+       "sig": "ezNMl7zeMsQEen5fTE0s-USPor98BEqe7LpBArNURrDWGRqV_u4XGsKM6s_jqeuLO7abGHnIsDBt8krAnQTjDQ",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -3700,28 +4643,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://evil.example/"
       },
-      "sha256": "c097927fe6ff66482496da283537d16115155e5f99274b4349c14e741baacd11",
+      "sha256": "eaa7863a162811b8f97f3294fbf8d452e5c7079868d0deede26bf74d956c34c5",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\nc097927fe6ff66482496da283537d16115155e5f99274b4349c14e741baacd11",
-       "sig": "brT6jiLoeeIHNp6vOGpPjw_az2sV5FZAWuMXAWfloBG146MawxYgGZE0162fZB4pesgSdWD5ijVCAc43GOxrCQ",
+       "message": "crawlcheck-data-v1\neaa7863a162811b8f97f3294fbf8d452e5c7079868d0deede26bf74d956c34c5",
+       "sig": "79K4yAQiTMjpGnKOlquGvvZZDLbzy90lYDPtR4tsvz9KBH-d7MVEGBc68zNx-9Rwt5KyG0SjhnoREzOR9OezCg",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -3794,28 +4737,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/go"
       },
-      "sha256": "0799f5d9b9c05780b606a572cdadd2be8f17a19b27932b635ab3b652c66a1aa0",
+      "sha256": "97ea876f502da0daad1ae906be2f197d8af12e180e0c7cfc82222b7dbbbf7ab0",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\n0799f5d9b9c05780b606a572cdadd2be8f17a19b27932b635ab3b652c66a1aa0",
-       "sig": "tTIdOx_4SRShrptBZB4Bjgzgu0aM0bMnsOy18geAxOGxH3chd_MQvBlUy8Q3dQYmpw4UcfSZOwm_psuqSDwqDg",
+       "message": "crawlcheck-data-v1\n97ea876f502da0daad1ae906be2f197d8af12e180e0c7cfc82222b7dbbbf7ab0",
+       "sig": "YYVP2PjiCEFARPsOK0zbwp8r3rcjwoagVNhr4YLx9fxIA-XlkZ6IT-wwFoKbsCKfEyxu9ZTFZleyn5DCfaWMAQ",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -3865,28 +4808,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://evil.example/x"
       },
-      "sha256": "278bd89a92a2bd8f8e6b226fbee8dc7630caa9fb49bf5ad408017dd2a837c103",
+      "sha256": "3ceb6a35dacd7256593f91359b59099d748fc5782e51e5ee953bc8754d4cc8dd",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\n278bd89a92a2bd8f8e6b226fbee8dc7630caa9fb49bf5ad408017dd2a837c103",
-       "sig": "M_nxMMCbA0Rj1sp5vK1x-gpvoiXd1SKNDli9o0cC57XsagS5Jc7iY_L9uqQpsPKLFunWSw6WhLsIK_x_SWh2BQ",
+       "message": "crawlcheck-data-v1\n3ceb6a35dacd7256593f91359b59099d748fc5782e51e5ee953bc8754d4cc8dd",
+       "sig": "eJ_oI6_4EZId-cyoONNq-UNh4DcDz_X-_ssHihcZQVj6Wid2v0lpgJwKE8nIvxd5voBT4STLxZk1e7sJVOH8CA",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -3966,28 +4909,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/go"
       },
-      "sha256": "0799f5d9b9c05780b606a572cdadd2be8f17a19b27932b635ab3b652c66a1aa0",
+      "sha256": "97ea876f502da0daad1ae906be2f197d8af12e180e0c7cfc82222b7dbbbf7ab0",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\n0799f5d9b9c05780b606a572cdadd2be8f17a19b27932b635ab3b652c66a1aa0",
-       "sig": "tTIdOx_4SRShrptBZB4Bjgzgu0aM0bMnsOy18geAxOGxH3chd_MQvBlUy8Q3dQYmpw4UcfSZOwm_psuqSDwqDg",
+       "message": "crawlcheck-data-v1\n97ea876f502da0daad1ae906be2f197d8af12e180e0c7cfc82222b7dbbbf7ab0",
+       "sig": "YYVP2PjiCEFARPsOK0zbwp8r3rcjwoagVNhr4YLx9fxIA-XlkZ6IT-wwFoKbsCKfEyxu9ZTFZleyn5DCfaWMAQ",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -4037,28 +4980,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://also-good.example/y"
       },
-      "sha256": "58926fcaf74ab6664fde403b57434686e78c3cd0be586bddd7531dda395fc0df",
+      "sha256": "9040b59b5b1515ae13773cddcc9773fda845c159fd6e5067f01fa2bd8a63c06a",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\n58926fcaf74ab6664fde403b57434686e78c3cd0be586bddd7531dda395fc0df",
-       "sig": "ZY6C7z6Cmq_fhSlPKuq5OvD9ROyZwsi4ShGchRH0CUwD1pxPfYgfcBlUfrcriGPM-74QK2oBoyR9MQwEcLjYCg",
+       "message": "crawlcheck-data-v1\n9040b59b5b1515ae13773cddcc9773fda845c159fd6e5067f01fa2bd8a63c06a",
+       "sig": "8HEa_51A24ogkVPKpNCDQV-Pdy81YM1tb7FDtIga2416AeTWF2OK9Qo-D18bBmMQpwTixsOf231JMF8ZR2CLCg",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -4147,28 +5090,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/a"
       },
-      "sha256": "52ee5980ea3a45f938f9749bd6dd7fe4ea44baa3cc33ad68147da216f1ddbb7d",
+      "sha256": "dcc2102248ebc214f59bdf878b7de821fa4930612fafe43eb37356c3b03a885b",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\n52ee5980ea3a45f938f9749bd6dd7fe4ea44baa3cc33ad68147da216f1ddbb7d",
-       "sig": "e4FDzMvLaGkBv9iHlI0YMfxIax54-6tVvjUlFKKFTVV9dez1wkrHKVod9u2Ecs0RzIDY7H4dFncm8cQ0iRtyBw",
+       "message": "crawlcheck-data-v1\ndcc2102248ebc214f59bdf878b7de821fa4930612fafe43eb37356c3b03a885b",
+       "sig": "o0PNtqo9A0VTC6R1M_VYMVssU2yy5Asi6vuMaOTjOKhUi9VvWWe5N5BONc70MKuW-5n0Sq1h1zivSPPIjKupBA",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -4218,28 +5161,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/b"
       },
-      "sha256": "dd4231d4daa44acd9033c70dfe05a201f2540c43c9cad322480746b9610b77e4",
+      "sha256": "80c066a63f397f7efefeb4dc71d77f06b0e4837a6197f3714faa19b63755f437",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\ndd4231d4daa44acd9033c70dfe05a201f2540c43c9cad322480746b9610b77e4",
-       "sig": "o6bM9TTpxqvMzFDBY1bitjqUyZu1nOX-U9MoeG6CJ_NoOsNIrciP-py7qyRmow8hxdM40O8UHz1H8WDtfEWYBw",
+       "message": "crawlcheck-data-v1\n80c066a63f397f7efefeb4dc71d77f06b0e4837a6197f3714faa19b63755f437",
+       "sig": "wB5N6Qzq-BUwUV72iUzw4Zndi90mA-kIxevU8SMeVP-tPefgrrKfZCTNBbZ1ZKz7TaX9FmVUdsPq2zJIquQQAw",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -4324,28 +5267,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/a"
       },
-      "sha256": "52ee5980ea3a45f938f9749bd6dd7fe4ea44baa3cc33ad68147da216f1ddbb7d",
+      "sha256": "dcc2102248ebc214f59bdf878b7de821fa4930612fafe43eb37356c3b03a885b",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\n52ee5980ea3a45f938f9749bd6dd7fe4ea44baa3cc33ad68147da216f1ddbb7d",
-       "sig": "e4FDzMvLaGkBv9iHlI0YMfxIax54-6tVvjUlFKKFTVV9dez1wkrHKVod9u2Ecs0RzIDY7H4dFncm8cQ0iRtyBw",
+       "message": "crawlcheck-data-v1\ndcc2102248ebc214f59bdf878b7de821fa4930612fafe43eb37356c3b03a885b",
+       "sig": "o0PNtqo9A0VTC6R1M_VYMVssU2yy5Asi6vuMaOTjOKhUi9VvWWe5N5BONc70MKuW-5n0Sq1h1zivSPPIjKupBA",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -4425,28 +5368,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/l0"
       },
-      "sha256": "98bd19750f3670f4285238cf44dba630313a98bb827441a6a47c1adef45fc876",
+      "sha256": "83fa2cc01656fda3e462a7871201280ca5059479ff76cbb3d915332373eeeb6d",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\n98bd19750f3670f4285238cf44dba630313a98bb827441a6a47c1adef45fc876",
-       "sig": "xMFSWftcG4bzi5MRdgf72eF-BH4MjrMuLUqbDFaewnvXSk3gQDh2NSnQ2qGRK1QywrqyIZprk0ezkfbfEfSdBw",
+       "message": "crawlcheck-data-v1\n83fa2cc01656fda3e462a7871201280ca5059479ff76cbb3d915332373eeeb6d",
+       "sig": "AXWuRQAdNOEo016ZMUeIJQxxaHjUktx9rNYcQjMr6mfaYomI9H0KXAaLIvKaRxPDKuBhRVfCvSQp9ayukVPvBg",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -4496,28 +5439,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/l1"
       },
-      "sha256": "73ed86063006f837c9ccdc5676a6175abb4aaff781b2293cec39a01a3df1fba9",
+      "sha256": "2e16c3fde3011c70cff8c361602ce7b9347b25b15e4902cc2cc54bee172fbd29",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\n73ed86063006f837c9ccdc5676a6175abb4aaff781b2293cec39a01a3df1fba9",
-       "sig": "og8TUoSQ5JdgeVgxKNzGlYEVAFABy6H4m2whqfV3Qk44SiRGPe3nYWFzmoqZm0VMduS_QBMidnAyCCcMzcQODA",
+       "message": "crawlcheck-data-v1\n2e16c3fde3011c70cff8c361602ce7b9347b25b15e4902cc2cc54bee172fbd29",
+       "sig": "mKFIqZhtdscINRs-s2Td--By1fJVHB97SAT3i8gw5_ao8fkT40926UqeVpSw6W_qbLEkcF4cI62LeVCu_msIAQ",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -4567,28 +5510,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/l2"
       },
-      "sha256": "fcac706f97c740392c2844913f5db02dc8430f78394b727f4aa0c046b5733a8f",
+      "sha256": "66d3ab6380d9f4379287bed9869fb7c22278e26976196a38d660a9bd49f28eb5",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\nfcac706f97c740392c2844913f5db02dc8430f78394b727f4aa0c046b5733a8f",
-       "sig": "WtHkvV0WDGiNawtm2rh_n1ZiNlR4A0Dn4fLiJQmXTrw33ItWtgr4PtIR62si6tR2s1q3I_b5HX82Fdo3lsFXCw",
+       "message": "crawlcheck-data-v1\n66d3ab6380d9f4379287bed9869fb7c22278e26976196a38d660a9bd49f28eb5",
+       "sig": "QfRdePQj_cWClzZXOhUEoYTEQBLkOmDSgA47AC644GRY-X648tUabTNUOQLgef44MbAPh_hzJKIw4opgaxcwAg",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -4638,28 +5581,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/l3"
       },
-      "sha256": "89b576de27f6c92f77d8772df39cbc713e3118aa39aff961fad41c6c53a43399",
+      "sha256": "7263a3bfef3a9d5c6e82ef24e3b556d59e1de41461c3f20be83ce9d8fee9df69",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\n89b576de27f6c92f77d8772df39cbc713e3118aa39aff961fad41c6c53a43399",
-       "sig": "cTnfFEj39tWezcclTaBIgy8MLqw3aaQyoDk_BCM0TZ5VXFu6WpGyeUcGf97tpK-FFMKtdcIDqp3rIfsckXc0DQ",
+       "message": "crawlcheck-data-v1\n7263a3bfef3a9d5c6e82ef24e3b556d59e1de41461c3f20be83ce9d8fee9df69",
+       "sig": "v-iIjBf4sdt5YNYohUqK1GlJmuTms14r-J6Ng6FiAz4ryvytOboXDJDFcssXiNmLRgi_cowQFnhzGLgHjsagCQ",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -4709,28 +5652,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/l4"
       },
-      "sha256": "35638449b08fb3fc560910c3a72af8a7c3e7e85d42b165858c69256f710556c7",
+      "sha256": "244433e2ae52f3f1ec2d555f3eb74e3cf60e63b19a9b893eb93bc53b79f808fb",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\n35638449b08fb3fc560910c3a72af8a7c3e7e85d42b165858c69256f710556c7",
-       "sig": "Uw2Df5CPziRtURFlabQI2-ZFVBSKYiU2uYZJctSfXr-Z7uit1lKdls5Y_yUf7b2TdPyAtDNNaemxIEgbHbasAw",
+       "message": "crawlcheck-data-v1\n244433e2ae52f3f1ec2d555f3eb74e3cf60e63b19a9b893eb93bc53b79f808fb",
+       "sig": "CJC62_EchNE7n-MnKzFesRekRuWVWZSyeg5WrLd5gDqC9eXxOHPY2nr3YGbJ6v3VLNt3fMJ1XVZTA-EzFN9eCg",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -4780,28 +5723,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/l5"
       },
-      "sha256": "f2333cd4673aa18ca81cf7dee60722e1484d092b68809fed646efb6a3b4ed7ba",
+      "sha256": "6cbf96a64f63044c0202c9451de1fe0820fa76db47e2db483ef67c074b5ea379",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\nf2333cd4673aa18ca81cf7dee60722e1484d092b68809fed646efb6a3b4ed7ba",
-       "sig": "gSfmq1mXnYG8107SjeTZJO_GIHribnxCSNmSKy9QSAFVc0ZV4X1bFYnVa7_G_M5iqFvemTp8W2uvSlD9hNN2CQ",
+       "message": "crawlcheck-data-v1\n6cbf96a64f63044c0202c9451de1fe0820fa76db47e2db483ef67c074b5ea379",
+       "sig": "BTwJeLCYip_TwVOqe7ZX9PyEjMreBMg9Lhaui_eCjun3m4bGYgzgAeOLXdWfY4GoWvwzX18c5Oke2oW12kE8AA",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -4851,28 +5794,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/l6"
       },
-      "sha256": "8de4ae7e0af5f9fbd89dec5295d5cfa65580f4e34d0dde9fdde311f00f71e8ae",
+      "sha256": "83f2e89028672ac99fd8670599f4a690e4a1876e58f8413a8361763311e15479",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\n8de4ae7e0af5f9fbd89dec5295d5cfa65580f4e34d0dde9fdde311f00f71e8ae",
-       "sig": "G_gMrjaeOIpXsVv4Fh7weRUo5k-TXIMphez8tBfLnOuYgtoGrMY3BVphUfaLqP1-ueqKC51D1QxrV2adeaSXCg",
+       "message": "crawlcheck-data-v1\n83f2e89028672ac99fd8670599f4a690e4a1876e58f8413a8361763311e15479",
+       "sig": "YBShnOlS6fuAuqd6KMCjZ0Ad1vi-WbcnGRiKH3E97LQH45Xdku234VrHNhRBsy87wnpQDocuXdEYgxdmE2qwBQ",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -4922,28 +5865,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/l7"
       },
-      "sha256": "a6a148364e73574c574313caa4643259d48249def97a3c9966d219ada13ee46a",
+      "sha256": "640edc65e01421442ac7f68e6fc7299fb847a806713758e0442aec9ff47920dd",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\na6a148364e73574c574313caa4643259d48249def97a3c9966d219ada13ee46a",
-       "sig": "5LeHKn-CpsclCgcYAGXRW7ChaKK30S_mYEPnIK9A1zVtD-OUT5GETFmh_Jy-EMYkIau_SbCJKuqIcKExKdVtCw",
+       "message": "crawlcheck-data-v1\n640edc65e01421442ac7f68e6fc7299fb847a806713758e0442aec9ff47920dd",
+       "sig": "H7_G7r5zTJoRdZqsE_-06agp96IH5VaaSBMBd6KGIDCA72643UNvSLBlSsynUgSsivK9ZLRtCz62gMJFabCZAA",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -4993,28 +5936,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/l8"
       },
-      "sha256": "b77b5aabb173b4af235b50898269001b7aff374f8b45160ac5474bc18b34c048",
+      "sha256": "649968c104923e75b6682f9bf9ffb95fcfff317c049cbecdd86a7913a08a9631",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\nb77b5aabb173b4af235b50898269001b7aff374f8b45160ac5474bc18b34c048",
-       "sig": "g_Zelo7Yr1ncXfGeMMEApJXb1Iwjr8EGpn6Q4buO_ETquTgqkUG6llK3m8BCTw6pjWqSbHjDzO_v3awxZdLdCQ",
+       "message": "crawlcheck-data-v1\n649968c104923e75b6682f9bf9ffb95fcfff317c049cbecdd86a7913a08a9631",
+       "sig": "i9OcdbxhA9jLXBeeLKpMPien12XYEE6zcDMQz2-r2toMZjOnliFnX1nB0YDHY7u2I7MffmzP5V19efD1K9RcCg",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -5064,28 +6007,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/l9"
       },
-      "sha256": "0cb8b93d423c4ef69fbd9866689b46e80c0d3f308839f7ecbde679acb891b9b8",
+      "sha256": "7f7a40752f2a2f1557fbb8f2ce6707d0ca681b37c9ab30b7d4ea0646f3a09f0e",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\n0cb8b93d423c4ef69fbd9866689b46e80c0d3f308839f7ecbde679acb891b9b8",
-       "sig": "r_HNGRTbituhqq4mZvoOssFqxE3SD5i0MH9S0YBzroHycQyBsp6kYt1Hr2F5I3HTsjWCJVX1Ns5LRNYPBgcbAw",
+       "message": "crawlcheck-data-v1\n7f7a40752f2a2f1557fbb8f2ce6707d0ca681b37c9ab30b7d4ea0646f3a09f0e",
+       "sig": "Ju7z5jMVrQHkKq0Q84TrFe2BsFAvixSum4SVgI-VoCTsAJLqEKRbgZJAzpSe8HhCjH6FerY9TGifIukoHE06Ag",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -5135,28 +6078,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/l10"
       },
-      "sha256": "cbd508a7f0633e1d345dbbb77b90753df65a434acdb1d0c9f746abd331da0c8d",
+      "sha256": "70bbb8c3c98938eab9c80f76fbb0046440e3cf53e3b186278136e3d6a6ea3ee8",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\ncbd508a7f0633e1d345dbbb77b90753df65a434acdb1d0c9f746abd331da0c8d",
-       "sig": "zAmJIpb6CC4Q49W3RoaOiC4nkBfzGs88oguT4A9nWcPII3LALglyFx_I2kyX0Uktx7i-YBW1oBIzr1V6-hWnBQ",
+       "message": "crawlcheck-data-v1\n70bbb8c3c98938eab9c80f76fbb0046440e3cf53e3b186278136e3d6a6ea3ee8",
+       "sig": "Chq1kb784mkqCDfUaqD56uycF1Dz3PsSjqI3y57wUz5Twu0n2xbIjhNOBNZUjh_G4_4r0FiCRMOOr46DqrnBBg",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -5206,28 +6149,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/l11"
       },
-      "sha256": "c390bb5309cff341dac03646a7931438a1b0bcc3d5173e2cd0e4ed05e2c80b9c",
+      "sha256": "488b3f49917a690855f62732ca31f53d38bcea8914262ea433e0e57c7ff7abac",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\nc390bb5309cff341dac03646a7931438a1b0bcc3d5173e2cd0e4ed05e2c80b9c",
-       "sig": "vKZ8CbZmgwSEOydBRChbugaY9VN-4FwQIwIHHDfWKNOVj8C2FNkDzQTFuJE6DPNjwIk-jDwVAkL0s2DrOYFmCg",
+       "message": "crawlcheck-data-v1\n488b3f49917a690855f62732ca31f53d38bcea8914262ea433e0e57c7ff7abac",
+       "sig": "O6crhun9VwTylshn0fYj4HCAjfeNY_1CmSCvmWSx4uow3PcVaj2sC0tsPUUx6KWaCdp5CjFkBZVGmL7KTal2DA",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -5277,28 +6220,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/l12"
       },
-      "sha256": "64cf94c935eb682062bf601dc18ef77b97e988f6d7158094bea2d04873b4a791",
+      "sha256": "d23178406b8f665432a18b5988202e8790a52e5af5aada6eb02593aba072ac0b",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\n64cf94c935eb682062bf601dc18ef77b97e988f6d7158094bea2d04873b4a791",
-       "sig": "H8jKiObY2L1nbw_6YSQSxj3ZGWz6M9K6TqKeHCKbTwdylw7GeiAclOuhaR6kZBQa-T-18lwDmV0MT_kibYBiBw",
+       "message": "crawlcheck-data-v1\nd23178406b8f665432a18b5988202e8790a52e5af5aada6eb02593aba072ac0b",
+       "sig": "i3HnAQG0A36k-MRlYCZumeeE5VlUA0AutHMpoGrOdkDSj6ovT5-_9Us4J_SxiAqvxiUy04qjGyj_LzRTXFOSBg",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -5420,28 +6363,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/a"
       },
-      "sha256": "52ee5980ea3a45f938f9749bd6dd7fe4ea44baa3cc33ad68147da216f1ddbb7d",
+      "sha256": "dcc2102248ebc214f59bdf878b7de821fa4930612fafe43eb37356c3b03a885b",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\n52ee5980ea3a45f938f9749bd6dd7fe4ea44baa3cc33ad68147da216f1ddbb7d",
-       "sig": "e4FDzMvLaGkBv9iHlI0YMfxIax54-6tVvjUlFKKFTVV9dez1wkrHKVod9u2Ecs0RzIDY7H4dFncm8cQ0iRtyBw",
+       "message": "crawlcheck-data-v1\ndcc2102248ebc214f59bdf878b7de821fa4930612fafe43eb37356c3b03a885b",
+       "sig": "o0PNtqo9A0VTC6R1M_VYMVssU2yy5Asi6vuMaOTjOKhUi9VvWWe5N5BONc70MKuW-5n0Sq1h1zivSPPIjKupBA",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -5521,28 +6464,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/one"
       },
-      "sha256": "ad1a6a2cd99e0af57ff63f4d51a2192a320a738ed0e1d6b572b837f5db3418b6",
+      "sha256": "6d395d1ed8348bf3b0ac800a46d5b5b24fbfa6aad5cb70b7b84ecc4021d68ace",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\nad1a6a2cd99e0af57ff63f4d51a2192a320a738ed0e1d6b572b837f5db3418b6",
-       "sig": "6QPLepy7EJRRLYvpIV0Zw8FhdT6GGF1yB7NewryRJC3Uo5aOzERkuhF0hOKXf1aS2Zm2LCr2ZwyxgUC794ZPDA",
+       "message": "crawlcheck-data-v1\n6d395d1ed8348bf3b0ac800a46d5b5b24fbfa6aad5cb70b7b84ecc4021d68ace",
+       "sig": "nXNZjiuBP8aWD3LjA5IzKgpo-pxe5XQJRrq7FvRxrPm8yko2VpjLantRS0YLUkUufQL8UXRn-iNzKG5u4nUHDg",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }
@@ -5592,28 +6535,28 @@
       },
       "resolve": {
        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "operation": {
        "method": "GET",
        "url": "https://good.example/two"
       },
-      "sha256": "7afbaa3ec9d6f1ad1d131fe7bbe348ec42e18fa77b5d6a576d6f175d0656666d",
+      "sha256": "10db6bcc128adc3a1a3190a07ee0cd64b9f90c999a37c0ee8241f399bda2de69",
       "signature": {
        "v": 1,
        "alg": "Ed25519",
-       "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+       "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
        "over": "sha256",
-       "message": "crawlcheck-data-v1\n7afbaa3ec9d6f1ad1d131fe7bbe348ec42e18fa77b5d6a576d6f175d0656666d",
-       "sig": "ZXc5PawmHmIXzLGyRmWl7vBd7GfTYS1h1UlZLuWXFzHInNe6kX2uQb08NNKj-0WLiBQycWWwf9Ff7LlZm2WMCQ",
+       "message": "crawlcheck-data-v1\n10db6bcc128adc3a1a3190a07ee0cd64b9f90c999a37c0ee8241f399bda2de69",
+       "sig": "jWhO4B5z4N04watYJlRi8i_bFuEd-Ucy5H26nPmkxiCrh8kXdKc4HnXw9IGhvImAZwtqwXep6VW6z0rl1nyLBA",
        "signed_at": "2026-10-10T15:59:00.000Z",
        "key": {
-        "kid": "erziRf8en6nlChFs1zqtfOHoOyD2GyiXW98t3SYpLuk",
+        "kid": "q6ROVfw-V9SBwDcY2_t0dsZJITSXdVRyN1vusgjK_KQ",
         "jwk": {
          "kty": "OKP",
          "crv": "Ed25519",
-         "x": "wS76C0bWq0ejgwsAlHq0imuG2HoW15ZeLhw9icbKbiA"
+         "x": "Bz-eleneWue2OfIiJ025eTQKlOmM2PTOctBQ1uMduHo"
         },
         "published_in": "the suite's directory"
        }

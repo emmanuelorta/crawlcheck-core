@@ -28,6 +28,9 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/.well-known/http-message-signatures-directory":
             return self._send(200, json.dumps(SUITE["directory"]))
+        if self.path == "/.well-known/security-key-rotation.json":   # conf2
+            rot = (STATE["case"] or {}).get("crawlcheck", {}).get("rotation") or SUITE.get("rotation")
+            return self._send(200, json.dumps(rot)) if rot else self._send(404, "{}")
         self._send(404, "{}")
 
     def do_POST(self):

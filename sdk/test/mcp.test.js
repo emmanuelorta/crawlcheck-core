@@ -5,7 +5,7 @@ import { withPreflight, mcpPreflight, McpPreflightRefused, transportUrl, lockFro
 function cc(table) {
   const calls = [];
   return { calls, async guard(host, action, opts) {
-    calls.push({ host, action, template: opts.template, tool: opts.operation && opts.operation.tool, op: opts.operation });
+    calls.push({ host, action, template: opts.template, tool: opts.operation && opts.operation.tool, op: opts.operation, mcp: opts.mcp });
     const d = table[host] || "unsupported";
     const receipt = { kind: "crawlcheck-decision", domain: host, action, decision: d, expires_at: new Date(Date.now() + 3600e3).toISOString(), steps: [{ why: "table" }], sha256: "x", signature: { kid: "k" } };
     let proceed = d === "allow" || (d === "warn" && !!opts.allowWarn);
@@ -47,6 +47,13 @@ test("require_confirmation: refused without a confirm, connects when a person sa
   await assert.rejects(() => withPreflight(mcpClient(TOOLS), k).connect(T("https://ask.example/mcp")), (e) => /human must confirm/.test(e.why));
   let seen = null; const c = withPreflight(mcpClient(TOOLS), k, { confirm: async (r) => { seen = r; return true; } });
   await c.connect(T("https://ask.example/mcp")); assert.equal(seen.decision, "require_confirmation"); assert.equal(c.sent.length, 1);
+});
+test("tscope1: the connect decision names the server and the approved tools_sha256", async () => {
+  const lock = await lockFromTools([TOOLS[0]]), k = cc({ "good.example": "allow" });
+  await withPreflight(mcpClient([TOOLS[0]]), k, { lock }).connect(T("https://good.example/mcp"));
+  assert.deepEqual(k.calls[0].mcp, { url: "https://good.example/mcp", tools_sha256: lock.tools_sha256 });
+  const k2 = cc({ "good.example": "allow" }); await withPreflight(mcpClient(TOOLS), k2).connect(T("https://good.example/mcp"));
+  assert.deepEqual(k2.calls[0].mcp, { url: "https://good.example/mcp" });
 });
 test("lockfile: changed tools close the client again; a tool outside the lock is refused", async () => {
   const lock = await lockFromTools([TOOLS[0]]);

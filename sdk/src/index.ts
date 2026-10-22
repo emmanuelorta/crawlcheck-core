@@ -17,7 +17,18 @@ export interface VerifyCheck { id: string; ok: boolean | null; why: string; [k: 
  * signing key is one CrawlCheck publishes (null offline: not decided). accepted: both - the only field to act on.
  * A document someone else signed with their own key is verified: true offline and accepted: false.
  */
-export interface Trust { integrity_valid: boolean; issuer_trusted: boolean | null; accepted: boolean }
+export interface Trust { integrity_valid: boolean; issuer_trusted: boolean | null; accepted: boolean; /** conf2: the signing policy accepts this key for this object at its signing time (purpose, retired, compromised). null: not decided. */ key_policy_valid?: boolean | null; /** conf2: stable reason: ok, ok_bound, key_wrong_purpose, key_not_yet_active, key_retired, key_compromised, key_unknown, no_signing_time, or related_<code> for a key the document leans on. */ key_policy_code?: string | null }
+/** conf2: the key directory and rotation record as the signing policy reads them (keyPolicyFrom / publishedKeyPolicy). */
+export interface KeyPolicyInput { v: 2; kids: string[]; keys: Record<string, { purpose: string; start: number | null }>; retired: Record<string, { purpose: string; stopped: number | null }>; compromised: Record<string, number>; rotation: boolean; read_at?: string; source?: string }
+export interface KeyPolicyResult { ok: boolean | null; code: string; known: boolean; purpose: string | null; expected: string | null; why: string }
+/** The signing policy as data (https://crawlcheck.io/keys#policy): object purposes, purpose chains, start times. */
+export const KEY_POLICY = (V as any).KEY_POLICY as { v: 2; object_purpose: Record<string, string>; chains: Record<string, string[]>; starts: Record<string, string | null>; bound: Record<string, string>; purpose_aliases: Record<string, string> };
+/** Build the policy input from a key directory you hold and, optionally, the rotation record saved with it. */
+export const keyPolicyFrom = V.keyPolicyFrom as (directory: unknown, rotation?: unknown) => Promise<KeyPolicyInput>;
+/** Does the signing policy accept this document's signing key for this object at its signing time? */
+export const keyPolicyCheck = V.keyPolicyCheck as (doc: unknown, kp: KeyPolicyInput) => KeyPolicyResult;
+/** Apply the signing policy to a verification: key_published (retired keys included), key_purpose, and the trust fields. */
+export const applyKeyPolicy = V.applyKeyPolicy as <T>(res: T, doc: unknown, kp: KeyPolicyInput) => T & Trust;
 function withTrust<T extends { verified: boolean; summary: string; checks: VerifyCheck[] }>(v: T, kid: string | undefined, published: string[] | null, related: string[] = []): T & Trust {
   let checks = v.checks;
   let issuer: boolean | null = null;
@@ -110,7 +121,7 @@ export interface PreflightPolicy {
   max_age_hours?: number; on_warn?: "warn" | "require_confirmation" | "block"; require_entity?: boolean;
   human_approval?: Action[]; allow?: Action[]; deny?: Action[]; [k: string]: unknown;
 }
-export interface PreflightOptions { agent?: string; template?: string; policy?: PreflightPolicy; /** 8-128 characters of A-Z a-z 0-9 . _ : - signed into the receipt (replay binding). guard() sends a fresh one when you give none. */ nonce?: string; /** The exact operation this decision is for (method + url, or an MCP tool); signed into the receipt. */ operation?: Operation }
+export interface PreflightOptions { agent?: string; template?: string; policy?: PreflightPolicy; /** 8-128 characters of A-Z a-z 0-9 . _ : - signed into the receipt (replay binding). guard() sends a fresh one when you give none. */ nonce?: string; /** The exact operation this decision is for (method + url, or an MCP tool); signed into the receipt. */ operation?: Operation; /** An MCP server on this domain and the tool-list hash you approved (mcp-lockfile tools_sha256). The decision then reads the live tools, blocks when they differ, and its signed `assessed` block names exactly what it covered. https://crawlcheck.io/spec/mcp-lockfile */ mcp?: { url: string; tools_sha256?: string } }
 /** What a receipt can be scoped to. Send only the keys that apply; CrawlCheck signs them back exactly as sent. https://crawlcheck.io/spec/guard#operation */
 export interface Operation { method?: "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS"; url?: string; tool?: string; tool_schema_sha256?: string; scopes?: string[] }
 /** The operation for calling an MCP tool: its name, the sha256 of its definition (as in the lockfile) and the scopes you will use. */
@@ -126,6 +137,8 @@ export interface GuardOptions extends PreflightOptions {
   onlineKeys?: boolean;
   /** Pinned CrawlCheck key ids, for offline use with onlineKeys: false. */
   publishedKids?: string[];
+  /** conf2: a pinned key policy (keyPolicyFrom(savedDirectory, savedRotation)), for offline use with onlineKeys: false. Checks key purpose too. */
+  keyPolicy?: KeyPolicyInput;
   /** Testing clock (ms since epoch). Default Date.now(). */
   now?: number;
 }
@@ -374,11 +387,24 @@ export class CrawlCheck {
   async preflight(domain: string, action: Action = "read", opts: PreflightOptions = {}): Promise<DecisionReceipt> {
     const b: JsonObject = { domain, action };
     if (opts.agent) b.agent = opts.agent; if (opts.template) b.template = opts.template; if (opts.policy) b.policy = opts.policy; if (opts.nonce) b.nonce = opts.nonce; if (opts.operation) b.operation = opts.operation as unknown as JsonObject;
+    if (opts.mcp && opts.mcp.url) b.mcp = (opts.mcp.tools_sha256 ? { url: opts.mcp.url, tools_sha256: opts.mcp.tools_sha256 } : { url: opts.mcp.url }) as unknown as JsonObject;
     return this.post("/api/v1/preflight", b) as unknown as Promise<DecisionReceipt>;
   }
-  /** Verify a signed document here. With onlineKeys (default), its signing key must also be in the published directory. */
+  private kpCache: { at: number; kp: KeyPolicyInput } | null = null;
+  /** conf2: the key directory and rotation record, read now (cached 10 minutes), as the signing policy reads them. */
+  async publishedKeyPolicy(): Promise<KeyPolicyInput> {
+    if (this.kpCache && Date.now() - this.kpCache.at < 600e3) return this.kpCache.kp;
+    const d: any = await this.req("GET", "/.well-known/http-message-signatures-directory");
+    let rot: unknown = null;
+    try { const r = await this.f(this.base + "/.well-known/security-key-rotation.json", { headers: { accept: "application/json" } }); if (r.ok) rot = await r.json(); } catch { rot = null; }
+    const kp = Object.assign(await keyPolicyFrom(d, rot), { read_at: new Date().toISOString(), source: "online" });
+    this.kpCache = { at: Date.now(), kp }; return kp;
+  }
+  /** Verify a signed document here. With onlineKeys (default), its signing key must also be in the published directory and the signing policy must accept it. */
   async verifyDocument(doc: unknown, onlineKeys = true): Promise<DocumentVerification & Trust> {
-    return withTrust(await (V.verifyDataDoc as (d: unknown) => Promise<DocumentVerification>)(doc), (doc as any)?.signature?.kid, onlineKeys ? await this.publishedKeyIds() : null, (V as any).relatedKids(doc));
+    const kp = onlineKeys ? await this.publishedKeyPolicy() : null;
+    const v = withTrust(await (V.verifyDataDoc as (d: unknown) => Promise<DocumentVerification>)(doc), (doc as any)?.signature?.kid, kp ? kp.kids : null, (V as any).relatedKids(doc));
+    return kp && (doc as any)?.signature ? applyKeyPolicy(v, doc, kp) : v;
   }
   /**
    * Preflight, verify the receipt, check it is for THIS operation, and decide. Proceeds on allow; warn only with allowWarn;
@@ -398,13 +424,18 @@ export class CrawlCheck {
     const scope = checkDecision(receipt, { domain, action, nonce, now: opts.now, operation: opts.operation });
     if (!receipt || typeof receipt !== "object") return no(scope.why);
     const online = opts.onlineKeys ?? true;
-    if (!online && !(Array.isArray(opts.publishedKids) && opts.publishedKids.length)) return no(["onlineKeys is false and no publishedKids were pinned: the signer cannot be checked"], receipt);
+    if (!online && !opts.keyPolicy && !(Array.isArray(opts.publishedKids) && opts.publishedKids.length)) return no(["onlineKeys is false and no keyPolicy or publishedKids were pinned: the signer cannot be checked"], receipt);
     let verification: DocumentVerification & Trust;
-    try { verification = withTrust(await (V.verifyDataDoc as (d: unknown) => Promise<DocumentVerification>)(receipt), receipt?.signature?.kid, online ? await this.publishedKeyIds() : opts.publishedKids!, (V as any).relatedKids(receipt)); }
+    try {
+      const kp = online ? await this.publishedKeyPolicy() : opts.keyPolicy || null;   // conf2: purpose, retired and compromised keys, not only "published"
+      verification = withTrust(await (V.verifyDataDoc as (d: unknown) => Promise<DocumentVerification>)(receipt), receipt?.signature?.kid, kp ? kp.kids : opts.publishedKids!, (V as any).relatedKids(receipt));
+      if (kp) verification = applyKeyPolicy(verification, receipt, kp);
+    }
     catch (e) { return no(["the receipt could not be verified: " + ((e as any)?.message || e)].concat(scope.why), receipt); }
     const why = scope.why.slice();
     if (!verification.integrity_valid) why.push("integrity failed: " + verification.checks.filter((c) => c.ok === false).map((c) => c.id).join(", "));
     if (verification.issuer_trusted !== true) why.push("signed by a key that is not in CrawlCheck's published key directory");
+    else if (verification.key_policy_valid === false) why.push("the signing policy rejects this key for a decision receipt: " + ((verification.checks.find((c) => c.id === "key_purpose") || {}) as VerifyCheck).why);
     if (why.length) return no(why, receipt, verification);
     const d = receipt.decision;
     let proceed = d === "allow" || (d === "warn" && !!opts.allowWarn);

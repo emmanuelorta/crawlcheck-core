@@ -28,6 +28,12 @@ Decisions: `allow`, `warn`, `require_confirmation`, `block`, `unsupported`. A po
 
 `verify_document(doc)` and `CrawlCheck.verify(doc)` return `verified`, `integrity_valid`, `issuer_trusted` and `accepted`. Act on `accepted`: offline, `issuer_trusted` is `None` and `accepted` is `False`, because a document signed with someone else's key can be self-consistent. `CrawlCheck.verify` and `guard` check the published key directory, so `accepted` is decided there.
 
+Since 1.8.0 an MCP connect decision names the server and, with a lockfile, its approved `tools_sha256` (`preflight(domain, "connect", mcp={"url": ..., "tools_sha256": ...})`; `with_preflight` sends it for you). CrawlCheck reads the live tools from its own network: a changed tool list comes back as `block`, and the signed receipt's `assessed` block says exactly which endpoint and tool state it covered.
+
+Since 1.8.0 they also apply the signing policy (https://crawlcheck.io/keys#policy): which key purpose may sign which object at which time (decision receipts move to the decision key at 2026-11-09 17:00 UTC), retired keys (valid only for documents signed before they stopped) and compromised keys (never valid on their signature alone). The result carries `key_policy_valid`, and `accepted` needs it. Offline, build the same input from copies you saved: `kp = key_policy_from(saved_directory, saved_rotation_record)`, then `apply_key_policy(result, doc, kp)` or `client.verify(doc, key_policy=kp)`. A saved copy cannot know a key retired or compromised after you saved it.
+
+`accepted` says who signed a document. It is not permission to act: a valid receipt can say `block`, `warn` or `require_confirmation`. `guard()` decides that part.
+
 ## Give your agent the check as a tool
 
 `agent_tools(cc)` returns three tools: `crawlcheck_check_site` (the signed, verified decision for an action on a site, including the business facts the site publishes and which AI engines get them wrong), `crawlcheck_verify_fact` (one signed verdict on a phone number, address, hours or service area you hold) and `crawlcheck_fetch` (fetches a page only after its domain and every redirect hop are allowed). All fail closed.

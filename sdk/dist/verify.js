@@ -751,6 +751,152 @@ export function relatedKids(x) {
     catch (e) { }
     return out.filter((k, i) => typeof k === "string" && out.indexOf(k) === i);
 }
+// conf2: the signing policy (https://crawlcheck.io/keys#policy, machine copy spec/key-policy/policy.json) as code. Which key
+// PURPOSE may sign which object at which time, retired keys, compromised keys. Same rule in the Python package.
+export const KEY_POLICY = { v: 2,
+    object_purpose: { "crawlcheck-decision": "decisions", "crawlcheck-log-sth": "log heads", "*": "documents" },
+    chains: { documents: ["documents", "requests"], decisions: ["decisions", "documents", "requests"], "log heads": ["log heads", "documents", "requests"] },
+    starts: { requests: null, documents: "2026-10-11T00:00:00Z", decisions: "2026-11-09T17:00:00Z", "log heads": "2026-11-09T17:00:00Z" },
+    bound: { "crawlcheck-resolve": "transparency.sth", "crawlcheck-decision": "resolve" },
+    purpose_aliases: { "requests and documents": "requests" } };
+const kpPurpose = (p) => { p = String(p || "requests"); return KEY_POLICY.purpose_aliases[p] || p; };
+const kpMs = (v) => { if (v === null || v === undefined || v === "")
+    return null; if (typeof v === "number")
+    return v < 1e11 ? v * 1000 : v; const t = Date.parse(String(v)); return isFinite(t) ? t : null; };
+// The key directory (and, when you have it, the rotation record) as the input every key-policy check reads.
+export async function keyPolicyFrom(directory, rotation) {
+    const keys = {}, retired = {}, compromised = {};
+    for (const k of (directory && directory.keys) || []) {
+        if (!k || !k.x)
+            continue;
+        const kid = b64u(await sha256(enc.encode(JSON.stringify({ crv: k.crv || "Ed25519", kty: k.kty || "OKP", x: k.x }))));
+        const purpose = kpPurpose(k.crawlcheck_purpose);
+        keys[kid] = { purpose, start: kpMs(k.crawlcheck_signs_from) ?? kpMs(k.nbf) ?? kpMs(KEY_POLICY.starts[purpose]) };
+    }
+    for (const r of (rotation && rotation.retired) || [])
+        if (r && r.thumbprint)
+            retired[r.thumbprint] = { purpose: kpPurpose(r.purpose), stopped: kpMs(r.stopped_signing_at) ?? kpMs(r.retired_at) };
+    for (const c of (rotation && rotation.compromised) || [])
+        if (c && c.thumbprint)
+            compromised[c.thumbprint] = kpMs(c.compromised_since) ?? 0;
+    return { v: 2, kids: Object.keys(keys), keys, retired, compromised, rotation: !!rotation };
+}
+export function signedAtOf(x) {
+    const s = x && x.signature, c = [s && s.signed_at, x && x.decided_at, x && x.answered_at, x && x.sealed_at, x && x.generated_at, x && x.issued_at, x && x.at];
+    for (const v of c) {
+        const t = kpMs(v);
+        if (t !== null)
+            return t;
+    }
+    return null;
+}
+function kpBoundKid(x) {
+    const path = KEY_POLICY.bound[x && x.kind];
+    if (!path)
+        return null;
+    const o = path.split(".").reduce((a, p) => (a && typeof a === "object" ? a[p] : undefined), x);
+    return (o && o.signature && o.signature.kid) || (o && typeof o.kid === "string" ? o.kid : null);
+}
+// One key against the policy at time t. Returns { known, ok, purpose, why } (ok null: could not be decided).
+function kpKey(kid, t, kp) {
+    if (!kid)
+        return { known: false, ok: false, code: "key_unknown", why: "no signing key named" };
+    if (kp.compromised[kid] !== undefined)
+        return { known: false, ok: false, code: "key_compromised", why: "key " + kid + " is listed as compromised since " + new Date(kp.compromised[kid]).toISOString() + ": its signature alone proves nothing (" + (t !== null && t >= kp.compromised[kid] ? "signed after that moment" : "only an outside anchor still proves documents signed before it") + ")" };
+    const k = kp.keys[kid];
+    if (k) {
+        if (t !== null && k.start !== null && t < k.start)
+            return { known: true, ok: false, purpose: k.purpose, code: "key_not_yet_active", why: "key " + kid + " (" + k.purpose + ") signs nothing before " + new Date(k.start).toISOString() };
+        return { known: true, ok: true, purpose: k.purpose, start: k.start };
+    }
+    const r = kp.retired[kid];
+    if (r) {
+        if (t === null)
+            return { known: true, ok: null, purpose: r.purpose, code: "no_signing_time", why: "retired key, and the document carries no signing time" };
+        return r.stopped !== null && t <= r.stopped ? { known: true, ok: true, purpose: r.purpose, retired: true, why: "retired key, signed before it stopped signing (" + new Date(r.stopped).toISOString() + ")" } : { known: false, ok: false, code: "key_retired", why: "key " + kid + " stopped signing at " + (r.stopped !== null ? new Date(r.stopped).toISOString() : "an unknown time") + "; this was signed after" };
+    }
+    return { known: false, ok: false, code: "key_unknown", why: "key " + kid + " is not in the published key directory" + (kp.rotation ? " or the rotation record" : "") };
+}
+function kpExpected(objPurpose, t, kp) {
+    for (const p of KEY_POLICY.chains[objPurpose]) {
+        if (p === "requests")
+            return p;
+        if (Object.keys(kp.keys).some((kid) => kp.keys[kid].purpose === p && kp.compromised[kid] === undefined && (t === null || kp.keys[kid].start === null || kp.keys[kid].start <= t)))
+            return p;
+    }
+    return "requests";
+}
+// Does the policy accept this signature on this document? { ok: true | false | null, code, purpose, expected, why }
+// code (stable): ok, ok_bound, key_wrong_purpose, key_not_yet_active, key_retired, key_compromised, key_unknown, no_signing_time;
+// applyKeyPolicy adds related_<code> when the key a document leans on (its answer, its log head) fails.
+export function keyPolicyCheck(x, kp) {
+    const kid = x && x.signature && x.signature.kid, t = signedAtOf(x);
+    const objPurpose = KEY_POLICY.object_purpose[x && x.kind] || KEY_POLICY.object_purpose["*"];
+    const k = kpKey(kid, t, kp);
+    if (k.ok !== true)
+        return { ok: k.ok, code: k.code, known: k.known, purpose: k.purpose || null, expected: null, why: k.why };
+    if (t === null)
+        return { ok: null, code: "no_signing_time", known: true, purpose: k.purpose, expected: null, why: "the document carries no signing time, so the key's purpose cannot be checked against the policy" };
+    const expected = kpExpected(objPurpose, t, kp), chain = KEY_POLICY.chains[objPurpose], at = new Date(t).toISOString();
+    if (k.purpose === expected)
+        return { ok: true, code: "ok", known: true, purpose: k.purpose, expected, why: "a " + k.purpose + " key signs " + objPurpose + " at " + at + (k.retired ? " (" + k.why + ")" : "") };
+    const later = chain.indexOf(k.purpose) > chain.indexOf(expected);
+    const bound = kpBoundKid(x), decisionKeyLive = objPurpose === "decisions" && expected === "decisions";
+    if (later && bound && bound === kid && !decisionKeyLive)
+        return { ok: true, code: "ok_bound", known: true, purpose: k.purpose, expected, why: "signed by the " + k.purpose + " key that signed the object it is bound to (" + KEY_POLICY.bound[x.kind] + "), as the policy allows" };
+    return { ok: false, code: "key_wrong_purpose", known: true, purpose: k.purpose, expected, why: "a " + k.purpose + " key does not sign " + objPurpose + " at " + at + ": the " + expected + " key does" + (chain.indexOf(k.purpose) < 0 ? " (" + k.purpose + " keys never sign them)" : "") };
+}
+// Apply the policy to a verification result: key_published (retired keys included), key_purpose, and the trust fields.
+export function applyKeyPolicy(res, x, kp) {
+    if (!res || !kp)
+        return res;
+    const main = keyPolicyCheck(x, kp), t = signedAtOf(x), rel = [];
+    let relCode = null;
+    if (x && x.kind === "crawlcheck-decision" && x.resolve && x.resolve.kid) {
+        const r = kpKey(x.resolve.kid, t, kp);
+        if (r.ok !== true) {
+            rel.push("the Resolve answer it names: " + r.why);
+            relCode = relCode || "related_" + (r.code || "key_unknown");
+        }
+    }
+    const sth = x && x.transparency && x.transparency.sth;
+    if (sth && sth.signature) {
+        const r = keyPolicyCheck(sth, kp);
+        if (r.ok === false) {
+            rel.push("its log head: " + r.why);
+            relCode = relCode || "related_" + r.code;
+        }
+    }
+    const kpub = { id: "key_published", ok: main.known && !rel.length, why: main.known && !rel.length ? "key " + (x.signature && x.signature.kid) + " is " + (kp.keys[x.signature && x.signature.kid] ? "in the published key directory" : "a retired key listed in the rotation record") + ((x && (x.kind === "crawlcheck-decision" || sth)) ? ", and so is every key it leans on" : "") : (main.known ? "it leans on a key the policy rejects: " + rel.join("; ") : main.why) + ": reject this document" };
+    const kpur = { id: "key_purpose", ok: rel.length ? false : main.ok, code: rel.length && main.ok !== false ? relCode : main.code, why: rel.length ? rel.join("; ") : main.why };
+    let checks = (res.checks || []).filter((c) => c.id !== "key_published" && c.id !== "key_purpose").concat([kpub, kpur]);
+    const ran = checks.filter((c) => c.ok !== null), failed = checks.filter((c) => c.ok === false);
+    const own = checks.filter((c) => c.id !== "key_published" && c.id !== "key_purpose");
+    const integrity_valid = own.some((c) => c.ok !== null) && own.every((c) => c.ok !== false);
+    const unavailable = checks.filter((c) => c.ok === null).map((c) => c.id);
+    const accepted = integrity_valid && kpub.ok === true && kpur.ok !== false;
+    return Object.assign({}, res, { checks, verified: ran.length > 0 && failed.length === 0, summary: failed.length ? failed.length + " check(s) FAILED" : ran.length + " of " + checks.length + " checks ran and passed",
+        integrity_valid, issuer_trusted: kpub.ok, key_policy_valid: kpur.ok, key_policy_code: kpur.code, accepted, accepted_strict: accepted && unavailable.length === 0, assurance: unavailable.length ? "partial" : "complete", unavailable });
+}
+// The directory and the rotation record, read now (online). The rotation record is optional: without it retired and
+// compromised keys are unknown, and only keys still in the directory are accepted.
+export async function publishedKeyPolicy(base) {
+    const b = String(base || "https://crawlcheck.io").replace(/\/+$/, "");
+    const r = await fetch(b + "/.well-known/http-message-signatures-directory");
+    if (!r.ok)
+        throw new Error("key directory answered HTTP " + r.status);
+    const d = await r.json();
+    let rot = null;
+    try {
+        const q = await fetch(b + "/.well-known/security-key-rotation.json");
+        if (q.ok)
+            rot = await q.json();
+    }
+    catch (e) {
+        rot = null;
+    }
+    return Object.assign(await keyPolicyFrom(d, rot), { read_at: new Date().toISOString(), source: "online" });
+}
 export function trustOf(res, kid, publishedKids, related) {
     let checks = Array.isArray(res && res.checks) ? res.checks : [];
     let issuer = null;

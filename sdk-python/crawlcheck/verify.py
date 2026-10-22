@@ -187,3 +187,171 @@ def verify_document(doc, published_kids=None):
     # verified alone can be true for a document someone else signed (offline, key_published is None). accepted needs
     # the signing key to be one CrawlCheck publishes: pass published_kids (CrawlCheck.verify does) before trusting it.
     return {"verified": verified, "integrity_valid": integrity, "issuer_trusted": kp, "accepted": verified and kp is True, "checks": checks}
+
+
+# conf2: the signing policy (https://crawlcheck.io/keys#policy, machine copy spec/key-policy/policy.json) as code: which
+# key PURPOSE may sign which object at which time, retired keys and compromised keys. Same rule as crawlcheck-verify.mjs.
+KEY_POLICY = {"v": 2,
+              "object_purpose": {"crawlcheck-decision": "decisions", "crawlcheck-log-sth": "log heads", "*": "documents"},
+              "chains": {"documents": ["documents", "requests"], "decisions": ["decisions", "documents", "requests"], "log heads": ["log heads", "documents", "requests"]},
+              "starts": {"requests": None, "documents": "2026-10-11T00:00:00Z", "decisions": "2026-11-09T17:00:00Z", "log heads": "2026-11-09T17:00:00Z"},
+              "bound": {"crawlcheck-resolve": "transparency.sth", "crawlcheck-decision": "resolve"},
+              "purpose_aliases": {"requests and documents": "requests"}}
+
+
+def _kp_purpose(p):
+    p = str(p or "requests")
+    return KEY_POLICY["purpose_aliases"].get(p, p)
+
+
+def _kp_ms(v):
+    """ms since epoch from an ISO time or a number (seconds below 1e11, else ms); None when absent or unreadable."""
+    import calendar
+    if v is None or v == "" or isinstance(v, bool):
+        return None
+    if isinstance(v, (int, float)):
+        return int(v * 1000) if v < 1e11 else int(v)
+    m = re.match(r"^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3})\d*)?)?)?(Z|[+-]\d{2}:?\d{2})?$", str(v).strip())
+    if not m:
+        return None
+    y, mo, d, h, mi, s, frac, tz = m.groups()
+    t = calendar.timegm((int(y), int(mo), int(d), int(h or 0), int(mi or 0), int(s or 0))) * 1000 + int((frac or "0").ljust(3, "0"))
+    if tz and tz != "Z":
+        sign = 1 if tz[0] == "+" else -1
+        hh, mm = int(tz[1:3]), int(tz[-2:])
+        t -= sign * (hh * 60 + mm) * 60000
+    return t
+
+
+def _iso(ms):
+    import datetime
+    return datetime.datetime.fromtimestamp(ms / 1000, tz=datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.") + "%03dZ" % (ms % 1000)
+
+
+def key_policy_from(directory, rotation=None):
+    """The key directory (and, when you have it, the rotation record) as the input every key-policy check reads."""
+    keys, retired, compromised = {}, {}, {}
+    for k in (directory or {}).get("keys") or []:
+        if not isinstance(k, dict) or not k.get("x"):
+            continue
+        kid = key_id({"crv": k.get("crv") or "Ed25519", "kty": k.get("kty") or "OKP", "x": k["x"]})
+        purpose = _kp_purpose(k.get("crawlcheck_purpose"))
+        start = _kp_ms(k.get("crawlcheck_signs_from"))
+        if start is None:
+            start = _kp_ms(k.get("nbf"))
+        if start is None:
+            start = _kp_ms(KEY_POLICY["starts"].get(purpose))
+        keys[kid] = {"purpose": purpose, "start": start}
+    for r in (rotation or {}).get("retired") or []:
+        if isinstance(r, dict) and r.get("thumbprint"):
+            st = _kp_ms(r.get("stopped_signing_at"))
+            retired[r["thumbprint"]] = {"purpose": _kp_purpose(r.get("purpose")), "stopped": st if st is not None else _kp_ms(r.get("retired_at"))}
+    for c in (rotation or {}).get("compromised") or []:
+        if isinstance(c, dict) and c.get("thumbprint"):
+            compromised[c["thumbprint"]] = _kp_ms(c.get("compromised_since")) or 0
+    return {"v": 2, "kids": list(keys), "keys": keys, "retired": retired, "compromised": compromised, "rotation": bool(rotation)}
+
+
+def signed_at_of(x):
+    s = (x or {}).get("signature") if isinstance(x, dict) else None
+    for v in ((s or {}).get("signed_at") if isinstance(s, dict) else None, x.get("decided_at"), x.get("answered_at"), x.get("sealed_at"), x.get("generated_at"), x.get("issued_at"), x.get("at")):
+        t = _kp_ms(v)
+        if t is not None:
+            return t
+    return None
+
+
+def _kp_bound_kid(x):
+    path = KEY_POLICY["bound"].get(x.get("kind"))
+    if not path:
+        return None
+    o = x
+    for p in path.split("."):
+        o = o.get(p) if isinstance(o, dict) else None
+    if not isinstance(o, dict):
+        return None
+    return ((o.get("signature") or {}).get("kid") if isinstance(o.get("signature"), dict) else None) or (o.get("kid") if isinstance(o.get("kid"), str) else None)
+
+
+def _kp_key(kid, t, kp):
+    if not kid:
+        return {"known": False, "ok": False, "code": "key_unknown", "why": "no signing key named"}
+    if kid in kp["compromised"]:
+        since = kp["compromised"][kid]
+        return {"known": False, "ok": False, "code": "key_compromised", "why": "key %s is listed as compromised since %s: its signature alone proves nothing (%s)" % (kid, _iso(since), "signed after that moment" if t is not None and t >= since else "only an outside anchor still proves documents signed before it")}
+    k = kp["keys"].get(kid)
+    if k:
+        if t is not None and k["start"] is not None and t < k["start"]:
+            return {"known": True, "ok": False, "purpose": k["purpose"], "code": "key_not_yet_active", "why": "key %s (%s) signs nothing before %s" % (kid, k["purpose"], _iso(k["start"]))}
+        return {"known": True, "ok": True, "purpose": k["purpose"]}
+    r = kp["retired"].get(kid)
+    if r:
+        if t is None:
+            return {"known": True, "ok": None, "purpose": r["purpose"], "code": "no_signing_time", "why": "retired key, and the document carries no signing time"}
+        if r["stopped"] is not None and t <= r["stopped"]:
+            return {"known": True, "ok": True, "purpose": r["purpose"], "retired": True, "why": "retired key, signed before it stopped signing (%s)" % _iso(r["stopped"])}
+        return {"known": False, "ok": False, "code": "key_retired", "why": "key %s stopped signing at %s; this was signed after" % (kid, _iso(r["stopped"]) if r["stopped"] is not None else "an unknown time")}
+    return {"known": False, "ok": False, "code": "key_unknown", "why": "key %s is not in the published key directory%s" % (kid, " or the rotation record" if kp["rotation"] else "")}
+
+
+def _kp_expected(obj_purpose, t, kp):
+    for p in KEY_POLICY["chains"][obj_purpose]:
+        if p == "requests":
+            return p
+        if any(v["purpose"] == p and kid not in kp["compromised"] and (t is None or v["start"] is None or v["start"] <= t) for kid, v in kp["keys"].items()):
+            return p
+    return "requests"
+
+
+def key_policy_check(x, kp):
+    """Does the signing policy accept this document's signing key for this object at its signing time?
+    Returns {"ok": True | False | None, "code", "known", "purpose", "expected", "why"}. code (stable): ok, ok_bound,
+    key_wrong_purpose, key_not_yet_active, key_retired, key_compromised, key_unknown, no_signing_time; apply_key_policy
+    adds related_<code> when a key the document leans on (its answer, its log head) fails."""
+    kid = ((x or {}).get("signature") or {}).get("kid")
+    t = signed_at_of(x)
+    obj = KEY_POLICY["object_purpose"].get(x.get("kind"), KEY_POLICY["object_purpose"]["*"])
+    k = _kp_key(kid, t, kp)
+    if k["ok"] is not True:
+        return {"ok": k["ok"], "code": k.get("code"), "known": k["known"], "purpose": k.get("purpose"), "expected": None, "why": k["why"]}
+    if t is None:
+        return {"ok": None, "code": "no_signing_time", "known": True, "purpose": k["purpose"], "expected": None, "why": "the document carries no signing time, so the key's purpose cannot be checked against the policy"}
+    expected, chain, at = _kp_expected(obj, t, kp), KEY_POLICY["chains"][obj], _iso(t)
+    if k["purpose"] == expected:
+        return {"ok": True, "code": "ok", "known": True, "purpose": k["purpose"], "expected": expected, "why": "a %s key signs %s at %s%s" % (k["purpose"], obj, at, " (%s)" % k["why"] if k.get("retired") else "")}
+    later = k["purpose"] in chain and chain.index(k["purpose"]) > chain.index(expected)
+    bound, decision_key_live = _kp_bound_kid(x), obj == "decisions" and expected == "decisions"
+    if later and bound and bound == kid and not decision_key_live:
+        return {"ok": True, "code": "ok_bound", "known": True, "purpose": k["purpose"], "expected": expected, "why": "signed by the %s key that signed the object it is bound to (%s), as the policy allows" % (k["purpose"], KEY_POLICY["bound"][x["kind"]])}
+    return {"ok": False, "code": "key_wrong_purpose", "known": True, "purpose": k["purpose"], "expected": expected, "why": "a %s key does not sign %s at %s: the %s key does%s" % (k["purpose"], obj, at, expected, "" if k["purpose"] in chain else " (%s keys never sign them)" % k["purpose"])}
+
+
+def apply_key_policy(res, x, kp):
+    """Apply the signing policy to a verification result: key_published (retired keys included), key_purpose, and
+    the trust fields. accepted needs integrity, a known key and a policy that does not reject it."""
+    if not res or not kp:
+        return res
+    main, t, rel, rel_code = key_policy_check(x, kp), signed_at_of(x), [], None
+    if x.get("kind") == "crawlcheck-decision" and (x.get("resolve") or {}).get("kid"):
+        r = _kp_key(x["resolve"]["kid"], t, kp)
+        if r["ok"] is not True:
+            rel.append("the Resolve answer it names: " + r["why"])
+            rel_code = rel_code or "related_" + (r.get("code") or "key_unknown")
+    sth = (x.get("transparency") or {}).get("sth") if isinstance(x.get("transparency"), dict) else None
+    if isinstance(sth, dict) and sth.get("signature"):
+        r = key_policy_check(sth, kp)
+        if r["ok"] is False:
+            rel.append("its log head: " + r["why"])
+            rel_code = rel_code or "related_" + r["code"]
+    kid = (x.get("signature") or {}).get("kid")
+    pub_ok = main["known"] and not rel
+    kpub = {"id": "key_published", "ok": pub_ok, "why": ("key %s is %s" % (kid, "in the published key directory" if kid in kp["keys"] else "a retired key listed in the rotation record")) + (", and so is every key it leans on" if (x.get("kind") == "crawlcheck-decision" or sth) else "") if pub_ok else ("it leans on a key the policy rejects: " + "; ".join(rel) if main["known"] else main["why"]) + ": reject this document"}
+    kpur = {"id": "key_purpose", "ok": False if rel else main["ok"], "code": rel_code if rel and main["ok"] is not False else main.get("code"), "why": "; ".join(rel) if rel else main["why"]}
+    checks = [c for c in res.get("checks", []) if c["id"] not in ("key_published", "key_purpose")] + [kpub, kpur]
+    own = [c for c in checks if c["id"] not in ("key_published", "key_purpose")]
+    ran = [c for c in checks if c["ok"] is not None]
+    integrity = any(c["ok"] is not None for c in own) and all(c["ok"] is not False for c in own)
+    accepted = integrity and kpub["ok"] is True and kpur["ok"] is not False
+    out = dict(res)
+    out.update({"checks": checks, "verified": bool(ran) and all(c["ok"] for c in ran), "integrity_valid": integrity, "issuer_trusted": kpub["ok"], "key_policy_valid": kpur["ok"], "key_policy_code": kpur["code"], "accepted": accepted})
+    return out
