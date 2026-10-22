@@ -146,6 +146,32 @@ export async function verifyWitnessToken(token, sthSha256, jwks) {
  * holds (at most opts.maxWalk batches), observing every link, so any head this client was shown that the witness's
  * chain does not contain surfaces as a fork. Heads newer than the witnessed one are listed as unwitnessed.
  */
+// Signed heads for batches hi down to lo, newest first. Since 1.9.0 one request per 200 batches (/api/v1/log/sths);
+// a server without that route is walked one head per request as before.
+export async function walkHeads(get, hi, lo) {
+    const out = [];
+    let k = hi;
+    while (k >= lo) {
+        const n = Math.min(200, k - lo + 1);
+        const d = await get("/api/v1/log/sths?to=" + k + "&n=" + n).catch(() => null);
+        if (!d || !Array.isArray(d.sths))
+            break;
+        const got = {};
+        for (const s of d.sths)
+            if (s && Number.isInteger(s.batch))
+                got[s.batch] = s;
+        for (let b = k; b > k - n; b--)
+            if (got[b])
+                out.push(got[b]);
+        k -= n;
+    }
+    for (; k >= lo; k--) {
+        const d = await get("/api/v1/log/sth/" + k).catch(() => null);
+        if (d && d.sth)
+            out.push(d.sth);
+    }
+    return out;
+}
 export async function logCheck(store, get, opts = {}) {
     const before = store.forks.length, o = { publishedKids: opts.publishedKids };
     const log = await get("/api/v1/log");
@@ -166,11 +192,8 @@ export async function logCheck(store, get, opts = {}) {
             store.witnessed = { batch: w.batch, sha256: sth.sha256, at: witnessed.at, run_id: witnessed.run_id };
         const held = Object.keys(store.heads).map(Number).filter((k) => k < w.batch);
         const lo = held.length ? Math.max(Math.min(...held), w.batch - (opts.maxWalk || 200)) : w.batch;
-        for (let k = w.batch - 1; k >= lo; k--) {
-            const d = await get("/api/v1/log/sth/" + k).catch(() => null);
-            if (d && d.sth)
-                await logObserve(store, d.sth, o);
-        }
+        for (const s of await walkHeads(get, w.batch - 1, lo))
+            await logObserve(store, s, o);
     }
     const wb = store.witnessed ? store.witnessed.batch : -1, now = Date.now(), maxAge = (opts.maxUnwitnessedMinutes || 120) * 60000;
     const unwitnessed = Object.keys(store.heads).map(Number).filter((k) => k > wb).sort((a, b) => a - b).map((k) => ({ batch: k, sha256: store.heads[k].sha256, created_at: store.heads[k].created_at }));

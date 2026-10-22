@@ -159,6 +159,38 @@ def _age_minutes(iso):
         return None
 
 
+def _walk_heads(get, hi, lo):
+    """Signed heads for batches hi down to lo, newest first. Since 1.9.0 one request per 200 batches (/api/v1/log/sths);
+    a server without that route is walked one head per request as before."""
+    out = []
+    if hi < lo:
+        return out
+    k = hi
+    while k >= lo:
+        n = min(200, k - lo + 1)
+        try:
+            d = get("/api/v1/log/sths?to=%d&n=%d" % (k, n))
+        except Exception:
+            d = None
+        sths = d.get("sths") if isinstance(d, dict) else None
+        if not isinstance(sths, list):
+            break
+        got = {s["batch"]: s for s in sths if isinstance(s, dict) and _is_int(s.get("batch"))}
+        for b in range(k, k - n, -1):
+            if b in got:
+                out.append(got[b])
+        k -= n
+    while k >= lo:   # fallback: one head per request
+        try:
+            d = get("/api/v1/log/sth/%d" % k)
+        except Exception:
+            d = None
+        if d and d.get("sth"):
+            out.append(d["sth"])
+        k -= 1
+    return out
+
+
 def log_check(store, get, published_kids=None, jwks=None, fetch_jwks=None, post=None, max_walk=200, max_unwitnessed_minutes=120):
     """Online split-view check. get(path) returns parsed JSON from crawlcheck.io; post(path, body) reports heads to
     /api/v1/log/gossip (optional). Same steps as the JavaScript logCheck."""
@@ -186,13 +218,8 @@ def log_check(store, get, published_kids=None, jwks=None, fetch_jwks=None, post=
             store["witnessed"] = {"batch": w["batch"], "sha256": sth["sha256"], "at": witnessed["at"], "run_id": witnessed["run_id"]}
         held = [int(k) for k in store["heads"] if int(k) < w["batch"]]
         lo = max(min(held), w["batch"] - max_walk) if held else w["batch"]
-        for k in range(w["batch"] - 1, lo - 1, -1):
-            try:
-                d = get("/api/v1/log/sth/%d" % k)
-            except Exception:
-                d = None
-            if d and d.get("sth"):
-                log_observe(store, d["sth"], published_kids)
+        for sth_k in _walk_heads(get, w["batch"] - 1, lo):
+            log_observe(store, sth_k, published_kids)
     wb = store["witnessed"]["batch"] if store.get("witnessed") else -1
     unw = [{"batch": int(k), "sha256": store["heads"][k]["sha256"], "created_at": store["heads"][k]["created_at"]} for k in sorted(store["heads"], key=int) if int(k) > wb]
     stale = [u for u in unw if u["created_at"] and (_age_minutes(u["created_at"]) or 0) > max_unwitnessed_minutes]
