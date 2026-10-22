@@ -7,10 +7,12 @@ TOOLS = [{"name": "search", "description": "find", "inputSchema": {"type": "obje
 
 def cc(table):
     c = CrawlCheck(); c.calls = []
-    def pf(domain, action="read", agent=None, template=None, policy=None, operation=None):
+    def pf(domain, action="read", agent=None, template=None, policy=None, operation=None, mcp=None):
+        c.scopes.append(mcp)
         c.calls.append((domain, action, template) if operation is None else (domain, action, template, operation.get("tool")))
         import datetime as _dt; _n = _dt.datetime.now(_dt.timezone.utc).replace(microsecond=0)
         return {"kind": "crawlcheck-decision", "v": 1, "domain": domain, "action": action, "decision": table.get(domain, "unsupported"), "decided_at": _n.strftime("%Y-%m-%dT%H:%M:%SZ"), "expires_at": (_n + _dt.timedelta(seconds=3000)).strftime("%Y-%m-%dT%H:%M:%SZ"), "resolve": {"sha256": "0" * 64, "kid": "k"}, "operation": operation, "steps": [{"why": "table"}], "sha256": "x", "signature": {"kid": "k"}}
+    c.scopes = []
     c.preflight = pf
     c.verify = lambda doc, online_keys=True: {"verified": True, "accepted": True}
     return c
@@ -55,6 +57,12 @@ class T(unittest.TestCase):
         run(w.initialize()); run(w.call_tool("search"))
         with self.assertRaises(McpPreflightRefused) as e: run(w.call_tool("delete_repo"))
         self.assertEqual(e.exception.stage, "tools/call"); self.assertEqual(s.sent, ["initialize", "tools/call search"])
+    def test_lock_scope_sent(self):   # tscope1: the connect decision names the server and the approved tools_sha256
+        lock = lock_from_tools([TOOLS[0]]); k = cc({"good.example": "allow"})
+        run(with_preflight(Session([TOOLS[0]]), k, server_url="https://good.example/mcp", lock=lock).initialize())
+        self.assertEqual(k.scopes[0], {"url": "https://good.example/mcp", "tools_sha256": lock["tools_sha256"]})
+        k2 = cc({"good.example": "allow"}); run(with_preflight(Session(TOOLS), k2, server_url="https://good.example/mcp").initialize())
+        self.assertEqual(k2.scopes[0], {"url": "https://good.example/mcp"})
     def test_destructive(self):
         s = Session(TOOLS); w = with_preflight(s, cc({"good.example": "allow"}), server_url="https://good.example/mcp", confirm_destructive=True, confirm=lambda rc: rc.get("tool") != "delete_repo")
         run(w.initialize()); run(w.call_tool("search"))

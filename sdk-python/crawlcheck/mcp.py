@@ -85,7 +85,19 @@ class McpPreflight:
         return True
 
     async def _decide(self, host):
-        rc = self.cc.preflight(host, "connect", agent=self.agent, template=self.template, policy=self.policy)
+        # tscope1: name the server and, with a lockfile, its approved tools_sha256, so the signed receipt covers that tool state
+        scope = None
+        if self.url and str(self.url).lower().startswith("https:"):
+            scope = {"url": self.url}
+            if isinstance(self.lock, dict) and isinstance(self.lock.get("tools_sha256"), str):
+                scope["tools_sha256"] = self.lock["tools_sha256"]
+        if scope:
+            try:
+                rc = self.cc.preflight(host, "connect", agent=self.agent, template=self.template, policy=self.policy, mcp=scope)
+            except TypeError:   # a client written before tscope1 takes no mcp=; decide on the domain alone
+                rc = self.cc.preflight(host, "connect", agent=self.agent, template=self.template, policy=self.policy)
+        else:
+            rc = self.cc.preflight(host, "connect", agent=self.agent, template=self.template, policy=self.policy)
         self.receipt, self.decided_at = rc, time.time()
         return await self._judge(rc, host, "connect")
 

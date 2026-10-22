@@ -3,6 +3,14 @@ import * as L from "./log.js";
 import * as S from "./staple.js";
 import * as M from "./mcp.js";
 import * as R from "./revocations.js";
+/** The signing policy as data (https://crawlcheck.io/keys#policy): object purposes, purpose chains, start times. */
+export const KEY_POLICY = V.KEY_POLICY;
+/** Build the policy input from a key directory you hold and, optionally, the rotation record saved with it. */
+export const keyPolicyFrom = V.keyPolicyFrom;
+/** Does the signing policy accept this document's signing key for this object at its signing time? */
+export const keyPolicyCheck = V.keyPolicyCheck;
+/** Apply the signing policy to a verification: key_published (retired keys included), key_purpose, and the trust fields. */
+export const applyKeyPolicy = V.applyKeyPolicy;
 function withTrust(v, kid, published, related = []) {
     let checks = v.checks;
     let issuer = null;
@@ -302,11 +310,34 @@ export class CrawlCheck {
             b.nonce = opts.nonce;
         if (opts.operation)
             b.operation = opts.operation;
+        if (opts.mcp && opts.mcp.url)
+            b.mcp = (opts.mcp.tools_sha256 ? { url: opts.mcp.url, tools_sha256: opts.mcp.tools_sha256 } : { url: opts.mcp.url });
         return this.post("/api/v1/preflight", b);
     }
-    /** Verify a signed document here. With onlineKeys (default), its signing key must also be in the published directory. */
+    kpCache = null;
+    /** conf2: the key directory and rotation record, read now (cached 10 minutes), as the signing policy reads them. */
+    async publishedKeyPolicy() {
+        if (this.kpCache && Date.now() - this.kpCache.at < 600e3)
+            return this.kpCache.kp;
+        const d = await this.req("GET", "/.well-known/http-message-signatures-directory");
+        let rot = null;
+        try {
+            const r = await this.f(this.base + "/.well-known/security-key-rotation.json", { headers: { accept: "application/json" } });
+            if (r.ok)
+                rot = await r.json();
+        }
+        catch {
+            rot = null;
+        }
+        const kp = Object.assign(await keyPolicyFrom(d, rot), { read_at: new Date().toISOString(), source: "online" });
+        this.kpCache = { at: Date.now(), kp };
+        return kp;
+    }
+    /** Verify a signed document here. With onlineKeys (default), its signing key must also be in the published directory and the signing policy must accept it. */
     async verifyDocument(doc, onlineKeys = true) {
-        return withTrust(await V.verifyDataDoc(doc), doc?.signature?.kid, onlineKeys ? await this.publishedKeyIds() : null, V.relatedKids(doc));
+        const kp = onlineKeys ? await this.publishedKeyPolicy() : null;
+        const v = withTrust(await V.verifyDataDoc(doc), doc?.signature?.kid, kp ? kp.kids : null, V.relatedKids(doc));
+        return kp && doc?.signature ? applyKeyPolicy(v, doc, kp) : v;
     }
     /**
      * Preflight, verify the receipt, check it is for THIS operation, and decide. Proceeds on allow; warn only with allowWarn;
@@ -333,11 +364,14 @@ export class CrawlCheck {
         if (!receipt || typeof receipt !== "object")
             return no(scope.why);
         const online = opts.onlineKeys ?? true;
-        if (!online && !(Array.isArray(opts.publishedKids) && opts.publishedKids.length))
-            return no(["onlineKeys is false and no publishedKids were pinned: the signer cannot be checked"], receipt);
+        if (!online && !opts.keyPolicy && !(Array.isArray(opts.publishedKids) && opts.publishedKids.length))
+            return no(["onlineKeys is false and no keyPolicy or publishedKids were pinned: the signer cannot be checked"], receipt);
         let verification;
         try {
-            verification = withTrust(await V.verifyDataDoc(receipt), receipt?.signature?.kid, online ? await this.publishedKeyIds() : opts.publishedKids, V.relatedKids(receipt));
+            const kp = online ? await this.publishedKeyPolicy() : opts.keyPolicy || null; // conf2: purpose, retired and compromised keys, not only "published"
+            verification = withTrust(await V.verifyDataDoc(receipt), receipt?.signature?.kid, kp ? kp.kids : opts.publishedKids, V.relatedKids(receipt));
+            if (kp)
+                verification = applyKeyPolicy(verification, receipt, kp);
         }
         catch (e) {
             return no(["the receipt could not be verified: " + (e?.message || e)].concat(scope.why), receipt);
@@ -347,6 +381,8 @@ export class CrawlCheck {
             why.push("integrity failed: " + verification.checks.filter((c) => c.ok === false).map((c) => c.id).join(", "));
         if (verification.issuer_trusted !== true)
             why.push("signed by a key that is not in CrawlCheck's published key directory");
+        else if (verification.key_policy_valid === false)
+            why.push("the signing policy rejects this key for a decision receipt: " + (verification.checks.find((c) => c.id === "key_purpose") || {}).why);
         if (why.length)
             return no(why, receipt, verification);
         const d = receipt.decision;

@@ -18,6 +18,12 @@ const { proceed, receipt } = await cc.guard("example.com", "read", { agent: "MyA
 
 Every verification returns `integrity_valid`, `issuer_trusted` and `accepted`. Act on `accepted`: it needs the signing key to be one CrawlCheck publishes, so a document someone signed with their own key is `verified` offline but never `accepted`. The client methods (`verifyDocument`, `verifyOffline`, `verifyReceiptOffline`, `guard`) check the published key directory for you.
 
+Since 1.8.0 an MCP connect decision names the server and, with a lockfile, its approved `tools_sha256` (`preflight(domain, "connect", { mcp: { url, tools_sha256 } })`; `withPreflight` sends it for you). CrawlCheck reads the live tools from its own network: a changed tool list comes back as `block`, and the signed receipt's `assessed` block says exactly which endpoint and tool state it covered.
+
+Since 1.8.0 they also apply the signing policy (https://crawlcheck.io/keys#policy): which key purpose may sign which object at which time (decision receipts move to the decision key at 2026-11-09 17:00 UTC), retired keys (valid only for documents signed before they stopped) and compromised keys (never valid on their signature alone). The result carries `key_policy_valid`, and `accepted` needs it. Offline, build the same input from copies you saved: `keyPolicyFrom(savedDirectory, savedRotationRecord)`, then `applyKeyPolicy(result, doc, kp)` or `guard(domain, action, { onlineKeys: false, keyPolicy })`. A saved copy cannot know a key retired or compromised after you saved it.
+
+`accepted` says who signed a document. It is not permission to act: a valid receipt can say `block`, `warn` or `require_confirmation`. `guard()` decides that part.
+
 `preflight(domain, action, { agent, template, policy })` returns the signed receipt without deciding for you; `verifyDocument(doc)` verifies any signed resolve answer or decision receipt offline. `resolve(domain)` returns the full signed ResolveV1 answer.
 
 ## Give your agent the check as a tool

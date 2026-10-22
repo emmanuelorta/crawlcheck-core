@@ -1,0 +1,1983 @@
+{
+ "kind": "crawlcheck-key-policy-suite",
+ "v": 1,
+ "suite_version": "1.0.0",
+ "built_at": "2026-10-18T19:49:39.006Z",
+ "policy": {
+  "kind": "crawlcheck-key-policy",
+  "v": 2,
+  "object_purpose": {
+   "crawlcheck-decision": "decisions",
+   "crawlcheck-log-sth": "log heads",
+   "*": "documents"
+  },
+  "chains": {
+   "documents": [
+    "documents",
+    "requests"
+   ],
+   "decisions": [
+    "decisions",
+    "documents",
+    "requests"
+   ],
+   "log heads": [
+    "log heads",
+    "documents",
+    "requests"
+   ]
+  },
+  "starts": {
+   "requests": null,
+   "documents": "2026-10-11T00:00:00Z",
+   "decisions": "2026-11-09T17:00:00Z",
+   "log heads": "2026-11-09T17:00:00Z"
+  },
+  "bound": {
+   "crawlcheck-resolve": "transparency.sth",
+   "crawlcheck-decision": "resolve"
+  },
+  "rule": [
+   "The object's purpose is decisions for a decision receipt, log heads for a signed tree head, documents for everything else.",
+   "Its chain lists the purposes that may sign it, in order. The expected purpose at signing time t is the first one in the chain with a published, uncompromised key whose start (crawlcheck_signs_from, else nbf, else starts[purpose]) is at or before t; requests is always available.",
+   "A signature is accepted when the signing key's purpose is the expected one, or when the key is the one that signed the object it is bound to (a Resolve answer's log head, a decision's Resolve answer) and that key's purpose comes later in the same chain. A decision made after a live decision key exists has no such exception.",
+   "A key that is not in the directory is accepted only when the rotation record lists it as retired and the document was signed at or before stopped_signing_at.",
+   "A key the rotation record lists as compromised is never accepted on its signature alone: after compromised_since it signed nothing valid, and before it only an outside anchor (the day's Bitcoin seal, a witnessed log head) still proves the document.",
+   "A key never signs before its own start.",
+   "An authentic, accepted document is still not permission to act: what to do is the decision inside it."
+  ],
+  "purpose_aliases": {
+   "requests and documents": "requests"
+  }
+ },
+ "directory": {
+  "keys": [
+   {
+    "kid": "ScoGCik3Omlx_Yr6Y5-BeCNuouhRu7w1Z4mlSmVWT4U",
+    "crawlcheck_purpose": "requests",
+    "nbf": 1789084800,
+    "kty": "OKP",
+    "crv": "Ed25519",
+    "x": "PNUZFgDug570j0emfKt5peEkGP3pMPybg1qi2Ox_zyc"
+   },
+   {
+    "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+    "crawlcheck_purpose": "documents",
+    "nbf": 1791633600,
+    "kty": "OKP",
+    "crv": "Ed25519",
+    "x": "r79djVigCFGDEt5-co1doUBTKMtG73Tzo6OS_XXr64U"
+   },
+   {
+    "kid": "QgCF3Tk8slbY39EyixmnwK0UjNLAfAuwpnvXRsf3drI",
+    "crawlcheck_purpose": "decisions",
+    "crawlcheck_signs_from": "2026-11-09T17:00:00Z",
+    "kty": "OKP",
+    "crv": "Ed25519",
+    "x": "1P3iYDlW-gMV7THxXqVyruQkwwrcwkV2IUJ7-9GpXpY"
+   },
+   {
+    "kid": "ZGlew40AOKfvEkDqjjYG3hG6lOlstwwj4lnzGh1TLAg",
+    "crawlcheck_purpose": "log heads",
+    "crawlcheck_signs_from": "2026-11-09T17:00:00Z",
+    "kty": "OKP",
+    "crv": "Ed25519",
+    "x": "FDyWZNn7L9r796qskFJetGEE3kU4aK8qOaE6JkhbNGA"
+   },
+   {
+    "kid": "pzeHgXJ5w6TaP3bWTAGdE0604ddGZWG5vt9ClihhvoI",
+    "crawlcheck_purpose": "documents",
+    "nbf": 1791633600,
+    "kty": "OKP",
+    "crv": "Ed25519",
+    "x": "TW28QU4XCu2cmAi8obUZNWfa8YOVLHnGxhJRC4PdWC8"
+   }
+  ]
+ },
+ "rotation": {
+  "operator": "CrawlCheck (suite)",
+  "signing_policy": {
+   "kind": "crawlcheck-key-policy",
+   "v": 2,
+   "object_purpose": {
+    "crawlcheck-decision": "decisions",
+    "crawlcheck-log-sth": "log heads",
+    "*": "documents"
+   },
+   "chains": {
+    "documents": [
+     "documents",
+     "requests"
+    ],
+    "decisions": [
+     "decisions",
+     "documents",
+     "requests"
+    ],
+    "log heads": [
+     "log heads",
+     "documents",
+     "requests"
+    ]
+   },
+   "starts": {
+    "requests": null,
+    "documents": "2026-10-11T00:00:00Z",
+    "decisions": "2026-11-09T17:00:00Z",
+    "log heads": "2026-11-09T17:00:00Z"
+   },
+   "bound": {
+    "crawlcheck-resolve": "transparency.sth",
+    "crawlcheck-decision": "resolve"
+   },
+   "rule": [
+    "The object's purpose is decisions for a decision receipt, log heads for a signed tree head, documents for everything else.",
+    "Its chain lists the purposes that may sign it, in order. The expected purpose at signing time t is the first one in the chain with a published, uncompromised key whose start (crawlcheck_signs_from, else nbf, else starts[purpose]) is at or before t; requests is always available.",
+    "A signature is accepted when the signing key's purpose is the expected one, or when the key is the one that signed the object it is bound to (a Resolve answer's log head, a decision's Resolve answer) and that key's purpose comes later in the same chain. A decision made after a live decision key exists has no such exception.",
+    "A key that is not in the directory is accepted only when the rotation record lists it as retired and the document was signed at or before stopped_signing_at.",
+    "A key the rotation record lists as compromised is never accepted on its signature alone: after compromised_since it signed nothing valid, and before it only an outside anchor (the day's Bitcoin seal, a witnessed log head) still proves the document.",
+    "A key never signs before its own start.",
+    "An authentic, accepted document is still not permission to act: what to do is the decision inside it."
+   ],
+   "purpose_aliases": {
+    "requests and documents": "requests"
+   }
+  },
+  "retired": [
+   {
+    "thumbprint": "gnC4enq_u0uTc5mWx5jY4xFL2yCrwKvIGdy2UDa2-eI",
+    "purpose": "requests",
+    "stopped_signing_at": "2026-10-05T00:00:00.000Z",
+    "retired_at": "2026-10-05T00:00:00.000Z"
+   }
+  ],
+  "compromised": [
+   {
+    "thumbprint": "pzeHgXJ5w6TaP3bWTAGdE0604ddGZWG5vt9ClihhvoI",
+    "compromised_since": "2026-10-12T00:00:00.000Z",
+    "reason": "suite fixture"
+   }
+  ]
+ },
+ "how": "For each case: build the key policy from directory (and rotation, unless keys is \"directory\"), verify doc, apply the policy. key_policy_valid and accepted must match expect.",
+ "cases": [
+  {
+   "id": "answer-document-key",
+   "title": "a Resolve answer signed by the document key",
+   "why": "positive control",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-resolve",
+    "v": 1,
+    "domain": "good.example",
+    "status": "measured",
+    "answered_at": "2026-10-15T10:00:00.000Z",
+    "freshness": {
+     "observed_at": "2026-10-15T10:00:00.000Z"
+    },
+    "actions": {
+     "read": {
+      "decision": "allow",
+      "doubts": []
+     },
+     "transact": {
+      "decision": "require_confirmation",
+      "doubts": [
+       "no_entity"
+      ]
+     }
+    },
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "transparency": {
+     "state": "included",
+     "leaf_hash": "76d9704d0ab57ba822255e723fa08852806233f0c303a72b76831c10940a39f7",
+     "index": 0,
+     "batch_size": 1,
+     "batch": 101,
+     "path": [],
+     "sth": {
+      "kind": "crawlcheck-log-sth",
+      "v": 1,
+      "batch": 101,
+      "batch_root": "76d9704d0ab57ba822255e723fa08852806233f0c303a72b76831c10940a39f7",
+      "batch_size": 1,
+      "tree_size": 101,
+      "sealed_at": "2026-10-15T10:00:00.000Z",
+      "prev_sth_sha256": null,
+      "sha256": "1b7c7130ac89f297536c9a7cc65031b30d0b59c9464291ab32bf315119481d4d",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n1b7c7130ac89f297536c9a7cc65031b30d0b59c9464291ab32bf315119481d4d",
+       "sig": "nEwKTYS6wI6nqdN9gPnS6Fdiwt00oUVPamNqg_m4xcBamjVmkuM8SP-EL3xDmFQV15_CWfDPaZtjMz4pBJ_hCA",
+       "signed_at": "2026-10-15T10:00:00.000Z",
+       "key": {
+        "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "r79djVigCFGDEt5-co1doUBTKMtG73Tzo6OS_XXr64U"
+        }
+       }
+      }
+     }
+    },
+    "sha256": "dc18cdf0fa9d6a4bcd6fa5dfb9fee591a92c0c0452e8ad6b5da62212c20db766",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\ndc18cdf0fa9d6a4bcd6fa5dfb9fee591a92c0c0452e8ad6b5da62212c20db766",
+     "sig": "zw96aS9BHT4Zz9GVDcav5lYFw5LczFA7dBN79Qzdw5KR-5s2puHuQ6FkDIN9adrX4kUVxGD16QWGB_FKAIOzDA",
+     "signed_at": "2026-10-15T10:00:00.000Z",
+     "key": {
+      "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "r79djVigCFGDEt5-co1doUBTKMtG73Tzo6OS_XXr64U"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": true,
+    "accepted": true,
+    "key_policy_code": "ok"
+   }
+  },
+  {
+   "id": "answer-request-key-before",
+   "title": "a Resolve answer signed by the request key before the document key existed",
+   "why": "requests signed documents until the document key started",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-resolve",
+    "v": 1,
+    "domain": "good.example",
+    "status": "measured",
+    "answered_at": "2026-10-01T10:00:00.000Z",
+    "freshness": {
+     "observed_at": "2026-10-01T10:00:00.000Z"
+    },
+    "actions": {
+     "read": {
+      "decision": "allow",
+      "doubts": []
+     },
+     "transact": {
+      "decision": "require_confirmation",
+      "doubts": [
+       "no_entity"
+      ]
+     }
+    },
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "transparency": {
+     "state": "included",
+     "leaf_hash": "7ddf35b76ef8499b17db1a3fadf7cb0b0d16f0c5a97da8ba2bf1cfc7a85e4ce5",
+     "index": 0,
+     "batch_size": 1,
+     "batch": 102,
+     "path": [],
+     "sth": {
+      "kind": "crawlcheck-log-sth",
+      "v": 1,
+      "batch": 102,
+      "batch_root": "7ddf35b76ef8499b17db1a3fadf7cb0b0d16f0c5a97da8ba2bf1cfc7a85e4ce5",
+      "batch_size": 1,
+      "tree_size": 102,
+      "sealed_at": "2026-10-01T10:00:00.000Z",
+      "prev_sth_sha256": null,
+      "sha256": "b7623342246b90e42db6dfac69a135e3882017279f7a0bb948f75c09245af3a4",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "ScoGCik3Omlx_Yr6Y5-BeCNuouhRu7w1Z4mlSmVWT4U",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\nb7623342246b90e42db6dfac69a135e3882017279f7a0bb948f75c09245af3a4",
+       "sig": "gV-tn3DDFA1cD-xSDrWOHHWQjEi82yuyCqh7NP1yGHeVCtmZrQP2NIlTvZeDwKXsVrIP20XNAKTLXc9-Uoj6BA",
+       "signed_at": "2026-10-01T10:00:00.000Z",
+       "key": {
+        "kid": "ScoGCik3Omlx_Yr6Y5-BeCNuouhRu7w1Z4mlSmVWT4U",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "PNUZFgDug570j0emfKt5peEkGP3pMPybg1qi2Ox_zyc"
+        }
+       }
+      }
+     }
+    },
+    "sha256": "2fe139705288a926ad651f87b6979efe48bc9a4d90744b7a677e58fbdcf2a2d9",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "ScoGCik3Omlx_Yr6Y5-BeCNuouhRu7w1Z4mlSmVWT4U",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\n2fe139705288a926ad651f87b6979efe48bc9a4d90744b7a677e58fbdcf2a2d9",
+     "sig": "upFthpynGHsoaRKi5kbSYR0WrOud71nAUq_dra8bE7GP1EPCA5lyx9uHtCKgUVKUaXQgMNI9yFl5-Ke5BlQ1Dw",
+     "signed_at": "2026-10-01T10:00:00.000Z",
+     "key": {
+      "kid": "ScoGCik3Omlx_Yr6Y5-BeCNuouhRu7w1Z4mlSmVWT4U",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "PNUZFgDug570j0emfKt5peEkGP3pMPybg1qi2Ox_zyc"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": true,
+    "accepted": true,
+    "key_policy_code": "ok"
+   }
+  },
+  {
+   "id": "answer-request-key-bound",
+   "title": "after the document key started, an answer signed by the request key whose log head (batch sealed earlier) the request key signed",
+   "why": "an answer is signed by the key that signed its log head (kp2)",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-resolve",
+    "v": 1,
+    "domain": "good.example",
+    "status": "measured",
+    "answered_at": "2026-10-15T10:00:00.000Z",
+    "freshness": {
+     "observed_at": "2026-10-15T10:00:00.000Z"
+    },
+    "actions": {
+     "read": {
+      "decision": "allow",
+      "doubts": []
+     },
+     "transact": {
+      "decision": "require_confirmation",
+      "doubts": [
+       "no_entity"
+      ]
+     }
+    },
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "transparency": {
+     "state": "included",
+     "leaf_hash": "76d9704d0ab57ba822255e723fa08852806233f0c303a72b76831c10940a39f7",
+     "index": 0,
+     "batch_size": 1,
+     "batch": 103,
+     "path": [],
+     "sth": {
+      "kind": "crawlcheck-log-sth",
+      "v": 1,
+      "batch": 103,
+      "batch_root": "76d9704d0ab57ba822255e723fa08852806233f0c303a72b76831c10940a39f7",
+      "batch_size": 1,
+      "tree_size": 103,
+      "sealed_at": "2026-10-08T10:00:00.000Z",
+      "prev_sth_sha256": null,
+      "sha256": "48c910625119adc0948ba48bcf35719aac6ddbe299581feb556e2131459362df",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "ScoGCik3Omlx_Yr6Y5-BeCNuouhRu7w1Z4mlSmVWT4U",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n48c910625119adc0948ba48bcf35719aac6ddbe299581feb556e2131459362df",
+       "sig": "q6a723AJswxP91TVvui114EVMKdPFNY3wy7GPUvAn-FPUQjKVdWRhFAjEPRmAPk9NgDEglzwtSBzN9dFghRYDA",
+       "signed_at": "2026-10-08T10:00:00.000Z",
+       "key": {
+        "kid": "ScoGCik3Omlx_Yr6Y5-BeCNuouhRu7w1Z4mlSmVWT4U",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "PNUZFgDug570j0emfKt5peEkGP3pMPybg1qi2Ox_zyc"
+        }
+       }
+      }
+     }
+    },
+    "sha256": "63613687ac5b6c1890ee8a8f02f74b4a297ae4addd2c030ecf6857ac47fa0c57",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "ScoGCik3Omlx_Yr6Y5-BeCNuouhRu7w1Z4mlSmVWT4U",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\n63613687ac5b6c1890ee8a8f02f74b4a297ae4addd2c030ecf6857ac47fa0c57",
+     "sig": "nSH-jlO1sPV9_VJ2h4Xw_JveqahPgUBlY4qdT-WCpx3onjLoiJ4d-dOruPdwEpECIrTZOKmvxD_fdBtwYy0aAg",
+     "signed_at": "2026-10-15T10:00:00.000Z",
+     "key": {
+      "kid": "ScoGCik3Omlx_Yr6Y5-BeCNuouhRu7w1Z4mlSmVWT4U",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "PNUZFgDug570j0emfKt5peEkGP3pMPybg1qi2Ox_zyc"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": true,
+    "accepted": true,
+    "key_policy_code": "ok_bound"
+   }
+  },
+  {
+   "id": "answer-request-key-unbound",
+   "title": "after the document key started, an answer signed by the request key, log head by the document key",
+   "why": "wrong purpose",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-resolve",
+    "v": 1,
+    "domain": "good.example",
+    "status": "measured",
+    "answered_at": "2026-10-15T10:00:00.000Z",
+    "freshness": {
+     "observed_at": "2026-10-15T10:00:00.000Z"
+    },
+    "actions": {
+     "read": {
+      "decision": "allow",
+      "doubts": []
+     },
+     "transact": {
+      "decision": "require_confirmation",
+      "doubts": [
+       "no_entity"
+      ]
+     }
+    },
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "transparency": {
+     "state": "included",
+     "leaf_hash": "76d9704d0ab57ba822255e723fa08852806233f0c303a72b76831c10940a39f7",
+     "index": 0,
+     "batch_size": 1,
+     "batch": 104,
+     "path": [],
+     "sth": {
+      "kind": "crawlcheck-log-sth",
+      "v": 1,
+      "batch": 104,
+      "batch_root": "76d9704d0ab57ba822255e723fa08852806233f0c303a72b76831c10940a39f7",
+      "batch_size": 1,
+      "tree_size": 104,
+      "sealed_at": "2026-10-15T10:00:00.000Z",
+      "prev_sth_sha256": null,
+      "sha256": "658a19daf0eeb65273386f2899bc9ddd5cc64ade89c0ae6924354b0e8a7b07d5",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n658a19daf0eeb65273386f2899bc9ddd5cc64ade89c0ae6924354b0e8a7b07d5",
+       "sig": "rHvSLwMJFS0WpjV0ya7xwRNCJBzaJz7YX1CBWjeF9IXFJfw8Vb3nv0e-kgf9kgoUcIPqsaL1GAs5NySWk_gpBA",
+       "signed_at": "2026-10-15T10:00:00.000Z",
+       "key": {
+        "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "r79djVigCFGDEt5-co1doUBTKMtG73Tzo6OS_XXr64U"
+        }
+       }
+      }
+     }
+    },
+    "sha256": "8b1c8e7b37846a0667b7c4e2ea19e43252e23b7d25f16d139b56ec40c7922433",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "ScoGCik3Omlx_Yr6Y5-BeCNuouhRu7w1Z4mlSmVWT4U",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\n8b1c8e7b37846a0667b7c4e2ea19e43252e23b7d25f16d139b56ec40c7922433",
+     "sig": "7uYvuCrQAEet1ilu2C-ZMPeCH9iqWYqVCiOm2xzMA0b16u4Tn0o2ptukR9r4IeI1YyrsOoXioSMvwKLzuJsmBg",
+     "signed_at": "2026-10-15T10:00:00.000Z",
+     "key": {
+      "kid": "ScoGCik3Omlx_Yr6Y5-BeCNuouhRu7w1Z4mlSmVWT4U",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "PNUZFgDug570j0emfKt5peEkGP3pMPybg1qi2Ox_zyc"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": false,
+    "accepted": false,
+    "key_policy_code": "key_wrong_purpose"
+   }
+  },
+  {
+   "id": "answer-request-key-head-late",
+   "title": "an answer and log head both signed by the request key after the document key started",
+   "why": "the log head itself breaks the policy, so the binding proves nothing",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-resolve",
+    "v": 1,
+    "domain": "good.example",
+    "status": "measured",
+    "answered_at": "2026-10-15T10:00:00.000Z",
+    "freshness": {
+     "observed_at": "2026-10-15T10:00:00.000Z"
+    },
+    "actions": {
+     "read": {
+      "decision": "allow",
+      "doubts": []
+     },
+     "transact": {
+      "decision": "require_confirmation",
+      "doubts": [
+       "no_entity"
+      ]
+     }
+    },
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "transparency": {
+     "state": "included",
+     "leaf_hash": "76d9704d0ab57ba822255e723fa08852806233f0c303a72b76831c10940a39f7",
+     "index": 0,
+     "batch_size": 1,
+     "batch": 105,
+     "path": [],
+     "sth": {
+      "kind": "crawlcheck-log-sth",
+      "v": 1,
+      "batch": 105,
+      "batch_root": "76d9704d0ab57ba822255e723fa08852806233f0c303a72b76831c10940a39f7",
+      "batch_size": 1,
+      "tree_size": 105,
+      "sealed_at": "2026-10-15T09:00:00.000Z",
+      "prev_sth_sha256": null,
+      "sha256": "1f87b6f90d6dc4feb4d039aa2fc8c4134a3bcc583960cad960a1efaa49246929",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "ScoGCik3Omlx_Yr6Y5-BeCNuouhRu7w1Z4mlSmVWT4U",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n1f87b6f90d6dc4feb4d039aa2fc8c4134a3bcc583960cad960a1efaa49246929",
+       "sig": "6I0J9gNc2f6EJwYF_iOcE2WMSz7z-v_u2fJcu3SGPGfryar9trkM-SKoW3Liw7GkJ5Nu5SFaGI7Nez8qCg1BDQ",
+       "signed_at": "2026-10-15T09:00:00.000Z",
+       "key": {
+        "kid": "ScoGCik3Omlx_Yr6Y5-BeCNuouhRu7w1Z4mlSmVWT4U",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "PNUZFgDug570j0emfKt5peEkGP3pMPybg1qi2Ox_zyc"
+        }
+       }
+      }
+     }
+    },
+    "sha256": "31343812664ddda92efb79dc48f448b04bab54e76296dd9dd7e72ee9bd4de612",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "ScoGCik3Omlx_Yr6Y5-BeCNuouhRu7w1Z4mlSmVWT4U",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\n31343812664ddda92efb79dc48f448b04bab54e76296dd9dd7e72ee9bd4de612",
+     "sig": "bdW9cqIs_Lg08TYYTYf4VUsN2w8JcFPILj9cYs0s03-7tPmNQSuzQXhstOdDA1lnxN-iaZmrpv1G0jSHoLOICg",
+     "signed_at": "2026-10-15T10:00:00.000Z",
+     "key": {
+      "kid": "ScoGCik3Omlx_Yr6Y5-BeCNuouhRu7w1Z4mlSmVWT4U",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "PNUZFgDug570j0emfKt5peEkGP3pMPybg1qi2Ox_zyc"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": false,
+    "accepted": false,
+    "key_policy_code": "related_key_wrong_purpose"
+   }
+  },
+  {
+   "id": "answer-decision-key",
+   "title": "a Resolve answer signed by the decision key",
+   "why": "decision keys never sign answers",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-resolve",
+    "v": 1,
+    "domain": "good.example",
+    "status": "measured",
+    "answered_at": "2026-11-10T10:00:00.000Z",
+    "freshness": {
+     "observed_at": "2026-11-10T10:00:00.000Z"
+    },
+    "actions": {
+     "read": {
+      "decision": "allow",
+      "doubts": []
+     },
+     "transact": {
+      "decision": "require_confirmation",
+      "doubts": [
+       "no_entity"
+      ]
+     }
+    },
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "transparency": {
+     "state": "included",
+     "leaf_hash": "1592b19715a5cd8db3e862d24015da677e227bc4d823bf35527fd2ec9fca98bd",
+     "index": 0,
+     "batch_size": 1,
+     "batch": 106,
+     "path": [],
+     "sth": {
+      "kind": "crawlcheck-log-sth",
+      "v": 1,
+      "batch": 106,
+      "batch_root": "1592b19715a5cd8db3e862d24015da677e227bc4d823bf35527fd2ec9fca98bd",
+      "batch_size": 1,
+      "tree_size": 106,
+      "sealed_at": "2026-11-10T10:00:00.000Z",
+      "prev_sth_sha256": null,
+      "sha256": "6b1e6c0b2b149e826f43c0e731ca557344a78d1aed89b998010689a4c47581cd",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "ZGlew40AOKfvEkDqjjYG3hG6lOlstwwj4lnzGh1TLAg",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n6b1e6c0b2b149e826f43c0e731ca557344a78d1aed89b998010689a4c47581cd",
+       "sig": "OFMgveGQQn2xRTewHE2XfV_5ZoVSkUttpTWPYjtsl3VR6H2-sHtHnktB-YgVhRhM8FZYc45qVuJTRpy36zwBBw",
+       "signed_at": "2026-11-10T10:00:00.000Z",
+       "key": {
+        "kid": "ZGlew40AOKfvEkDqjjYG3hG6lOlstwwj4lnzGh1TLAg",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "FDyWZNn7L9r796qskFJetGEE3kU4aK8qOaE6JkhbNGA"
+        }
+       }
+      }
+     }
+    },
+    "sha256": "434fd4f400b72bfd62f92dae32fa64158748e1297681e540a7996f9873d4bb70",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "QgCF3Tk8slbY39EyixmnwK0UjNLAfAuwpnvXRsf3drI",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\n434fd4f400b72bfd62f92dae32fa64158748e1297681e540a7996f9873d4bb70",
+     "sig": "2NyeG_j-jVUcfL3HRz0LONf-Xn_J5rtk51QNdAPSE6eCcr6mVLRJrqxL9OqX9p3l2zdGVu0f8qyqecpjalPJAQ",
+     "signed_at": "2026-11-10T10:00:00.000Z",
+     "key": {
+      "kid": "QgCF3Tk8slbY39EyixmnwK0UjNLAfAuwpnvXRsf3drI",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "1P3iYDlW-gMV7THxXqVyruQkwwrcwkV2IUJ7-9GpXpY"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": false,
+    "accepted": false,
+    "key_policy_code": "key_wrong_purpose"
+   }
+  },
+  {
+   "id": "answer-before-key-start",
+   "title": "an answer signed by the document key before its nbf",
+   "why": "a key never signs before its own start",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-resolve",
+    "v": 1,
+    "domain": "good.example",
+    "status": "measured",
+    "answered_at": "2026-10-09T10:00:00.000Z",
+    "freshness": {
+     "observed_at": "2026-10-09T10:00:00.000Z"
+    },
+    "actions": {
+     "read": {
+      "decision": "allow",
+      "doubts": []
+     },
+     "transact": {
+      "decision": "require_confirmation",
+      "doubts": [
+       "no_entity"
+      ]
+     }
+    },
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "sha256": "491bbb8c8515275d53f4f7aad9501944070ef600dece2ebf3c14595909271a50",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\n491bbb8c8515275d53f4f7aad9501944070ef600dece2ebf3c14595909271a50",
+     "sig": "v217S6SHMPXqVwVu-OhFecm1pnd-TSYOZ4Ghn3ewqr15UPIsIUz_lS5JEvPMf7E30Zeqpy_I753ey8_RV9esDA",
+     "signed_at": "2026-10-09T10:00:00.000Z",
+     "key": {
+      "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "r79djVigCFGDEt5-co1doUBTKMtG73Tzo6OS_XXr64U"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": false,
+    "accepted": false,
+    "key_policy_code": "key_not_yet_active"
+   }
+  },
+  {
+   "id": "answer-head-document-before-switch",
+   "title": "an answer whose log head the document key signed before 2026-11-09 17:00 UTC",
+   "why": "",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-resolve",
+    "v": 1,
+    "domain": "good.example",
+    "status": "measured",
+    "answered_at": "2026-11-08T10:00:00.000Z",
+    "freshness": {
+     "observed_at": "2026-11-08T10:00:00.000Z"
+    },
+    "actions": {
+     "read": {
+      "decision": "allow",
+      "doubts": []
+     },
+     "transact": {
+      "decision": "require_confirmation",
+      "doubts": [
+       "no_entity"
+      ]
+     }
+    },
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "transparency": {
+     "state": "included",
+     "leaf_hash": "efa7448f2779fca50d1fb7cca656862b6cc6db245b39eb4f14eb1ca55ba5ea37",
+     "index": 0,
+     "batch_size": 1,
+     "batch": 107,
+     "path": [],
+     "sth": {
+      "kind": "crawlcheck-log-sth",
+      "v": 1,
+      "batch": 107,
+      "batch_root": "efa7448f2779fca50d1fb7cca656862b6cc6db245b39eb4f14eb1ca55ba5ea37",
+      "batch_size": 1,
+      "tree_size": 107,
+      "sealed_at": "2026-11-08T10:00:00.000Z",
+      "prev_sth_sha256": null,
+      "sha256": "d68ca9e0f1bb836c52111f21bde83e787a742d78394e8d7dab5f9376b9204b12",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\nd68ca9e0f1bb836c52111f21bde83e787a742d78394e8d7dab5f9376b9204b12",
+       "sig": "UA75Jz7pSNZbbVvulRWMWsvee3uzTIRus8bxfF98_QkbqX6md-IEilXgcGi6GF9VHy1dqNs51DaN2qixjRs8AA",
+       "signed_at": "2026-11-08T10:00:00.000Z",
+       "key": {
+        "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "r79djVigCFGDEt5-co1doUBTKMtG73Tzo6OS_XXr64U"
+        }
+       }
+      }
+     }
+    },
+    "sha256": "a663e5002607eb654bbc687cc0badd457363960287aa9ce256fefd916e95bde2",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\na663e5002607eb654bbc687cc0badd457363960287aa9ce256fefd916e95bde2",
+     "sig": "DUvkvqhsYWSbFdwEtv4k0-jarbnx0BikNN33kLNK7jGzIHbQjC8NW0zzU2erThpWeLX06Satr-TqEMYe1XVSAA",
+     "signed_at": "2026-11-08T10:00:00.000Z",
+     "key": {
+      "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "r79djVigCFGDEt5-co1doUBTKMtG73Tzo6OS_XXr64U"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": true,
+    "accepted": true,
+    "key_policy_code": "ok"
+   }
+  },
+  {
+   "id": "answer-head-document-after-switch",
+   "title": "an answer whose log head the document key signed after the log key took over",
+   "why": "after the switch only the log key signs heads",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-resolve",
+    "v": 1,
+    "domain": "good.example",
+    "status": "measured",
+    "answered_at": "2026-11-10T10:00:00.000Z",
+    "freshness": {
+     "observed_at": "2026-11-10T10:00:00.000Z"
+    },
+    "actions": {
+     "read": {
+      "decision": "allow",
+      "doubts": []
+     },
+     "transact": {
+      "decision": "require_confirmation",
+      "doubts": [
+       "no_entity"
+      ]
+     }
+    },
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "transparency": {
+     "state": "included",
+     "leaf_hash": "1592b19715a5cd8db3e862d24015da677e227bc4d823bf35527fd2ec9fca98bd",
+     "index": 0,
+     "batch_size": 1,
+     "batch": 108,
+     "path": [],
+     "sth": {
+      "kind": "crawlcheck-log-sth",
+      "v": 1,
+      "batch": 108,
+      "batch_root": "1592b19715a5cd8db3e862d24015da677e227bc4d823bf35527fd2ec9fca98bd",
+      "batch_size": 1,
+      "tree_size": 108,
+      "sealed_at": "2026-11-10T10:00:00.000Z",
+      "prev_sth_sha256": null,
+      "sha256": "7be40af651dd493f93410df0f2d71e1761dfccd404ca1a411c377331e5377d67",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n7be40af651dd493f93410df0f2d71e1761dfccd404ca1a411c377331e5377d67",
+       "sig": "-mK03fzJVRUJrtvV62Z5FYxp3O0hYbg70EEYixbeNj1qs4YuRJIJNO6HwCt9HCGyA5O5qqVZ7Jv5E1pfoD3wAA",
+       "signed_at": "2026-11-10T10:00:00.000Z",
+       "key": {
+        "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "r79djVigCFGDEt5-co1doUBTKMtG73Tzo6OS_XXr64U"
+        }
+       }
+      }
+     }
+    },
+    "sha256": "679db63a84c6b4646e367780323790b0bfcb9be488244eac6c53bd43abd11aff",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\n679db63a84c6b4646e367780323790b0bfcb9be488244eac6c53bd43abd11aff",
+     "sig": "18yXGxiE96p7AWVZkXPXahnUfI-J2HqH0FuZSNLbm3lR2qHG_z-9Ohmf0m3UEjM6x9j91B_Iu5IrUpXIj97AAw",
+     "signed_at": "2026-11-10T10:00:00.000Z",
+     "key": {
+      "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "r79djVigCFGDEt5-co1doUBTKMtG73Tzo6OS_XXr64U"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": false,
+    "accepted": false,
+    "key_policy_code": "related_key_wrong_purpose"
+   }
+  },
+  {
+   "id": "answer-head-log-after-switch",
+   "title": "an answer whose log head the log key signed after the switch",
+   "why": "positive control",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-resolve",
+    "v": 1,
+    "domain": "good.example",
+    "status": "measured",
+    "answered_at": "2026-11-10T10:00:00.000Z",
+    "freshness": {
+     "observed_at": "2026-11-10T10:00:00.000Z"
+    },
+    "actions": {
+     "read": {
+      "decision": "allow",
+      "doubts": []
+     },
+     "transact": {
+      "decision": "require_confirmation",
+      "doubts": [
+       "no_entity"
+      ]
+     }
+    },
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "transparency": {
+     "state": "included",
+     "leaf_hash": "1592b19715a5cd8db3e862d24015da677e227bc4d823bf35527fd2ec9fca98bd",
+     "index": 0,
+     "batch_size": 1,
+     "batch": 109,
+     "path": [],
+     "sth": {
+      "kind": "crawlcheck-log-sth",
+      "v": 1,
+      "batch": 109,
+      "batch_root": "1592b19715a5cd8db3e862d24015da677e227bc4d823bf35527fd2ec9fca98bd",
+      "batch_size": 1,
+      "tree_size": 109,
+      "sealed_at": "2026-11-10T10:00:00.000Z",
+      "prev_sth_sha256": null,
+      "sha256": "6e16b2199c7fc89a1a6ce9eaf7051df4761333a5e16260e3236c0fe0f1a50f6e",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "ZGlew40AOKfvEkDqjjYG3hG6lOlstwwj4lnzGh1TLAg",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n6e16b2199c7fc89a1a6ce9eaf7051df4761333a5e16260e3236c0fe0f1a50f6e",
+       "sig": "c_f6YBOOC_F-upic0fGsk2SLQPSBRq22wOGbIIBk_fxtkdI9ayUkHiNp06OLF0RCs9jWS1Movv2xWY-MPTKmCQ",
+       "signed_at": "2026-11-10T10:00:00.000Z",
+       "key": {
+        "kid": "ZGlew40AOKfvEkDqjjYG3hG6lOlstwwj4lnzGh1TLAg",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "FDyWZNn7L9r796qskFJetGEE3kU4aK8qOaE6JkhbNGA"
+        }
+       }
+      }
+     }
+    },
+    "sha256": "7eab41675b92d4addfd437680093f84a2741e3dfc5d07f35c3597ffc7a2da161",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\n7eab41675b92d4addfd437680093f84a2741e3dfc5d07f35c3597ffc7a2da161",
+     "sig": "AQRuFLuH9sS5y0KY4b5vIURR24zjnbAddtMBYbEvhH4z5hntw9J-_iAKoF14sKhavYbfW_rSAGivYpggs_1UAA",
+     "signed_at": "2026-11-10T10:00:00.000Z",
+     "key": {
+      "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "r79djVigCFGDEt5-co1doUBTKMtG73Tzo6OS_XXr64U"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": true,
+    "accepted": true,
+    "key_policy_code": "ok"
+   }
+  },
+  {
+   "id": "decision-document-before-switch",
+   "title": "a decision signed by the document key before the switch",
+   "why": "",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-decision",
+    "v": 1,
+    "decided_at": "2026-11-01T10:00:00.000Z",
+    "expires_at": "2026-11-02T10:00:00.000Z",
+    "clock_skew_s": 300,
+    "nonce": "kp-suite",
+    "domain": "good.example",
+    "action": "read",
+    "decision": "allow",
+    "base_decision": "allow",
+    "human_confirmation_required": false,
+    "reason_codes": [
+     "resolve.actions.read"
+    ],
+    "steps": [],
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "resolve": {
+     "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+     "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    "sha256": "4912b53667deb2207116861ee51c163b7c390bf9391a77979a52361eab698950",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\n4912b53667deb2207116861ee51c163b7c390bf9391a77979a52361eab698950",
+     "sig": "WIIkvzE8uR30XzoyXql6AGsanDkEOvZ2M__icGHLTmHVHq20Ebpqbp3LkABkarwiek9e68oV5U107S6DnqBMCg",
+     "signed_at": "2026-11-01T10:00:00.000Z",
+     "key": {
+      "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "r79djVigCFGDEt5-co1doUBTKMtG73Tzo6OS_XXr64U"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": true,
+    "accepted": true,
+    "key_policy_code": "ok"
+   }
+  },
+  {
+   "id": "decision-document-after-switch",
+   "title": "a decision signed by the document key after the switch",
+   "why": "",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-decision",
+    "v": 1,
+    "decided_at": "2026-11-10T10:00:00.000Z",
+    "expires_at": "2026-11-11T10:00:00.000Z",
+    "clock_skew_s": 300,
+    "nonce": "kp-suite",
+    "domain": "good.example",
+    "action": "read",
+    "decision": "allow",
+    "base_decision": "allow",
+    "human_confirmation_required": false,
+    "reason_codes": [
+     "resolve.actions.read"
+    ],
+    "steps": [],
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "resolve": {
+     "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+     "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    "sha256": "fd3cddb660a0d9bf70a228031d251a3a51f32a9c160897515b8901793daad544",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\nfd3cddb660a0d9bf70a228031d251a3a51f32a9c160897515b8901793daad544",
+     "sig": "TDX31eLWjRfBcv8dtqlyoSWcI7ZE2ExWvQ1lAGSHZezBUs-vcLDH8jft4rCt_Pfq8tJHt_QV-oViKKemzWmTCA",
+     "signed_at": "2026-11-10T10:00:00.000Z",
+     "key": {
+      "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "r79djVigCFGDEt5-co1doUBTKMtG73Tzo6OS_XXr64U"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": false,
+    "accepted": false,
+    "key_policy_code": "key_wrong_purpose"
+   }
+  },
+  {
+   "id": "decision-decision-after-switch",
+   "title": "a decision signed by the decision key after the switch",
+   "why": "positive control",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-decision",
+    "v": 1,
+    "decided_at": "2026-11-10T10:00:00.000Z",
+    "expires_at": "2026-11-11T10:00:00.000Z",
+    "clock_skew_s": 300,
+    "nonce": "kp-suite",
+    "domain": "good.example",
+    "action": "read",
+    "decision": "allow",
+    "base_decision": "allow",
+    "human_confirmation_required": false,
+    "reason_codes": [
+     "resolve.actions.read"
+    ],
+    "steps": [],
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "resolve": {
+     "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+     "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    "sha256": "fd3cddb660a0d9bf70a228031d251a3a51f32a9c160897515b8901793daad544",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "QgCF3Tk8slbY39EyixmnwK0UjNLAfAuwpnvXRsf3drI",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\nfd3cddb660a0d9bf70a228031d251a3a51f32a9c160897515b8901793daad544",
+     "sig": "2RkPeApaJHr-hEJvtde9VYhKxCzRmQ5g7S9lev3rdVsr-9bBoeHeus0Eg_b8HWN3iNnPEX4L1OEjUNaLc43aBw",
+     "signed_at": "2026-11-10T10:00:00.000Z",
+     "key": {
+      "kid": "QgCF3Tk8slbY39EyixmnwK0UjNLAfAuwpnvXRsf3drI",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "1P3iYDlW-gMV7THxXqVyruQkwwrcwkV2IUJ7-9GpXpY"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": true,
+    "accepted": true,
+    "key_policy_code": "ok"
+   }
+  },
+  {
+   "id": "decision-decision-before-switch",
+   "title": "a decision signed by the decision key before its signs_from",
+   "why": "",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-decision",
+    "v": 1,
+    "decided_at": "2026-11-01T10:00:00.000Z",
+    "expires_at": "2026-11-02T10:00:00.000Z",
+    "clock_skew_s": 300,
+    "nonce": "kp-suite",
+    "domain": "good.example",
+    "action": "read",
+    "decision": "allow",
+    "base_decision": "allow",
+    "human_confirmation_required": false,
+    "reason_codes": [
+     "resolve.actions.read"
+    ],
+    "steps": [],
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "resolve": {
+     "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+     "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    "sha256": "4912b53667deb2207116861ee51c163b7c390bf9391a77979a52361eab698950",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "QgCF3Tk8slbY39EyixmnwK0UjNLAfAuwpnvXRsf3drI",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\n4912b53667deb2207116861ee51c163b7c390bf9391a77979a52361eab698950",
+     "sig": "pd4DmFEp1BueNz5UA-Ag3EkryA4qh0y94TSnY12b1NMktA3SxUANHo3XraDU1br94J6ExFyTMEbkx7X_6AbCDQ",
+     "signed_at": "2026-11-01T10:00:00.000Z",
+     "key": {
+      "kid": "QgCF3Tk8slbY39EyixmnwK0UjNLAfAuwpnvXRsf3drI",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "1P3iYDlW-gMV7THxXqVyruQkwwrcwkV2IUJ7-9GpXpY"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": false,
+    "accepted": false,
+    "key_policy_code": "key_not_yet_active"
+   }
+  },
+  {
+   "id": "decision-request-bound",
+   "title": "before the switch, a decision signed by the request key on an answer the request key signed",
+   "why": "a decision follows its answer's key until the decision key exists (ga1)",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-decision",
+    "v": 1,
+    "decided_at": "2026-11-01T10:00:00.000Z",
+    "expires_at": "2026-11-02T10:00:00.000Z",
+    "clock_skew_s": 300,
+    "nonce": "kp-suite",
+    "domain": "good.example",
+    "action": "read",
+    "decision": "allow",
+    "base_decision": "allow",
+    "human_confirmation_required": false,
+    "reason_codes": [
+     "resolve.actions.read"
+    ],
+    "steps": [],
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "resolve": {
+     "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "kid": "ScoGCik3Omlx_Yr6Y5-BeCNuouhRu7w1Z4mlSmVWT4U",
+     "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    "sha256": "22993fec628b682481d75629020310bd5ebeda789634a6ef40f8eb2eb1aa89cb",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "ScoGCik3Omlx_Yr6Y5-BeCNuouhRu7w1Z4mlSmVWT4U",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\n22993fec628b682481d75629020310bd5ebeda789634a6ef40f8eb2eb1aa89cb",
+     "sig": "2xQ3oBoNjtJuDxCXRs9fF2UYHY8jkI1aBhEm4q6h_gwPQQN3uvhzT9RbC8E0Zk6dJHUkLFTYcz-fo2O7ivrpBw",
+     "signed_at": "2026-11-01T10:00:00.000Z",
+     "key": {
+      "kid": "ScoGCik3Omlx_Yr6Y5-BeCNuouhRu7w1Z4mlSmVWT4U",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "PNUZFgDug570j0emfKt5peEkGP3pMPybg1qi2Ox_zyc"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": true,
+    "accepted": true,
+    "key_policy_code": "ok_bound"
+   }
+  },
+  {
+   "id": "decision-request-unbound",
+   "title": "before the switch, a decision signed by the request key on an answer the document key signed",
+   "why": "",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-decision",
+    "v": 1,
+    "decided_at": "2026-11-01T10:00:00.000Z",
+    "expires_at": "2026-11-02T10:00:00.000Z",
+    "clock_skew_s": 300,
+    "nonce": "kp-suite",
+    "domain": "good.example",
+    "action": "read",
+    "decision": "allow",
+    "base_decision": "allow",
+    "human_confirmation_required": false,
+    "reason_codes": [
+     "resolve.actions.read"
+    ],
+    "steps": [],
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "resolve": {
+     "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "kid": "UHU3DnUq98yJ_bb40NTE-0eoAPe0C0f7HMwl22w9Q0k",
+     "leaf_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    "sha256": "4912b53667deb2207116861ee51c163b7c390bf9391a77979a52361eab698950",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "ScoGCik3Omlx_Yr6Y5-BeCNuouhRu7w1Z4mlSmVWT4U",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\n4912b53667deb2207116861ee51c163b7c390bf9391a77979a52361eab698950",
+     "sig": "E6yKmeFdet2nDsxDKBs2njRawqkCQUA94V4C4zNiZNBR_UhEKhVSMOWUYG9XPvOIElxJH_GUreQxjTLuuStTCg",
+     "signed_at": "2026-11-01T10:00:00.000Z",
+     "key": {
+      "kid": "ScoGCik3Omlx_Yr6Y5-BeCNuouhRu7w1Z4mlSmVWT4U",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "PNUZFgDug570j0emfKt5peEkGP3pMPybg1qi2Ox_zyc"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": false,
+    "accepted": false,
+    "key_policy_code": "key_wrong_purpose"
+   }
+  },
+  {
+   "id": "retired-before-stop",
+   "title": "a document signed by a retired key before it stopped signing",
+   "why": "retired keys keep old signatures valid through the rotation record",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-resolve",
+    "v": 1,
+    "domain": "good.example",
+    "status": "measured",
+    "answered_at": "2026-10-01T10:00:00.000Z",
+    "freshness": {
+     "observed_at": "2026-10-01T10:00:00.000Z"
+    },
+    "actions": {
+     "read": {
+      "decision": "allow",
+      "doubts": []
+     },
+     "transact": {
+      "decision": "require_confirmation",
+      "doubts": [
+       "no_entity"
+      ]
+     }
+    },
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "transparency": {
+     "state": "included",
+     "leaf_hash": "7ddf35b76ef8499b17db1a3fadf7cb0b0d16f0c5a97da8ba2bf1cfc7a85e4ce5",
+     "index": 0,
+     "batch_size": 1,
+     "batch": 110,
+     "path": [],
+     "sth": {
+      "kind": "crawlcheck-log-sth",
+      "v": 1,
+      "batch": 110,
+      "batch_root": "7ddf35b76ef8499b17db1a3fadf7cb0b0d16f0c5a97da8ba2bf1cfc7a85e4ce5",
+      "batch_size": 1,
+      "tree_size": 110,
+      "sealed_at": "2026-10-01T10:00:00.000Z",
+      "prev_sth_sha256": null,
+      "sha256": "639cda07f3dcff2920c4e5007689d5336f447baf777e635243c03a236536528e",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "gnC4enq_u0uTc5mWx5jY4xFL2yCrwKvIGdy2UDa2-eI",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n639cda07f3dcff2920c4e5007689d5336f447baf777e635243c03a236536528e",
+       "sig": "-w9FuJXoyHAa8I-j3JCFg3laQ0r_QNJ7VrWXMmSrFsLAm3OYwF9ozdZk_hVZ3e8p0BDTvgPpalisl7qpG9ruDw",
+       "signed_at": "2026-10-01T10:00:00.000Z",
+       "key": {
+        "kid": "gnC4enq_u0uTc5mWx5jY4xFL2yCrwKvIGdy2UDa2-eI",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "pjWYA6DNVEvkGV9OYr091PbbkLexKUtylqr0_0seWJg"
+        }
+       }
+      }
+     }
+    },
+    "sha256": "381eb7030706deb930cb6e61e3d4557eeb9ae78f7818a942aa99deebc395d8bd",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "gnC4enq_u0uTc5mWx5jY4xFL2yCrwKvIGdy2UDa2-eI",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\n381eb7030706deb930cb6e61e3d4557eeb9ae78f7818a942aa99deebc395d8bd",
+     "sig": "uLrsLb8Bnfmc1uVGV1pVFCBfb4UVx8D9rm1kIlmmVUe6I5DxGEhNgUNevIgVEydUJ5QZrLKNa7xbeISW1d9mCQ",
+     "signed_at": "2026-10-01T10:00:00.000Z",
+     "key": {
+      "kid": "gnC4enq_u0uTc5mWx5jY4xFL2yCrwKvIGdy2UDa2-eI",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "pjWYA6DNVEvkGV9OYr091PbbkLexKUtylqr0_0seWJg"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": true,
+    "accepted": true,
+    "key_policy_code": "ok"
+   }
+  },
+  {
+   "id": "retired-after-stop",
+   "title": "a document signed by a retired key after it stopped signing",
+   "why": "",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-resolve",
+    "v": 1,
+    "domain": "good.example",
+    "status": "measured",
+    "answered_at": "2026-10-06T10:00:00.000Z",
+    "freshness": {
+     "observed_at": "2026-10-06T10:00:00.000Z"
+    },
+    "actions": {
+     "read": {
+      "decision": "allow",
+      "doubts": []
+     },
+     "transact": {
+      "decision": "require_confirmation",
+      "doubts": [
+       "no_entity"
+      ]
+     }
+    },
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "transparency": {
+     "state": "included",
+     "leaf_hash": "5b958e782a3ea54400dcb6d66204113512e910d52c5d8481785f6fac81741064",
+     "index": 0,
+     "batch_size": 1,
+     "batch": 111,
+     "path": [],
+     "sth": {
+      "kind": "crawlcheck-log-sth",
+      "v": 1,
+      "batch": 111,
+      "batch_root": "5b958e782a3ea54400dcb6d66204113512e910d52c5d8481785f6fac81741064",
+      "batch_size": 1,
+      "tree_size": 111,
+      "sealed_at": "2026-10-06T10:00:00.000Z",
+      "prev_sth_sha256": null,
+      "sha256": "11e06465d60273b0cffa58c388746a8cb81046c23e1fba3f4a31145ebdb4659b",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "gnC4enq_u0uTc5mWx5jY4xFL2yCrwKvIGdy2UDa2-eI",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n11e06465d60273b0cffa58c388746a8cb81046c23e1fba3f4a31145ebdb4659b",
+       "sig": "giGzNqm_8NHrsA31Efap2Heie3c6-I_1xU9GgE03gJIBZ4eIBqPmnD61Ymr2F05Fx6LMH0xUHU3HG_YXBxlhCg",
+       "signed_at": "2026-10-06T10:00:00.000Z",
+       "key": {
+        "kid": "gnC4enq_u0uTc5mWx5jY4xFL2yCrwKvIGdy2UDa2-eI",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "pjWYA6DNVEvkGV9OYr091PbbkLexKUtylqr0_0seWJg"
+        }
+       }
+      }
+     }
+    },
+    "sha256": "b575d5ae4f06ede19c9923ca8ef947e6a6d09f3cd9f099c8b0a79e8e8954181a",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "gnC4enq_u0uTc5mWx5jY4xFL2yCrwKvIGdy2UDa2-eI",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\nb575d5ae4f06ede19c9923ca8ef947e6a6d09f3cd9f099c8b0a79e8e8954181a",
+     "sig": "JQYk4fYY4oyDgh426OhqfBDa1EilfjQaz8UtP_XPRKv-fkkn3et9ilb7utOXCCOKQ9hS0dTo_heJZHTiPKLaDQ",
+     "signed_at": "2026-10-06T10:00:00.000Z",
+     "key": {
+      "kid": "gnC4enq_u0uTc5mWx5jY4xFL2yCrwKvIGdy2UDa2-eI",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "pjWYA6DNVEvkGV9OYr091PbbkLexKUtylqr0_0seWJg"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": false,
+    "accepted": false,
+    "key_policy_code": "key_retired"
+   }
+  },
+  {
+   "id": "retired-no-rotation",
+   "title": "a document signed by a retired key, checked with the directory only",
+   "why": "without the rotation record a key that left the directory is unknown",
+   "keys": "directory",
+   "doc": {
+    "kind": "crawlcheck-resolve",
+    "v": 1,
+    "domain": "good.example",
+    "status": "measured",
+    "answered_at": "2026-10-01T10:00:00.000Z",
+    "freshness": {
+     "observed_at": "2026-10-01T10:00:00.000Z"
+    },
+    "actions": {
+     "read": {
+      "decision": "allow",
+      "doubts": []
+     },
+     "transact": {
+      "decision": "require_confirmation",
+      "doubts": [
+       "no_entity"
+      ]
+     }
+    },
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "transparency": {
+     "state": "included",
+     "leaf_hash": "7ddf35b76ef8499b17db1a3fadf7cb0b0d16f0c5a97da8ba2bf1cfc7a85e4ce5",
+     "index": 0,
+     "batch_size": 1,
+     "batch": 112,
+     "path": [],
+     "sth": {
+      "kind": "crawlcheck-log-sth",
+      "v": 1,
+      "batch": 112,
+      "batch_root": "7ddf35b76ef8499b17db1a3fadf7cb0b0d16f0c5a97da8ba2bf1cfc7a85e4ce5",
+      "batch_size": 1,
+      "tree_size": 112,
+      "sealed_at": "2026-10-01T10:00:00.000Z",
+      "prev_sth_sha256": null,
+      "sha256": "12e092bc7a9dfaf0a1ef2b279fe099ddb18b4766824faaec283dd86fccdb9299",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "gnC4enq_u0uTc5mWx5jY4xFL2yCrwKvIGdy2UDa2-eI",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n12e092bc7a9dfaf0a1ef2b279fe099ddb18b4766824faaec283dd86fccdb9299",
+       "sig": "bkhcJVCdVz6wTKdh6ZfFfn0mjrI4E7PEpP7Wmed52NI6rEtepPlvSEDmAtBS1kzZB-6aBRlKK8-TwY2NH2fBAQ",
+       "signed_at": "2026-10-01T10:00:00.000Z",
+       "key": {
+        "kid": "gnC4enq_u0uTc5mWx5jY4xFL2yCrwKvIGdy2UDa2-eI",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "pjWYA6DNVEvkGV9OYr091PbbkLexKUtylqr0_0seWJg"
+        }
+       }
+      }
+     }
+    },
+    "sha256": "d40b4beb4978fc9a777561982ed65f4594f12bd5f7564638516806c646832421",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "gnC4enq_u0uTc5mWx5jY4xFL2yCrwKvIGdy2UDa2-eI",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\nd40b4beb4978fc9a777561982ed65f4594f12bd5f7564638516806c646832421",
+     "sig": "o1wo9Z4HrBCSSD2u3BJaHQAz7rKfgxl-dssvAjSCm4DnPpUC37CvhG-IgXDU3wKkZfcSKxVbSeyDIEwSPJXBBQ",
+     "signed_at": "2026-10-01T10:00:00.000Z",
+     "key": {
+      "kid": "gnC4enq_u0uTc5mWx5jY4xFL2yCrwKvIGdy2UDa2-eI",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "pjWYA6DNVEvkGV9OYr091PbbkLexKUtylqr0_0seWJg"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": false,
+    "accepted": false,
+    "key_policy_code": "key_unknown"
+   }
+  },
+  {
+   "id": "compromised-after",
+   "title": "a document signed by a compromised key after compromised_since",
+   "why": "",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-resolve",
+    "v": 1,
+    "domain": "good.example",
+    "status": "measured",
+    "answered_at": "2026-10-13T10:00:00.000Z",
+    "freshness": {
+     "observed_at": "2026-10-13T10:00:00.000Z"
+    },
+    "actions": {
+     "read": {
+      "decision": "allow",
+      "doubts": []
+     },
+     "transact": {
+      "decision": "require_confirmation",
+      "doubts": [
+       "no_entity"
+      ]
+     }
+    },
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "transparency": {
+     "state": "included",
+     "leaf_hash": "ba700a65043bc4aaa5421ac0a181b2f68cae15d7fe7f6fdafa4f69dd858d052e",
+     "index": 0,
+     "batch_size": 1,
+     "batch": 113,
+     "path": [],
+     "sth": {
+      "kind": "crawlcheck-log-sth",
+      "v": 1,
+      "batch": 113,
+      "batch_root": "ba700a65043bc4aaa5421ac0a181b2f68cae15d7fe7f6fdafa4f69dd858d052e",
+      "batch_size": 1,
+      "tree_size": 113,
+      "sealed_at": "2026-10-13T10:00:00.000Z",
+      "prev_sth_sha256": null,
+      "sha256": "e074b4de0ded06bd45329067067ac7d26a6845a71af4d375d9fd8555abfd0114",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "pzeHgXJ5w6TaP3bWTAGdE0604ddGZWG5vt9ClihhvoI",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\ne074b4de0ded06bd45329067067ac7d26a6845a71af4d375d9fd8555abfd0114",
+       "sig": "vwH84HJ0LJok-ELvI_SRQNYULzCDvPoj1I5ceVyKctmUnEMUcXKZUmr7hbU6Iv8uPab-yaFmCX7QYoIlp49eAQ",
+       "signed_at": "2026-10-13T10:00:00.000Z",
+       "key": {
+        "kid": "pzeHgXJ5w6TaP3bWTAGdE0604ddGZWG5vt9ClihhvoI",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "TW28QU4XCu2cmAi8obUZNWfa8YOVLHnGxhJRC4PdWC8"
+        }
+       }
+      }
+     }
+    },
+    "sha256": "9c0930a36093da647a58325fb0c2f1d5bb5dfc417758828255a6eace1ab1b7e9",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "pzeHgXJ5w6TaP3bWTAGdE0604ddGZWG5vt9ClihhvoI",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\n9c0930a36093da647a58325fb0c2f1d5bb5dfc417758828255a6eace1ab1b7e9",
+     "sig": "o0v2QS2JOAi5mCi8TKXJn2pr5l56xkj09Al9xipYp3ydp-xMSCFVd2yAJJfNR1Oo7ZHzelJrF-NjXp2_7eR7Bg",
+     "signed_at": "2026-10-13T10:00:00.000Z",
+     "key": {
+      "kid": "pzeHgXJ5w6TaP3bWTAGdE0604ddGZWG5vt9ClihhvoI",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "TW28QU4XCu2cmAi8obUZNWfa8YOVLHnGxhJRC4PdWC8"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": false,
+    "accepted": false,
+    "key_policy_code": "key_compromised"
+   }
+  },
+  {
+   "id": "compromised-before",
+   "title": "a document signed by a compromised key before compromised_since",
+   "why": "a signature alone no longer proves it; only an outside anchor does",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-resolve",
+    "v": 1,
+    "domain": "good.example",
+    "status": "measured",
+    "answered_at": "2026-10-11T10:00:00.000Z",
+    "freshness": {
+     "observed_at": "2026-10-11T10:00:00.000Z"
+    },
+    "actions": {
+     "read": {
+      "decision": "allow",
+      "doubts": []
+     },
+     "transact": {
+      "decision": "require_confirmation",
+      "doubts": [
+       "no_entity"
+      ]
+     }
+    },
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "transparency": {
+     "state": "included",
+     "leaf_hash": "4bd5814a7c841f15c856e3f2fbc9f14407fb7561b400a7871e123de7a730e6f0",
+     "index": 0,
+     "batch_size": 1,
+     "batch": 114,
+     "path": [],
+     "sth": {
+      "kind": "crawlcheck-log-sth",
+      "v": 1,
+      "batch": 114,
+      "batch_root": "4bd5814a7c841f15c856e3f2fbc9f14407fb7561b400a7871e123de7a730e6f0",
+      "batch_size": 1,
+      "tree_size": 114,
+      "sealed_at": "2026-10-11T10:00:00.000Z",
+      "prev_sth_sha256": null,
+      "sha256": "570316047e27f23e81724e9ba21324b8f0901a75b362dfb55aba900809ae1c70",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "pzeHgXJ5w6TaP3bWTAGdE0604ddGZWG5vt9ClihhvoI",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n570316047e27f23e81724e9ba21324b8f0901a75b362dfb55aba900809ae1c70",
+       "sig": "uNfW84zmnq2za7nqRZbNOUZRK4kzYxZxsf5RkRfMJcUKI4P89yaTo34GmnavJ-blwiHyVwfHIow_7h-xp2mRAg",
+       "signed_at": "2026-10-11T10:00:00.000Z",
+       "key": {
+        "kid": "pzeHgXJ5w6TaP3bWTAGdE0604ddGZWG5vt9ClihhvoI",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "TW28QU4XCu2cmAi8obUZNWfa8YOVLHnGxhJRC4PdWC8"
+        }
+       }
+      }
+     }
+    },
+    "sha256": "fab8a868c62911f1aed5e088dc66602f52e4678dd5eed04e79fbccd8c8c7ba0c",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "pzeHgXJ5w6TaP3bWTAGdE0604ddGZWG5vt9ClihhvoI",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\nfab8a868c62911f1aed5e088dc66602f52e4678dd5eed04e79fbccd8c8c7ba0c",
+     "sig": "B65LZ_Rs72q5nr654twhJ7JiPidI0907__gjFUtciYiG9wAFa2xXbCrcVA7E7tVkPefAf5RAFR7CKfz8C8VtAA",
+     "signed_at": "2026-10-11T10:00:00.000Z",
+     "key": {
+      "kid": "pzeHgXJ5w6TaP3bWTAGdE0604ddGZWG5vt9ClihhvoI",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "TW28QU4XCu2cmAi8obUZNWfa8YOVLHnGxhJRC4PdWC8"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": false,
+    "accepted": false,
+    "key_policy_code": "key_compromised"
+   }
+  },
+  {
+   "id": "compromised-unknown-offline",
+   "title": "the same document, checked with the directory only (rotation record not read)",
+   "why": "a saved directory cannot know a later compromise: this is the stated limit of offline mode",
+   "keys": "directory",
+   "doc": {
+    "kind": "crawlcheck-resolve",
+    "v": 1,
+    "domain": "good.example",
+    "status": "measured",
+    "answered_at": "2026-10-13T10:00:00.000Z",
+    "freshness": {
+     "observed_at": "2026-10-13T10:00:00.000Z"
+    },
+    "actions": {
+     "read": {
+      "decision": "allow",
+      "doubts": []
+     },
+     "transact": {
+      "decision": "require_confirmation",
+      "doubts": [
+       "no_entity"
+      ]
+     }
+    },
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "transparency": {
+     "state": "included",
+     "leaf_hash": "ba700a65043bc4aaa5421ac0a181b2f68cae15d7fe7f6fdafa4f69dd858d052e",
+     "index": 0,
+     "batch_size": 1,
+     "batch": 115,
+     "path": [],
+     "sth": {
+      "kind": "crawlcheck-log-sth",
+      "v": 1,
+      "batch": 115,
+      "batch_root": "ba700a65043bc4aaa5421ac0a181b2f68cae15d7fe7f6fdafa4f69dd858d052e",
+      "batch_size": 1,
+      "tree_size": 115,
+      "sealed_at": "2026-10-13T10:00:00.000Z",
+      "prev_sth_sha256": null,
+      "sha256": "2ab6fbede52ab17a70df2635697036ceabd219172bbd0313292919c0cd5f8a3f",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "pzeHgXJ5w6TaP3bWTAGdE0604ddGZWG5vt9ClihhvoI",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n2ab6fbede52ab17a70df2635697036ceabd219172bbd0313292919c0cd5f8a3f",
+       "sig": "bJPElzQw_VU_SqWUGEH4QEsvl_wuetVKKlilnZKSRRnsjCi2MHTSBLjQDu2-NsVu_xVzjU6eH6wjQ_fOVX_PCA",
+       "signed_at": "2026-10-13T10:00:00.000Z",
+       "key": {
+        "kid": "pzeHgXJ5w6TaP3bWTAGdE0604ddGZWG5vt9ClihhvoI",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "TW28QU4XCu2cmAi8obUZNWfa8YOVLHnGxhJRC4PdWC8"
+        }
+       }
+      }
+     }
+    },
+    "sha256": "c0cfac118442ced6303e29841834aa4c08f437a217be936d5949d0b914caba33",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "pzeHgXJ5w6TaP3bWTAGdE0604ddGZWG5vt9ClihhvoI",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\nc0cfac118442ced6303e29841834aa4c08f437a217be936d5949d0b914caba33",
+     "sig": "QZWjZEDvdbLBSDn8DPeD14wPWicLiDTYU7uonX0_s9MSiPEZGUWjUH7nWXqVC9HsTwWRU2kUJuTe8FGfF1n-DQ",
+     "signed_at": "2026-10-13T10:00:00.000Z",
+     "key": {
+      "kid": "pzeHgXJ5w6TaP3bWTAGdE0604ddGZWG5vt9ClihhvoI",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "TW28QU4XCu2cmAi8obUZNWfa8YOVLHnGxhJRC4PdWC8"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": true,
+    "accepted": true,
+    "key_policy_code": "ok"
+   }
+  },
+  {
+   "id": "foreign-key",
+   "title": "a valid signature by a key CrawlCheck does not publish",
+   "why": "integrity is not trust",
+   "keys": "directory+rotation",
+   "doc": {
+    "kind": "crawlcheck-resolve",
+    "v": 1,
+    "domain": "good.example",
+    "status": "measured",
+    "answered_at": "2026-10-15T10:00:00.000Z",
+    "freshness": {
+     "observed_at": "2026-10-15T10:00:00.000Z"
+    },
+    "actions": {
+     "read": {
+      "decision": "allow",
+      "doubts": []
+     },
+     "transact": {
+      "decision": "require_confirmation",
+      "doubts": [
+       "no_entity"
+      ]
+     }
+    },
+    "evidence": {
+     "report": "https://crawlcheck.io/r/suitefixture"
+    },
+    "transparency": {
+     "state": "included",
+     "leaf_hash": "76d9704d0ab57ba822255e723fa08852806233f0c303a72b76831c10940a39f7",
+     "index": 0,
+     "batch_size": 1,
+     "batch": 116,
+     "path": [],
+     "sth": {
+      "kind": "crawlcheck-log-sth",
+      "v": 1,
+      "batch": 116,
+      "batch_root": "76d9704d0ab57ba822255e723fa08852806233f0c303a72b76831c10940a39f7",
+      "batch_size": 1,
+      "tree_size": 116,
+      "sealed_at": "2026-10-15T10:00:00.000Z",
+      "prev_sth_sha256": null,
+      "sha256": "603f15a94016e55160459488765e3beaf3b7e2668c156efbbaae75773d5128b7",
+      "signature": {
+       "v": 1,
+       "alg": "Ed25519",
+       "kid": "QIZXjuqHvgeVJ2iymVWry-EHzb-cleK9n4SI9Dr0Ci0",
+       "over": "sha256",
+       "message": "crawlcheck-data-v1\n603f15a94016e55160459488765e3beaf3b7e2668c156efbbaae75773d5128b7",
+       "sig": "j7aq0Fwgni-dcedF-pzWnuAjWsXAoln8fK1eUHJwmRU_9OtjZEiHfpo5A1qTXw8WNaAAPVDpUYiNmVvq8LvsAA",
+       "signed_at": "2026-10-15T10:00:00.000Z",
+       "key": {
+        "kid": "QIZXjuqHvgeVJ2iymVWry-EHzb-cleK9n4SI9Dr0Ci0",
+        "jwk": {
+         "kty": "OKP",
+         "crv": "Ed25519",
+         "x": "ZGrVtoLu6bUg4oTFEwmv9FFdKirFOAX-79Rxd47GfMw"
+        }
+       }
+      }
+     }
+    },
+    "sha256": "5589d09ee61b2102cb8cf74aa44d30d88ffd2b8e10398c4f66336760d2db615e",
+    "signature": {
+     "v": 1,
+     "alg": "Ed25519",
+     "kid": "QIZXjuqHvgeVJ2iymVWry-EHzb-cleK9n4SI9Dr0Ci0",
+     "over": "sha256",
+     "message": "crawlcheck-data-v1\n5589d09ee61b2102cb8cf74aa44d30d88ffd2b8e10398c4f66336760d2db615e",
+     "sig": "_J-7_vsSs-k0eejb4R4ybczx4Mfyz_01czipOH76e28oW6tJsp7fk_SU7Zg2LaTq0VYBAEWa3V0kKw3EZqNIDA",
+     "signed_at": "2026-10-15T10:00:00.000Z",
+     "key": {
+      "kid": "QIZXjuqHvgeVJ2iymVWry-EHzb-cleK9n4SI9Dr0Ci0",
+      "jwk": {
+       "kty": "OKP",
+       "crv": "Ed25519",
+       "x": "ZGrVtoLu6bUg4oTFEwmv9FFdKirFOAX-79Rxd47GfMw"
+      }
+     }
+    }
+   },
+   "expect": {
+    "key_policy_valid": false,
+    "accepted": false,
+    "key_policy_code": "key_unknown"
+   }
+  }
+ ]
+}

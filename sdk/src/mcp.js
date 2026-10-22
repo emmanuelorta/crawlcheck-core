@@ -46,8 +46,11 @@ export function mcpPreflight(cc, opts = {}) {
     if (opts.maxAgeMs && Date.now() - state.decidedAt > opts.maxAgeMs) return false;
     return true;
   };
+  // tscope1: send the server URL and, with a lockfile, its approved tools_sha256, so CrawlCheck reads the live tools from its own
+  // vantage and the signed receipt names the endpoint and tool state it covered (a changed list comes back as block).
+  const mcpScope = function () { if (!state.url || !/^https:/i.test(state.url)) return undefined; const h = opts.lock && typeof opts.lock.tools_sha256 === "string" ? opts.lock.tools_sha256 : null; return h ? { url: state.url, tools_sha256: h } : { url: state.url }; };
   const decide = async function (host) {
-    const g = await cc.guard(host, "connect", { template, policy: opts.policy, agent: opts.agent, confirm: opts.confirm, allowWarn: !!opts.allowWarn, onlineKeys: opts.onlineKeys });
+    const g = await cc.guard(host, "connect", { template, policy: opts.policy, agent: opts.agent, confirm: opts.confirm, allowWarn: !!opts.allowWarn, onlineKeys: opts.onlineKeys, mcp: mcpScope() });
     state.receipt = g.receipt; state.verification = g.verification; state.decidedAt = Date.now();
     if (!g.proceed) {
       const d = g.receipt && g.receipt.decision;

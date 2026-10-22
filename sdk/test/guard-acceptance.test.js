@@ -16,6 +16,7 @@ function fakeFetch(c, log) {
       const p = new URL(url).pathname, cc = c.crawlcheck;
       if (cc.unreachable) throw new TypeError("fetch failed");
       if (p === "/.well-known/http-message-signatures-directory") return new Response(JSON.stringify(suite.directory), { headers: { "content-type": "application/json" } });
+      if (p === "/.well-known/security-key-rotation.json") { const rot = cc.rotation || suite.rotation; return rot ? new Response(JSON.stringify(rot), { headers: { "content-type": "application/json" } }) : new Response("{}", { status: 404 }); }   // conf2
       if (p === "/api/v1/preflight") {
         const b = JSON.parse(init.body || "{}"); log.asked.push(b.domain);
         if (cc.by_op) { const o = b.operation || {}; const r = cc.by_op[o.method + " " + o.url]; return r ? new Response(JSON.stringify(r), { headers: { "content-type": "application/json" } }) : new Response("{\"error\":\"none\"}", { status: 404 }); }

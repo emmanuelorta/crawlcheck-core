@@ -8,12 +8,12 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from .verify import verify_document, key_id, canon
+from .verify import verify_document, key_id, canon, key_policy_from, apply_key_policy
 from . import log as _log
 from .staple import staple_check, staple_from_headers
 from .revocations import new_revocation_store, apply_revocations, revoked_for
 
-VERSION = "1.7.0"
+VERSION = "1.8.0"
 ACTIONS = ("read", "cite", "connect", "transact", "administer")
 
 
@@ -136,6 +136,7 @@ class CrawlCheck:
     def __init__(self, key=None, base="https://crawlcheck.io", timeout=30, log_store=None, revocation_store=None, private_lookups=False):
         self.key, self.base, self.timeout = key, base.rstrip("/"), timeout
         self._kids = None
+        self._kp = None   # conf2: (read time, key policy)
         self.last_guard = None
         # Transparency-log store: every Resolve answer's signed tree head is checked against it. Plain JSON - persist
         # it between runs (json.dump(client.log, f)) and pass it back as log_store= to catch a split view across runs.
@@ -218,7 +219,7 @@ class CrawlCheck:
                 pass
         return r
 
-    def preflight(self, domain, action="read", agent=None, template=None, policy=None, operation=None, nonce=None):
+    def preflight(self, domain, action="read", agent=None, template=None, policy=None, operation=None, nonce=None, mcp=None):
         """The policy engine: a signed decision receipt (allow | warn | require_confirmation | block | unsupported).
         policy keys: max_age_hours, on_warn (warn|require_confirmation|block), require_entity, human_approval[], allow[], deny[].
         A policy can only make the decision stricter."""
@@ -233,6 +234,10 @@ class CrawlCheck:
             b["operation"] = operation
         if nonce:
             b["nonce"] = nonce
+        if mcp and mcp.get("url"):
+            # tscope1: an MCP server on this domain and its approved lockfile tools_sha256; the signed receipt's
+            # "assessed" block then names the endpoint and tool state it covered, and changed tools come back as block.
+            b["mcp"] = {k: mcp[k] for k in ("url", "tools_sha256") if mcp.get(k)}
         return self._req("POST", "/api/v1/preflight", body=b)
 
     def changes(self, since=None, domain=None, limit=100):
@@ -263,9 +268,26 @@ class CrawlCheck:
             self._kids = [k.get("kid") or key_id(k) for k in d.get("keys", [])]
         return self._kids
 
-    def verify(self, doc, online_keys=True):
-        """Verify a signed document. With online_keys, the signing key must also be in the published directory."""
-        return verify_document(doc, self.published_key_ids() if online_keys else None)
+    def published_key_policy(self, refresh=False):
+        """conf2: the key directory and rotation record, read now (cached 10 minutes), as the signing policy reads them.
+        Without the rotation record retired and compromised keys are unknown and only keys still in the directory pass."""
+        if refresh or self._kp is None or time.time() - self._kp[0] > 600:
+            d = self._req("GET", "/.well-known/http-message-signatures-directory")
+            try:
+                rot = self._req("GET", "/.well-known/security-key-rotation.json")
+            except Exception:  # noqa: BLE001 - optional
+                rot = None
+            kp = key_policy_from(d, rot if isinstance(rot, dict) else None)
+            kp["source"], kp["read_at"] = "online", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            self._kp = (time.time(), kp)
+        return self._kp[1]
+
+    def verify(self, doc, online_keys=True, key_policy=None):
+        """Verify a signed document. With online_keys (or a pinned key_policy from key_policy_from), the signing key must
+        also be published and the signing policy (purpose, retired, compromised) must accept it."""
+        kp = key_policy or (self.published_key_policy() if online_keys else None)
+        v = verify_document(doc, kp["kids"] if kp else None)
+        return apply_key_policy(v, doc, kp) if kp and isinstance(doc, dict) and doc.get("signature") else v
 
     def sync_revocations(self, full=False):
         """Fetch the signed revocation list (a ?since= delta when the store already holds one), verify it (integrity and
@@ -322,11 +344,12 @@ class CrawlCheck:
             v = self.verify(rc)
         except Exception as e:  # noqa: BLE001
             return no(["the receipt could not be verified: %s" % e] + why, rc)
-        bad = [c["id"] for c in v.get("checks", []) if c.get("ok") is False and c.get("id") != "key_published"]
+        bad = [c["id"] for c in v.get("checks", []) if c.get("ok") is False and c.get("id") not in ("key_published", "key_purpose")]
         if bad:
             why.append("integrity failed: " + ", ".join(bad))
         if not v.get("accepted") and not bad:
-            why.append("signed by a key that is not in CrawlCheck's published key directory")
+            why.append("signed by a key that is not in CrawlCheck's published key directory" if v.get("issuer_trusted") is not True else
+                       "the signing policy rejects this key for a decision receipt: " + next((c["why"] for c in v["checks"] if c["id"] == "key_purpose"), ""))
         if why:
             return no(why, rc)
         d = rc.get("decision")

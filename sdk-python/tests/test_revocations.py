@@ -13,6 +13,10 @@ def client(state):
     def fake(m, p, q=None, b=None):
         if state.get("cut"):
             raise OSError("network cut")
+        if p == "/.well-known/http-message-signatures-directory":   # conf2: verify() reads the key policy, not only the ids
+            return copy.deepcopy(F["directory"])
+        if p == "/.well-known/security-key-rotation.json":
+            raise OSError("no rotation record in this fixture")
         state["calls"].append((p, dict(q or {})))
         if p == "/api/v1/revocations":
             return copy.deepcopy(F["delta"] if (q or {}).get("since") else F["full"])
@@ -66,6 +70,10 @@ class T(unittest.TestCase):
         c = CrawlCheck(private_lookups=True); c.published_key_ids = lambda refresh=False: KIDS
 
         def fake(m, p, q=None, b=None):
+            if p == "/.well-known/http-message-signatures-directory":   # conf2: names no domain, so it is not a lookup
+                return copy.deepcopy(F["directory"])
+            if p == "/.well-known/security-key-rotation.json":
+                raise OSError("no rotation record in this fixture")
             calls.append(p + json.dumps(q or {}))
             if p.startswith("/api/v1/resolve-prefix/"):
                 return {"in_bucket": 2, "answers": [{"domain_sha256": "0" * 64, "answer": {}}, {"domain_sha256": h, "answer": copy.deepcopy(F["resolve"])}]}
