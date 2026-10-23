@@ -1,5 +1,5 @@
 name: CrawlCheck fixes
-description: Opens a pull request with a corrected robots.txt (and sitemap, for static sites) when CrawlCheck finds a defect in the live files.
+description: Opens a pull request with a corrected robots.txt (and sitemap, for static sites) when CrawlCheck finds a defect in the live files. Optionally reads the site from this runner as a CrawlCheck observer.
 author: CrawlCheck (crawlcheck.io)
 branding:
   icon: check-circle
@@ -20,6 +20,12 @@ inputs:
   token:
     description: Token used to push and open the pull request. Needs contents and pull-requests write.
     default: ${{ github.token }}
+  fix:
+    description: '"false" skips the fix step (observe only).'
+    default: "true"
+  observe:
+    description: '"true" also reads the site from this runner and posts a signed observation to CrawlCheck (id gha:<owner>/<repo>). Needs Node 20+ and permissions id-token write.'
+    default: "false"
 outputs:
   changed:
     description: "true when a fix was written and a pull request opened or updated"
@@ -30,7 +36,13 @@ outputs:
 runs:
   using: composite
   steps:
+    - if: inputs.observe == 'true'
+      shell: bash
+      env:
+        CC_DOMAIN: ${{ inputs.domain }}
+      run: node "$GITHUB_ACTION_PATH/observe.mjs"
     - id: run
+      if: inputs.fix != 'false'
       shell: bash
       env:
         CC_DOMAIN: ${{ inputs.domain }}

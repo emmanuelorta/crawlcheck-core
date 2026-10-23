@@ -33,8 +33,33 @@ Turn on **Settings › Actions › General › Allow GitHub Actions to create an
 | `branch` | `crawlcheck/fixes` | Re-runs update the same branch and pull request |
 | `token` | `github.token` | Needs contents and pull-requests write |
 
+| `fix` | `true` | `false` skips the fix step (observe only) |
+| `observe` | `false` | `true` also reads the site from this runner as a CrawlCheck observer |
+
 Outputs: `changed` (`true`/`false`) and `pr-url`.
 
 The corrected files come from the live site, not from the file in your repository, so review the diff: if your repository holds changes that are not deployed yet, the pull request will not include them. Every change is listed in comments at the top of the corrected robots.txt and in the pull request body.
+
+## Observe from your own runner
+
+With `observe: "true"` the action also reads your site from the machine the job runs on, under the same request profiles CrawlCheck's scanner uses, and posts one signed reading. CrawlCheck then has a reading of your site taken from your runner's network, not only its own; on a self-hosted runner that is your own network.
+
+```yaml
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write          # proves which repository is observing; no secret to store
+jobs:
+  fix:
+    runs-on: ubuntu-latest  # or self-hosted
+    steps:
+      - uses: actions/checkout@v5
+      - uses: emmanuelorta/crawlcheck-core/action@main
+        with:
+          domain: example.com
+          observe: "true"
+```
+
+Each run makes a fresh key and asks GitHub for a token bound to it; GitHub's token names your repository and workflow, so there is nothing to enrol and no secret to keep. The observer id is `gha:<owner>/<repo>`. The first run registers the repository; readings are stored and listed at once, and they count toward CrawlCheck's verdicts after 7 days and 20 accepted readings, like every new observer. Each reading carries what the requests got back: status, a few response headers and the page bytes (CrawlCheck stores them by their hash); no cookies or credentials are sent. A failed observation never fails the job. Protocol: https://crawlcheck.io/docs/observer-protocol#ci
 
 Docs: https://github.com/emmanuelorta/crawlcheck-core/tree/main/action
