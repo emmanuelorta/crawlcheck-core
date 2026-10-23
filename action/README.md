@@ -34,11 +34,30 @@ Turn on **Settings › Actions › General › Allow GitHub Actions to create an
 | `token` | `github.token` | Needs contents and pull-requests write |
 
 | `fix` | `true` | `false` skips the fix step (observe only) |
+| `staple-dir` | empty | Static build folder: writes the signed verdict to `.well-known/crawlcheck-staple.json` there |
+| `staple-headers-file` | empty | A `_headers` file to add the `CrawlCheck-Staple` header to (Netlify, Cloudflare Pages) |
 | `observe` | `false` | `true` also reads the site from this runner as a CrawlCheck observer |
 
 Outputs: `changed` (`true`/`false`) and `pr-url`.
 
 The corrected files come from the live site, not from the file in your repository, so review the diff: if your repository holds changes that are not deployed yet, the pull request will not include them. Every change is listed in comments at the top of the corrected robots.txt and in the pull request body.
+
+## Staple the signed verdict into a static site
+
+A staple is your site's own CrawlCheck verdict, signed by CrawlCheck, served by your site: an AI agent can check it offline, with no request to CrawlCheck. On WordPress the CrawlCheck Fix plugin does this by itself. On a static site, add the action to the job that builds and deploys, after the build and before the deploy:
+
+```yaml
+      - run: npm run build                     # your build
+      - uses: emmanuelorta/crawlcheck-core/action@main
+        with:
+          domain: example.com
+          fix: "false"
+          staple-dir: dist                      # your build output
+          staple-headers-file: dist/_headers    # Netlify / Cloudflare Pages; leave out elsewhere
+      - run: npm run deploy                    # your deploy
+```
+
+The record is checked before anything is written (signed by a published CrawlCheck key, naming your domain, not expired), and a staple that would not verify is never deployed. A staple lasts 7 days, so deploy at least weekly (a `schedule:` trigger on the deploy workflow does it). Nothing is committed to your repository. Spec: https://crawlcheck.io/spec/staple
 
 ## Observe from your own runner
 

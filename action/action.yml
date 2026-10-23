@@ -1,5 +1,5 @@
 name: CrawlCheck fixes
-description: Opens a pull request with a corrected robots.txt (and sitemap, for static sites) when CrawlCheck finds a defect in the live files. Optionally reads the site from this runner as a CrawlCheck observer.
+description: Opens a pull request with a corrected robots.txt (and sitemap, for static sites) when CrawlCheck finds a defect in the live files. Optionally staples the signed CrawlCheck verdict into a static build and reads the site from this runner as a CrawlCheck observer.
 author: CrawlCheck (crawlcheck.io)
 branding:
   icon: check-circle
@@ -23,6 +23,12 @@ inputs:
   fix:
     description: '"false" skips the fix step (observe only).'
     default: "true"
+  staple-dir:
+    description: Build output folder of a static site (e.g. dist). When set, the site's signed CrawlCheck verdict is written to <staple-dir>/.well-known/crawlcheck-staple.json, verified first. Run it in the job that deploys, at least weekly (a staple lasts 7 days).
+    default: ""
+  staple-headers-file:
+    description: A _headers file (Netlify, Cloudflare Pages) to add the CrawlCheck-Staple header to, e.g. dist/_headers. Only used with staple-dir.
+    default: ""
   observe:
     description: '"true" also reads the site from this runner and posts a signed observation to CrawlCheck (id gha:<owner>/<repo>). Needs Node 20+ and permissions id-token write.'
     default: "false"
@@ -36,6 +42,13 @@ outputs:
 runs:
   using: composite
   steps:
+    - if: inputs.staple-dir != ''
+      shell: bash
+      env:
+        CC_DOMAIN: ${{ inputs.domain }}
+        CC_STAPLE_DIR: ${{ inputs.staple-dir }}
+        CC_STAPLE_HEADERS: ${{ inputs.staple-headers-file }}
+      run: node "$GITHUB_ACTION_PATH/staple.mjs"
     - if: inputs.observe == 'true'
       shell: bash
       env:

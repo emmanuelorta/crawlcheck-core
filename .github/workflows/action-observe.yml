@@ -1,6 +1,7 @@
-name: action observe
-# Runs the Action's observe step against crawlcheck.io, so the observer path is exercised from this repository's own
-# runner exactly as a customer's workflow runs it (observer id gha:emmanuelorta/crawlcheck-core).
+name: action self-test
+# Runs the Action's observe and staple steps against crawlcheck.io exactly as a customer's workflow runs them: the
+# observer from this repository's own runner (observer id gha:emmanuelorta/crawlcheck-core), the staple into a
+# throwaway build folder, then checked offline the way an agent checks it.
 on:
   workflow_dispatch:
 permissions:
@@ -17,3 +18,24 @@ jobs:
           domain: crawlcheck.io
           fix: "false"
           observe: "true"
+  staple:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: A build folder with an existing _headers rule
+        run: |
+          mkdir -p dist
+          printf '/assets/*\n  Cache-Control: max-age=31536000\n' > dist/_headers
+      - uses: ./action
+        with:
+          domain: crawlcheck.io
+          fix: "false"
+          staple-dir: dist
+          staple-headers-file: dist/_headers
+      - name: Check the staple as an agent would
+        run: |
+          test -s dist/.well-known/crawlcheck-staple.json
+          grep -q '^  CrawlCheck-Staple: v=ccr1;d=crawlcheck.io;' dist/_headers
+          grep -q '/assets/\*' dist/_headers
+          node --input-type=module -e "import { checkRecord } from './action/staple.mjs'; import fs from 'node:fs'; const d = JSON.parse(fs.readFileSync('dist/.well-known/crawlcheck-staple.json','utf8')); const k = (await (await fetch('https://crawlcheck.io/.well-known/http-message-signatures-directory')).json()).keys.map(x => x.kid); const c = checkRecord(d.record, 'crawlcheck.io', k); console.log(c.ok ? 'staple verifies' : c.why); process.exit(c.ok ? 0 : 1);"
