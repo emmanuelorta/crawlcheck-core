@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { crawlerPolicy, parseGroups, shadowedGroups, groupFor, pathAllowed, rootAllowed, AGENTS } from "../src/robots.js";
+import { crawlerPolicy, parseGroups, shadowedGroups, groupFor, pathAllowed, rootAllowed, starGroup, ruleMatches, decide, AGENTS } from "../src/robots.js";
 
 const fx = (n) => readFileSync(new URL("./fixtures/" + n, import.meta.url), "utf8");
 
@@ -33,7 +33,7 @@ test("naming an agent in its own group SHADOWS every * rule for it", () => {
   const t = "User-agent: *\nDisallow: /wp-admin/\nDisallow: /feed/\n\nUser-agent: GPTBot\nAllow: /\n";
   const p = crawlerPolicy(t, false, "/wp-admin/");
   assert.equal(p.shadowed_groups, 1);
-  assert.deepEqual(p.shadowed[0], { uas: ["gptbot"], missing: ["/wp-admin/", "/feed/"], missing_count: 2 });
+  assert.deepEqual(p.shadowed[0], { uas: ["gptbot"], missing: ["/wp-admin/", "/feed/"], missing_count: 2, declares_own_rules: false });
   const gpt = p.agents.find((a) => a.ua === "GPTBot");
   assert.equal(gpt.allowed, true, "GPTBot reaches /wp-admin/ because its own group has no Disallow");
   assert.equal(gpt.rules_shadowed, true);
@@ -51,12 +51,12 @@ test("no file / unreadable file is reported as unmeasured, never as a policy", (
   assert.equal(crawlerPolicy("<html>challenge</html>", true).measured, false);
 });
 
-test("the agent table has 92 entries and no duplicates", () => {
-  assert.equal(AGENTS.length, 92);
-  assert.equal(new Set(AGENTS.map((a) => a[0].toLowerCase())).size, 92);
+test("the agent table has 114 entries and no duplicates", () => {
+  assert.equal(AGENTS.length, 114);
+  assert.equal(new Set(AGENTS.map((a) => a[0].toLowerCase())).size, 114);
 });
 
-for (const d of ["treeservicedenverllc.com", "supremefencingdenver.com"]) {
+for (const d of ["crawlcheck.io", "terrariumstation.com"]) {
   test("parity with the production scanner: " + d, () => {
     const expected = JSON.parse(fx(d + ".expected.json"));
     const got = crawlerPolicy(fx(d + ".robots.txt"), false, expected.path);
@@ -94,4 +94,33 @@ test("crawlerPolicy is unchanged by the unwrap", () => {
   const groups = parseGroups(txt);
   const pol = crawlerPolicy(txt, false, "/wp-admin/");
   for (const a of pol.agents) assert.equal(a.allowed, pathAllowed(groupFor(groups, a.ua), "/wp-admin/"), a.ua);
+});
+
+// 0.6.0 — RFC 9309 matching, as production has done since 2026-09-30.
+test("`Disallow: /` + `Allow: /$` opens the homepage and nothing else", () => {
+  const g = starGroup(parseGroups("User-agent: *\nDisallow: /\nAllow: /$\n"));
+  assert.equal(rootAllowed(g), true, "the 0.5 reader stripped nothing from /$ and read the whole site closed");
+  assert.equal(pathAllowed(g, "/"), true);
+  assert.equal(pathAllowed(g, "/about"), false);
+});
+
+test("`*` matches anywhere in the rule, not only at the end", () => {
+  const g = starGroup(parseGroups("User-agent: *\nDisallow: /*?add-to-cart=\nDisallow: /*/private/\n"));
+  assert.equal(pathAllowed(g, "/shop/?add-to-cart=12"), false);
+  assert.equal(pathAllowed(g, "/shop/"), true);
+  assert.equal(pathAllowed(g, "/a/private/x"), false);
+  assert.equal(pathAllowed(g, "/private/x"), true, "the 0.5 reader read /*/private/ as the prefix //private/");
+});
+
+test("a trailing `$` anchors the end; elsewhere `$` and `.` are literal", () => {
+  assert.equal(ruleMatches("/*.pdf$", "/files/a.pdf"), true);
+  assert.equal(ruleMatches("/*.pdf$", "/files/a.pdf?dl=1"), false);
+  assert.equal(ruleMatches("/a.b", "/aXb"), false);
+  assert.equal(ruleMatches("/$x", "/$x/y"), true);
+});
+
+test("longest match wins, and an equal-length tie goes to Allow", () => {
+  assert.deepEqual(decide([{ path: "/a", allow: false }, { path: "/a/b", allow: true }], "/a/b/c"), { allowed: true, rule: "/a/b" });
+  assert.deepEqual(decide([{ path: "/p", allow: false }, { path: "/p", allow: true }], "/p"), { allowed: true, rule: "/p" });
+  assert.deepEqual(decide([], "/x"), { allowed: true, rule: null });
 });

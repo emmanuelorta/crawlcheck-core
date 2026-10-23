@@ -108,9 +108,9 @@ test("rows carry the row contract and the three-state verdict", () => {
   assert.ok(rows.some((r) => r.ok !== null), "and at least one is scored");
 });
 
-test("parity with the production scanner on a live page (treeservicedenverllc.com)",
+test("parity with the production scanner on a live page (terrariumstation.com)",
   { skip: live ? false : "set CC_LIVE=1" }, async () => {
-  const expected = fxj("treeservicedenverllc.com.images.json");
+  const expected = fxj("terrariumstation.com.images.json");
   assert.equal(expected.reproducible, true);
   const res = await fetch(expected.page_url, {
     headers: { "user-agent": expected.fetch.user_agent, accept: expected.fetch.accept },

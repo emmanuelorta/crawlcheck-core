@@ -1,0 +1,58 @@
+{
+  "_": "Captured from a live production scan of terrariumstation.com at crawlcheck.io on 2026-10-23 (live head 398e6cfd). `quotable` and `agent_surfaces_found` are the service's own values, copied unaltered. The page is not committed: page_sha256 and page_bytes describe the exact response the service read, and the live test re-fetches with the same user-agent and Accept and refuses to compare unless the bytes still match.",
+  "domain": "terrariumstation.com",
+  "page_url": "https://terrariumstation.com/",
+  "fetch": {
+    "user_agent": "Mozilla/5.0 (compatible; CrawlCheck/1.0; +https://crawlcheck.io/bot)",
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+  },
+  "page_sha256": "cd1cb703ddacebaf897396bd83f6717ca563b3ac3f250b25e6c414df9bfbbb59",
+  "page_bytes": 63995,
+  "digest_excludes": "two edge-injected scripts that are not part of the page the site serves and change per request or per CDN release: the Cloudflare Web Analytics beacon and the Cloudflare Zaraz loader (a fresh nonce on every response). The reader excludes <script> content before it counts anything.",
+  "digest_excludes_pattern": "<script[^>]+static\\.cloudflareinsights\\.com[\\s\\S]*?</script>|<script data-cfasync=\"false\" nonce=\"[0-9a-f-]{36}\">try\\{\\(function\\(w,d\\)\\{!function\\(kP,kQ,kR,kS\\)[\\s\\S]*?</script>",
+  "scan_id": "may22hhat5",
+  "scanned_at": "2026-10-23T12:53:45.671Z",
+  "grade": "A",
+  "overall": 95,
+  "name_hint": "Terrarium Station",
+  "score_version": 34,
+  "quotable": {
+    "paragraphs": 17,
+    "words": 454,
+    "lead": "Premium captive-bred reptiles and invertebrates for serious keepers. Every animal raised with conservation in mind.",
+    "lead_names_subject": false,
+    "lead_defines": false,
+    "answer_units": 5,
+    "first_person": 0,
+    "headings": 18,
+    "question_headings": 3,
+    "question_headings_answered": 2,
+    "headings_with_id": 0,
+    "sentences": 25,
+    "median_sentence_words": 11,
+    "short_share": 80,
+    "quotable": 3,
+    "quotable_share": 12,
+    "samples": [
+      "The options may be chosen on the product page Isopods Cubaris sp.",
+      "\"Rubber Ducky\" Isopod For Sale This product has multiple variants.",
+      "Subscribe to the Terrarium Station LLC YouTube channel for bioactive terrarium setups, rare gecko breeding updates, isopod and millipede care, and behind-the-scenes looks at our conservation-focused b"
+    ],
+    "faq_questions": 0,
+    "faq_visible": 0,
+    "dated": false,
+    "tables": 0
+  },
+  "agent_surfaces_found": {
+    "agent_skills": true,
+    "media_kit": true,
+    "agents_md": true,
+    "api_catalog": false,
+    "mcp_card": false,
+    "link_header": true,
+    "markdown": false
+  },
+  "agent_surfaces_markdown_content_type": "text/html; charset=utf-8",
+  "reproducible": true,
+  "section_score": 67
+}

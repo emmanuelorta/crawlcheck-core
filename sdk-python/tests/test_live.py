@@ -13,7 +13,7 @@ class T(unittest.TestCase):
                          '{"a":[true,null,1.5,1,"é\\n"],"b":1,"c":{"x":10000000000000000,"y":1e+21,"z":1e-7}}')
 
     def test_resolve_verifies(self):
-        a = self.cc.resolve("supremefencingdenver.com")
+        a = self.cc.resolve("terrariumstation.com")
         self.assertEqual(a["kind"], "crawlcheck-resolve")
         r = self.cc.verify(a)
         self.assertTrue(r["verified"], r)
@@ -38,13 +38,13 @@ class T(unittest.TestCase):
         self.assertEqual(e.exception.status, 422)
 
     def test_guard_requires_confirmation(self):
-        ok, rc = self.cc.guard("supremefencingdenver.com", "transact")
+        ok, rc = self.cc.guard("terrariumstation.com", "transact")
         self.assertFalse(ok)
-        ok, rc = self.cc.guard("supremefencingdenver.com", "transact", confirm=lambda r: True)
+        ok, rc = self.cc.guard("terrariumstation.com", "transact", confirm=lambda r: True)
         self.assertTrue(ok)
 
     def test_foreign_key_rejected_online(self):
-        a = self.cc.resolve("supremefencingdenver.com")
+        a = self.cc.resolve("terrariumstation.com")
         r = verify_document(a, published_kids=["someone-else"])
         self.assertFalse(r["verified"])
         self.assertFalse(r["accepted"])
@@ -52,7 +52,7 @@ class T(unittest.TestCase):
         self.assertIs(r["issuer_trusted"], False)
 
     def test_offline_verified_is_not_accepted(self):
-        a = self.cc.resolve("supremefencingdenver.com")
+        a = self.cc.resolve("terrariumstation.com")
         off = verify_document(a)
         self.assertTrue(off["verified"])
         self.assertIsNone(off["issuer_trusted"])
@@ -66,7 +66,7 @@ class T(unittest.TestCase):
             self.assertTrue(self.cc.guard("github.com", "read", allow_warn=True)[0])
 
     def test_batch(self):
-        b = self.cc.resolve_batch(["github.com", "supremefencingdenver.com"])
+        b = self.cc.resolve_batch(["github.com", "terrariumstation.com"])
         self.assertEqual(b["count"], 2)
         for x in b["answers"]:
             self.assertTrue(self.cc.verify(x["answer"])["verified"])

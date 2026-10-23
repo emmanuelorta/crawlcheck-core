@@ -1,0 +1,35 @@
+{
+  "_": "Captured from a live production scan of terrariumstation.com at crawlcheck.io on 2026-10-23. `images` is the service's own value, copied unaltered (its `provenance` block comes from a separate network read and is not part of this reader). The page itself is not committed; the live test re-fetches and refuses to compare unless the bytes still match.",
+  "domain": "terrariumstation.com",
+  "page_url": "https://terrariumstation.com/",
+  "fetch": {
+    "user_agent": "Mozilla/5.0 (compatible; CrawlCheck/1.0; +https://crawlcheck.io/bot)",
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+  },
+  "page_sha256": "cd1cb703ddacebaf897396bd83f6717ca563b3ac3f250b25e6c414df9bfbbb59",
+  "page_bytes": 63995,
+  "digest_excludes": "two edge-injected scripts that are not part of the page the site serves and change per request or per CDN release: the Cloudflare Web Analytics beacon and the Cloudflare Zaraz loader (a fresh nonce on every response). The reader excludes <script> content before it counts anything.",
+  "digest_excludes_pattern": "<script[^>]+static\\.cloudflareinsights\\.com[\\s\\S]*?</script>|<script data-cfasync=\"false\" nonce=\"[0-9a-f-]{36}\">try\\{\\(function\\(w,d\\)\\{!function\\(kP,kQ,kR,kS\\)[\\s\\S]*?</script>",
+  "scan_id": "may22hhat5",
+  "scanned_at": "2026-10-23T12:53:45.671Z",
+  "grade": "A",
+  "overall": 95,
+  "images": {
+    "measured": true,
+    "total": 11,
+    "no_alt": 0,
+    "empty_alt": 0,
+    "no_dimensions": 0,
+    "lazy": 4,
+    "lazy_above_fold": 0,
+    "modern_format": 3,
+    "svg": 1,
+    "data_uri": 3,
+    "og_image": true,
+    "ld_image": true,
+    "ld_imageobject": true,
+    "preloaded": 2,
+    "fetchpriority_high": 3
+  },
+  "reproducible": true
+}

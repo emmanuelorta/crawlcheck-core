@@ -99,7 +99,10 @@ export const SURFACE_PATHS = [
   ["agents_md", "/agents.md"],
   ["agent_skills", "/.well-known/agent-skills/index.json"],
   ["mcp_card", "/.well-known/mcp/server-card.json"],
-  ["api_catalog", "/.well-known/api-catalog"]
+  ["api_catalog", "/.well-known/api-catalog"],
+  // The fifth probe is free: these four already fire together, so a media kit
+  // costs one more parallel request and nothing in wall time.
+  ["media_kit", "/.well-known/media-kit.json"]
 ];
 export async function agentSurfaces(base, root) {
   const out = { checked_at: new Date().toISOString(), found: {}, evidence: {} };

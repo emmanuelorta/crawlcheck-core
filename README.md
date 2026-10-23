@@ -2,11 +2,11 @@
 
 [![tests](https://github.com/emmanuelorta/crawlcheck-core/actions/workflows/test.yml/badge.svg)](https://github.com/emmanuelorta/crawlcheck-core/actions/workflows/test.yml)
 
-The dependency-free modules of [CrawlCheck](https://crawlcheck.io), the verification layer for the agentic web, extracted from the production Worker. These are the readers behind its signed answer about what a site permits and serves to AI crawlers and agents. No build step, no dependencies, ESM, Node 20+.
+The dependency-free modules of [CrawlCheck](https://crawlcheck.io), the verification layer for the agentic web, extracted from the production service. These are the readers behind its signed answer about what a site permits and serves to AI crawlers and agents. No build step, no dependencies, ESM, Node 20+.
 
-The hosted service fetches a site as 15 crawler identities and measures 35 sections, 24 of them graded, across three stages — **reach** (can the crawler get in), **read** (what it actually receives), **quote** (can an answer engine lift it). This repository is the open core: the readers and checks that need no network, no store and no key, published so the measurements can be reproduced.
+The hosted service fetches a site as 12 crawler identities (plus a browser and two control requests) and measures 35 sections, 24 of them graded, across three stages — **reach** (can the crawler get in), **read** (what it actually receives), **quote** (can an answer engine lift it). This repository is the open core: the readers and checks that need no network, no store and no key, published so the measurements can be reproduced.
 
-**What is here today:** the robots.txt policy reader, the crawler identifier / log-line forgery verifier, the quotable-content reader, the image-signal reader, and the markdown-negotiation and agent-surface probes. **What stays in the service:** the scoring — the thresholds each reading is judged against, the weight every section carries in the grade, and the corpus calibration those numbers were set from — plus fetching as fifteen crawler identities, the record over time, monitoring, the dataset, and billing. The rule is simple: **a reading of your page is a fact you are entitled to check, and the calibration is the product.**
+**What is here today:** the robots.txt policy reader, the crawler identifier / log-line forgery verifier, the quotable-content reader, the image-signal reader, and the markdown-negotiation and agent-surface probes. **What stays in the service:** the scoring — the thresholds each reading is judged against, the weight every section carries in the grade, and the corpus calibration those numbers were set from — plus fetching as those crawler identities, the record over time, monitoring, the dataset, and billing. The rule is simple: **a reading of your page is a fact you are entitled to check, and the calibration is the product.**
 
 ## Also in this repository: the SDKs
 
@@ -36,7 +36,7 @@ policy.shadowed;
 // [{ uas:["gptbot"], missing:["/wp-admin/","/feed/"], missing_count:2 }]
 ```
 
-For each of 92 named agents (answer engines, search indexes, training crawlers, SEO tools, social unfurlers, regional engines) it reports: which user-agent group applies (`named`), whether the given path and the root are allowed under that group, and whether the group **shadows** the `*` rules.
+For each of 114 named agents (answer engines, search indexes, training crawlers, SEO tools, social unfurlers, regional engines) it reports: which user-agent group applies (`named`), whether the given path and the root are allowed under that group, and whether the group **shadows** the `*` rules.
 
 ### The shadowing defect
 
@@ -59,13 +59,14 @@ GPTBot no longer sees `Disallow: /wp-admin/` — the `*` group stops applying to
 | `crawlerPolicy(txt, unreadable, path)` | Full per-agent policy for one file. `measured:false` with a reason when the file is empty or unreadable — an absence is never reported as a policy |
 | `parseGroups(txt)` | RFC 9309 groups: consecutive `User-agent` lines share one group; `Allow`/`Disallow` rules in order |
 | `groupFor(groups, ua)` | The group that applies to an agent: longest-prefix match on the agent token, `*` as fallback |
-| `pathAllowed(group, path)` / `rootAllowed(group)` | Longest rule wins; `Allow` beats `Disallow` at equal length |
-| `shadowedGroups(groups)` | Named groups missing any `*` disallow |
-| `AGENTS` | The 92-agent table: `[token, label, role]` |
+| `pathAllowed(group, path)` / `rootAllowed(group)` | RFC 9309 matching (`*` anywhere, trailing `$` anchors the end); longest rule wins; `Allow` beats `Disallow` at equal length |
+| `ruleMatches(rule, path)` / `decide(rules, path)` | The matcher itself, and the decision with the rule that made it |
+| `shadowedGroups(groups)` | Named groups for which a `*` disallow is lost (not covered by one of the group's own rules, e.g. its own `Disallow: /`) |
+| `AGENTS` | The 114-agent table: `[token, label, role]` |
 
 ### What it does not do
 
-`*` inside a rule path is stripped and the remainder matched as a prefix; `$` end anchors are not honoured; `Crawl-delay`, `Sitemap` and unknown fields are ignored. These are the production service's readings too — the tests include byte-for-byte parity against the live `/api/tool/robots` endpoint on real files, so this module answers exactly what the service answers.
+`Crawl-delay`, `Sitemap` and unknown fields are ignored, and percent-encoding is not normalised (rules and paths are compared as written). Path matching follows RFC 9309: `*` matches any run of characters and a trailing `$` anchors the end, so `Disallow: /` + `Allow: /$` opens the homepage and nothing else. Versions before 0.6.0 stripped `*` and ignored `$`; production changed on 2026-09-30, and 0.6.0 brings this module back to the service's reading. The tests check parity on real robots.txt files, including paths decided by `*` rules.
 
 ## agents — who fetched, and whether they are who they claim
 
@@ -194,7 +195,7 @@ npm test            # 48 tests, no network (4 skipped)
 CC_LIVE=1 npm test  # 48: adds the four live parity checks
 ```
 
-**robots** — RFC group parsing, precedence, the shadowing case both ways, unmeasured inputs, table integrity, and parity with the production service on two real robots.txt files.
+**robots** — RFC group parsing, precedence, the shadowing case both ways, unmeasured inputs, table integrity, and RFC 9309 wildcard and end-anchor cases, and parity with the production service on two real robots.txt files.
 
 **agents** — token matching, IPv4/IPv6 range logic, the three-state verdict, and parity with the production verifier on 11 real log lines against a stored snapshot of the five operator feeds those lines touch (`test/fixtures/ranges.json`, dated inside the file).
 
