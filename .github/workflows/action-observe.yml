@@ -1,0 +1,19 @@
+name: action observe
+# Runs the Action's observe step against crawlcheck.io, so the observer path is exercised from this repository's own
+# runner exactly as a customer's workflow runs it (observer id gha:emmanuelorta/crawlcheck-core).
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: ./action
+        with:
+          domain: crawlcheck.io
+          fix: "false"
+          observe: "true"
