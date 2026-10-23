@@ -27,6 +27,12 @@ Each of these is a decision the agent must make \emph{before} it acts, usually w
 
 The second question is not a test of the service's accuracy. The signal shown to the model was produced by the service and matches each case's label by construction. What the second arm measures is whether a model that is handed a correct verdict acts on it, which is a necessary condition for any such service to matter, not a sufficient one. Section~\ref{sec:limits} returns to this.
 
+\section{Related work}
+
+Benchmarks of agent security so far measure mostly one hazard: instructions injected into what an agent reads. InjecAgent~\cite{zhan2024injecagent} tests indirect prompt injection against tool-integrated agents, where attacker text arrives through a tool's output. AgentDojo~\cite{debenedetti2024agentdojo} provides a dynamic environment of user tasks and injection cases for evaluating both attacks and defenses. Agent Security Bench~\cite{zhang2025asb} formalises attacks and defenses across agent scenarios and tools. WASP~\cite{evtimov2025wasp} brings the question to web agents acting in realistic sites. On deceptive destinations, PhishNChips~\cite{litvak2026phishnchips} shows that phishing detection by language models depends strongly on the system prompt, and that checks relying on sender and URL domains matching are defeated by attackers who register matching domains.
+
+This benchmark differs in two ways. It asks about the decision to act at all, across six hazard families of which tool-description injection is one, and it scores wrongly stopping on matched benign cases alongside failing to stop. And it measures a second arm in which the same evidence comes with an external, signed verdict, to ask whether models act on correct outside evidence when they have it.
+
 \section{The suite}
 
 The suite is a single JSON document, frozen at version 4 on 22 October 2026, with SHA-256
@@ -134,5 +140,14 @@ Everything needed to repeat the run is public: the suite file with its hash, the
 \section*{Disclosure}
 
 The author operates CrawlCheck, the verification service whose signal is used in the second arm, and built the benchmark. No outside party has yet reproduced the run.
+
+
+\begin{thebibliography}{9}
+\bibitem{zhan2024injecagent} Q.~Zhan, Z.~Liang, Z.~Ying, D.~Kang. InjecAgent: Benchmarking Indirect Prompt Injections in Tool-Integrated Large Language Model Agents. arXiv:2403.02691, 2024.
+\bibitem{debenedetti2024agentdojo} E.~Debenedetti, J.~Zhang, M.~Balunovi\'c, L.~Beurer-Kellner, M.~Fischer, F.~Tram\`er. AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses for LLM Agents. NeurIPS Datasets and Benchmarks, 2024. arXiv:2406.13352.
+\bibitem{zhang2025asb} H.~Zhang, J.~Huang, K.~Mei, Y.~Yao, Z.~Wang, C.~Zhan, H.~Wang, Y.~Zhang. Agent Security Bench (ASB): Formalizing and Benchmarking Attacks and Defenses in LLM-based Agents. ICLR, 2025. arXiv:2410.02644.
+\bibitem{evtimov2025wasp} I.~Evtimov, A.~Zharmagambetov, A.~Grattafiori, C.~Guo, K.~Chaudhuri. WASP: Benchmarking Web Agent Security Against Prompt Injection Attacks. arXiv:2504.18575, 2025.
+\bibitem{litvak2026phishnchips} R.~Litvak. The System Prompt Is the Attack Surface: How LLM Agent Configuration Shapes Security and Creates Exploitable Vulnerabilities. arXiv:2603.25056, 2026.
+\end{thebibliography}
 
 \end{document}
