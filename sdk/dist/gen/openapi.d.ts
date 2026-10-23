@@ -1895,7 +1895,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The last reconstruction test: the oldest archived records' evidence paths (record, report node, decision nodes, manifest node, every verifier check) resolved through the 90-day projections and again from the permanent store alone (R2 archive + seal records), compared byte for byte after canonical serialisation. Public */
+        /** The last reconstruction test: the oldest archived records' evidence paths (record, report node, decision nodes, manifest node, every verifier check) resolved through the 90-day projections and again from the permanent store alone (the sealed archive and seal records), compared byte for byte after canonical serialisation. Public */
         get: operations["reconstructionTest"];
         put?: never;
         post?: never;
