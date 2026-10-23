@@ -130,10 +130,12 @@ test("surface rows are informational, and say NOT APPLICABLE rather than failing
   assert.equal(agentSurfaceRows({ agent_surfaces: { found: {} } }).find((r) => r.k === "Markdown for agents").cur, "not checked");
 });
 
-// Opt in with CC_LIVE=1 to re-run the probes against the two sites the fixtures
-// were captured from. Off by default so the suite needs no network.
+// Opt in with CC_LIVE=1 to re-run the probes against the site the reproducible
+// fixture was captured from. Off by default so the suite needs no network.
+// (emmanuelorta.com's fixture is a 2026-09-03 historical record; that site has
+// added surfaces since, so it is not a live target.)
 const live = process.env.CC_LIVE === "1";
-for (const domain of ["treeservicedenverllc.com", "emmanuelorta.com"]) {
+for (const domain of ["terrariumstation.com"]) {
   test("live: the probes still answer what the production scan recorded for " + domain, { skip: live ? false : "set CC_LIVE=1" }, async () => {
     const expected = fxj(domain + ".quotable.json");
     const base = "https://" + domain;

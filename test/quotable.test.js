@@ -28,9 +28,9 @@ const page = (body) => "<html><head><title>t</title></head><body>" + body + "</b
 const live = process.env.CC_LIVE === "1";
 const sha256 = async (buf) => Buffer.from(await crypto.subtle.digest("SHA-256", buf)).toString("hex");
 
-test("parity with the production scanner on a live scan of treeservicedenverllc.com",
+test("parity with the production scanner on a live scan of terrariumstation.com",
   { skip: live ? false : "set CC_LIVE=1" }, async () => {
-  const expected = fxj("treeservicedenverllc.com.quotable.json");
+  const expected = fxj("terrariumstation.com.quotable.json");
   assert.equal(expected.reproducible, true);
   const res = await fetch(expected.page_url, {
     headers: { "user-agent": expected.fetch.user_agent, accept: expected.fetch.accept },
@@ -58,16 +58,19 @@ test("parity with the production scanner on a live scan of treeservicedenverllc.
 // live figures and cannot be re-fetched byte-identically, so it is not a parity
 // target — it is here to prove the reader does not flatten one site into another.
 test("the two recorded scans disagree, which is what makes them worth keeping", () => {
-  const tsd = fxj("treeservicedenverllc.com.quotable.json");
+  const ts = fxj("terrariumstation.com.quotable.json");
   const eo = fxj("emmanuelorta.com.quotable.json");
-  assert.equal(tsd.section_score, 100);
-  assert.equal(eo.section_score, 67, "a page whose lead is a slogan and whose factual share is 12% loses three rows");
-  assert.equal(tsd.quotable.faq_questions, 9);
+  assert.equal(ts.section_score, 67);
+  assert.equal(eo.section_score, 67, "the same section score from different readings: the rows that fail are not the same");
+  assert.equal(ts.quotable.words, 454);
+  assert.equal(eo.quotable.words, 2539);
+  assert.equal(ts.quotable.answer_units, 5);
+  assert.equal(eo.quotable.answer_units, 24);
+  assert.equal(ts.quotable.dated, false);
+  assert.equal(eo.quotable.dated, true, "a page that shows a record-updated date");
+  assert.equal(ts.quotable.faq_questions, 0);
   assert.equal(eo.quotable.faq_questions, 0, "no FAQPage: the parity row is not scored rather than failed");
-  assert.equal(eo.quotable.lead_defines, false);
-  assert.equal(tsd.agent_surfaces_found.markdown, true, "this site answers Accept: text/markdown with markdown");
-  assert.equal(eo.agent_surfaces_found.markdown, false);
-  assert.equal(tsd.reproducible, true);
+  assert.equal(ts.reproducible, true);
   assert.equal(eo.reproducible, false, "a page that rewrites itself hourly cannot be a re-fetch target");
   assert.ok(eo.not_reproducible_because.length > 40, "and the fixture has to say why");
 });
