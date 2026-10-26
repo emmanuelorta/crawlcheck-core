@@ -15,7 +15,8 @@ test("identifyBot: longest matching token wins, case-insensitive", () => {
 });
 
 test("every feed family named in BOT_FEED_OF has a feed URL", () => {
-  for (const fam of new Set(Object.values(BOT_FEED_OF))) assert.ok(BOT_IP_FEEDS[fam], fam);
+  // A bot may accept more than one feed (e.g. Google's special-case crawlers): check every family listed.
+  for (const fam of new Set(Object.values(BOT_FEED_OF).flat())) assert.ok(BOT_IP_FEEDS[fam], fam);
   // Production carries "Meta-ExternalAgent" and "meta-externalagent" — a case
   // variant, harmless because matching is case-insensitive. Kept verbatim for parity.
   assert.equal(new Set(BOT_TOKENS.map((t) => t.toLowerCase())).size, BOT_TOKENS.length - 1);
@@ -63,4 +64,15 @@ test("forged rate divides by verified + spoofed only; null when nothing is check
   const r = verifyLines(["1.2.3.4 - CCBot/2.0", "5.6.7.8 - Bytespider"], ranges);
   assert.equal(r.forged_rate_pct, null);
   assert.deepEqual(r.tally, { verified: 0, spoofed: 0, unverifiable: 2, no_bot: 0 });
+});
+
+test("Google's special-case and remaining common crawlers are identified and mapped to Google's feeds", () => {
+  assert.equal(identifyBot("AdsBot-Google (+http://www.google.com/adsbot.html)"), "AdsBot-Google");
+  assert.equal(identifyBot("Mozilla/5.0 (compatible; GoogleOther)"), "GoogleOther");
+  assert.deepEqual([].concat(BOT_FEED_OF["AdsBot-Google"]), ["google_special", "google"]);
+  assert.equal(BOT_FEED_OF["GoogleOther"], "google");
+  const ranges = { feeds: { google_special: ["108.177.2.0/24"], google: ["192.178.4.0/27"] } };
+  assert.equal(verifyBotIP("AdsBot-Google", "108.177.2.10", ranges), true);
+  assert.equal(verifyBotIP("AdsBot-Google", "203.0.113.9", ranges), false);
+  assert.equal(verifyBotIP("AdsBot-Google", "108.177.2.10", { feeds: {} }), null); // unreadable feeds: unverifiable, never spoofed
 });

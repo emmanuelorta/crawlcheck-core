@@ -14,10 +14,16 @@ export const BOT_TOKENS = [
   "OAI-SearchBot", "ChatGPT-User", "GPTBot", "Claude-SearchBot", "Claude-User",
   "ClaudeBot", "anthropic-ai", "PerplexityBot", "Perplexity-User",
   "Google-Extended", "Googlebot", "Bingbot", "Applebot-Extended", "Applebot",
-  "Amazonbot", "Bytespider", "Meta-ExternalAgent", "meta-externalagent",
-  "FacebookBot", "YandexBot", "Baiduspider", "DuckDuckBot", "CCBot",
+  "Amazonbot", "Amzn-SearchBot", "Bytespider", "Meta-ExternalAgent", "meta-externalagent",   // amzv3: Amzn-SearchBot tracked (its list is read since amzv2)
+  "FacebookBot", "YandexBot", "Baiduspider", "SeznamBot", "Yeti", "DuckDuckBot", "CCBot",   // vrd2: + Seznam, Naver
   "Diffbot", "omgili", "cohere-ai", "MistralAI-User", "YouBot",
   "Timpibot", "Scrapy", "SemrushBot", "AhrefsBot", "DataForSeoBot",
+  // Google user-triggered fetchers and Google-Agent (build 582). Tokens exactly as Google lists them.
+  "Google-Agent", "Google-GeminiNotebook", "Google-NotebookLM", "Google-Read-Aloud", "FeedFetcher-Google",
+  "Google-Site-Verification", "GoogleMessages", "Google-Pinpoint", "GoogleProducer", "Google-CWS",
+  // gvf1: the rest of Google's documented crawlers. Common crawlers (common-crawlers.json) and special-case crawlers (special-crawlers.json).
+  "GoogleOther", "Google-InspectionTool", "Storebot-Google", "Google-CloudVertexBot",
+  "AdsBot-Google", "Mediapartners-Google", "APIs-Google", "Google-Safety",
 ];
 
 export function identifyBot(ua) {
@@ -37,6 +43,24 @@ export const BOT_FEED_OF = {
   "PerplexityBot": "perplexity", "Perplexity-User": "perplexity_user",
   "Googlebot": "google", "Google-Extended": "google",
   "Bingbot": "bing", "Applebot": "apple", "Applebot-Extended": "apple",
+  "DuckDuckBot": "duckduckgo", "MistralAI-User": "mistral_user", "AhrefsBot": "ahrefs",   // cd4: operators that publish range files
+  "Amazonbot": "amazon", "Amzn-SearchBot": "amazon_search",   // amzv1, amzv2: was "publishes no IP range feed" - 45,043 claimed hits, all unverifiable, from a Cloudflare network
+  // GOOGLE'S USER-TRIGGERED TRAFFIC (build 582). user-triggered-fetchers-google.json was fetched every
+  // day and mapped to no bot, so none of it could ever verify, and Google-Agent's own feed was not
+  // fetched at all. Google says Google-Agent uses user-triggered-agents.json; the other fetchers are
+  // Google-owned and resolve to google-proxy-*.google.com, but Google does not pin each one to a file,
+  // so they accept either Google-owned user-triggered file. user-triggered-fetchers.json (customer
+  // GCP, gae.googleusercontent.com) is deliberately NOT accepted: anyone can run code there.
+  "Google-Agent": "google_agent",
+  "Google-GeminiNotebook": ["google_user", "google_agent"], "Google-NotebookLM": ["google_user", "google_agent"],
+  "Google-Read-Aloud": ["google_user", "google_agent"], "FeedFetcher-Google": ["google_user", "google_agent"],
+  "Google-Site-Verification": ["google_user", "google_agent"], "GoogleMessages": ["google_user", "google_agent"],
+  "Google-Pinpoint": ["google_user", "google_agent"], "GoogleProducer": ["google_user", "google_agent"],
+  "Google-CWS": ["google_user", "google_agent"],
+  // gvf1: Google's common crawlers verify against common-crawlers.json; special-case crawlers against special-crawlers.json (or the common file, which some historically used).
+  "GoogleOther": "google", "Google-InspectionTool": "google", "Storebot-Google": "google", "Google-CloudVertexBot": "google",
+  "AdsBot-Google": ["google_special", "google"], "Mediapartners-Google": ["google_special", "google"],
+  "APIs-Google": ["google_special", "google"], "Google-Safety": ["google_special", "google"],
 };
 
 export const BOT_IP_FEEDS = {
@@ -48,8 +72,15 @@ export const BOT_IP_FEEDS = {
   perplexity_user: "https://www.perplexity.ai/perplexity-user.json",
   google:          "https://developers.google.com/static/crawling/ipranges/common-crawlers.json",
   google_user:     "https://developers.google.com/static/crawling/ipranges/user-triggered-fetchers-google.json",
+  google_agent:    "https://developers.google.com/static/crawling/ipranges/user-triggered-agents.json",
+  google_special:  "https://developers.google.com/static/crawling/ipranges/special-crawlers.json",   // gvf1: AdsBot, Mediapartners, APIs-Google, Google-Safety (Google: rate-limited-proxy-*.google.com)
   bing:            "https://www.bing.com/toolbox/bingbot.json",
   apple:           "https://search.developer.apple.com/applebot.json",
+  duckduckgo:      "https://duckduckgo.com/duckduckbot.json",
+  mistral_user:    "https://mistral.ai/mistralai-user-ips.json",
+  ahrefs:          "https://api.ahrefs.com/v3/public/crawler-ips",
+  amazon:          "https://developer.amazon.com/amazonbot/ip-addresses/",   // amzv1: Amazon publishes Amazonbot's addresses (a JSON block inside an HTML page)
+  amazon_search:   "https://developer.amazon.com/amazonbot/searchbot-ip-addresses/",   // amzv2: Amzn-SearchBot's list, same page style, entries keyed ip_prefix
 };
 
 export const CRAWLERS = [
@@ -142,14 +173,17 @@ export function ipInCidr(ip, cidr) {
 
 export function verifyBotIP(bot, ip, ranges) {
   if (!ip) return null;
-  const fam = BOT_FEED_OF[bot];
-  if (!fam) return null;                  // operator publishes no feed
-  const list = ranges && ranges.feeds && ranges.feeds[fam];
-  if (!list || !list.length) return null; // feed unreadable — not forgery
-  for (const c of list) if (ipInCidr(ip, c)) return true;
-  return false;
+  const fams = [].concat(BOT_FEED_OF[bot] || []);
+  if (!fams.length) return null;          // operator publishes no feed
+  let readable = false;
+  for (const fam of fams) {
+    const list = ranges && ranges.feeds && ranges.feeds[fam];
+    if (!list || !list.length) continue;  // this feed unreadable - not forgery
+    readable = true;
+    for (const c of list) if (ipInCidr(ip, c)) return true;
+  }
+  return readable ? false : null;
 }
-
 // Load every operator feed with the fetch you pass in. Returns the same shape
 // verifyBotIP() expects: { at, feeds: { openai: ["cidr", ...], ... } }.
 // A feed that fails to load is simply absent, which makes its operator's hits
@@ -161,8 +195,12 @@ export async function loadRanges(fetchFn, userAgent) {
     try {
       const r = await f(BOT_IP_FEEDS[name], { headers: { "user-agent": userAgent || "crawlcheck-core (+https://crawlcheck.io/bot)", accept: "application/json" }, redirect: "follow" });
       if (!r || !r.ok) return;
-      const j = await r.json();
-      const list = ((j && j.prefixes) || []).map((p) => p && (p.ipv4Prefix || p.ipv6Prefix)).filter(Boolean);
+      // Amazon publishes its list as a JSON block inside an HTML page, with bare addresses: read the prefixes out of the text.
+      const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch (e) { j = null; }
+      if (!j) { const p = []; const re = /"(ipv4Prefix|ipv6Prefix|ip_prefix|ipv6_prefix)"\s*:\s*"([0-9a-fA-F:.\/]+)"/g; let m; while ((m = re.exec(txt)) !== null && p.length < 20000) { const six = m[2].indexOf(":") > -1; const v = m[2].indexOf("/") > -1 ? m[2] : m[2] + (six ? "/128" : "/32"); p.push({ [six ? "ipv6Prefix" : "ipv4Prefix"]: v }); } j = { prefixes: p }; }
+      // Ahrefs publishes {ips:[{ip_address}]}; every other feed here uses {prefixes:[{ipv4Prefix|ipv6Prefix}]}.
+      const list = ((j && j.prefixes) || ((j && j.ips) || []).map((x) => x && x.ip_address ? { [String(x.ip_address).indexOf(":") > -1 ? "ipv6Prefix" : "ipv4Prefix"]: x.ip_address + (String(x.ip_address).indexOf(":") > -1 ? "/128" : "/32") } : null))
+        .map((p) => p && (p.ipv4Prefix || p.ipv6Prefix)).filter(Boolean);
       if (list.length) feeds[name] = list;
     } catch { /* absent feed = unverifiable, not forged */ }
   }));
