@@ -29,4 +29,11 @@ jobs:
       - run: |
           TAG="${GITHUB_REF_NAME#v}"; PKG="$(node -p "require('./package.json').version")"
           [ "$TAG" = "$PKG" ] || { echo "tag v$TAG != package.json $PKG"; exit 1; }
-      - run: npm publish --access public
+      # The first publish is manual (see the header). Until the package exists on npm,
+      # a tag cuts the GitHub release only and this job ends green instead of failing.
+      - id: exists
+        run: |
+          if npm view crawlcheck-core version >/dev/null 2>&1; then echo "ok=1" >> "$GITHUB_OUTPUT"
+          else echo "::notice::crawlcheck-core is not on npm yet; skipping publish (first publish is manual)"; fi
+      - if: steps.exists.outputs.ok == '1'
+        run: npm publish --access public
