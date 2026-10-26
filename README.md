@@ -82,7 +82,7 @@ r.forged_rate_pct;  // spoofed / (verified + spoofed), or null when nothing is c
 r.rows[0];          // { line, bot, ip, verdict, why }
 ```
 
-Three verdicts, never two. **Verified**: the address is inside a range the claimed operator publishes. **Spoofed**: it is outside every range that operator publishes. **Unverifiable**: the operator publishes no feed (Common Crawl, ByteDance, Meta, Amazon) or the feed could not be read — and that is reported as unverifiable, not as forgery. The forged rate divides by verified + spoofed only; counting unverifiable hits as forged would inflate it and counting them as genuine would understate it.
+Three verdicts, never two. **Verified**: the address is inside a range the claimed operator publishes. **Spoofed**: it is outside every range that operator publishes. **Unverifiable**: the operator publishes no feed (Common Crawl, ByteDance, Meta) or the feed could not be read — and that is reported as unverifiable, not as forgery. The forged rate divides by verified + spoofed only; counting unverifiable hits as forged would inflate it and counting them as genuine would understate it.
 
 | Export | What it does |
 |---|---|
