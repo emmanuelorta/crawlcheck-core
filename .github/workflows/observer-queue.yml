@@ -1,0 +1,28 @@
+name: Queue observer
+# A second network for CrawlCheck at no cost: this public repository's GitHub-hosted runner (Microsoft Azure) takes
+# tasks from CrawlCheck's public observation queue twice an hour and posts signed readings as gha:emmanuelorta/crawlcheck-core.
+# Public repositories run GitHub-hosted jobs free of charge. No secret: the run is proven by a GitHub OIDC token.
+on:
+  schedule:
+    - cron: "11 * * * *"
+    - cron: "41 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: observer-queue
+  cancel-in-progress: false
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+      - name: Observe the queue
+        env:
+          CC_DOMAIN: ""
+        run: node action/observe.mjs

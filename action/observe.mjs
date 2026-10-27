@@ -50,7 +50,7 @@ export async function observe(opts) {
   const F = opts.fetch || fetch, E = opts.env || process.env;
   const BASE = String(opts.base || "https://crawlcheck.io").replace(/\/$/, "");
   const domain = String(opts.domain || "").replace(/^https?:\/\//, "").replace(/\/.*$/, "").toLowerCase();
-  if (!domain) throw new Error("domain is required");
+  // queue mode (2026-10-26): an empty domain asks CrawlCheck for tasks from its public queue (the scheduled observer in this repo).
   const repo = opts.repository || E.GITHUB_REPOSITORY;
   if (!repo) throw new Error("GITHUB_REPOSITORY is not set: run this inside GitHub Actions");
   const observerId = "gha:" + repo;
@@ -61,7 +61,7 @@ export async function observe(opts) {
   const runnerEnv = E.RUNNER_ENVIRONMENT || null;
   const vantage = { provider: runnerEnv === "self-hosted" ? "self-hosted GitHub Actions runner" : "GitHub-hosted runner (Microsoft Azure)", runner_environment: runnerEnv, runner_os: E.RUNNER_OS || null, runner_arch: E.RUNNER_ARCH || null };
   const t0 = Date.now();
-  const tk = await F(BASE + "/api/observe/tasks?domains=" + encodeURIComponent(domain), { headers: { authorization: "Bearer " + oidc, "x-cc-observer-id": observerId, "x-cc-observer-key": JSON.stringify(pub), "user-agent": "crawlcheck-action-observer/1" } });
+  const tk = await F(BASE + "/api/observe/tasks" + (domain ? "?domains=" + encodeURIComponent(domain) : ""), { headers: { authorization: "Bearer " + oidc, "x-cc-observer-id": observerId, "x-cc-observer-key": JSON.stringify(pub), "user-agent": "crawlcheck-action-observer/1" } });
   const rtt = Date.now() - t0;
   const plan = await tk.json().catch(() => ({}));
   if (!tk.ok) throw new Error("tasks refused: HTTP " + tk.status + " " + JSON.stringify(plan).slice(0, 300));
