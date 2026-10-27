@@ -25,7 +25,11 @@ def agent_tools(cc, agent=None, allow_warn=False, confirm=None, max_chars=20000)
     """Return [{"name", "description", "parameters", "execute"}] for crawlcheck_check_site, crawlcheck_verify_fact and crawlcheck_fetch."""
     def check_site(args):
         args = args or {}
-        domain, action = _domain(args.get("site")), args.get("action") if args.get("action") in _ACTIONS else "read"
+        raw = args.get("action")
+        # 1.10.1: an action that is given but not one of the five fails closed (it used to fall back to "read").
+        if raw not in (None, "") and raw not in _ACTIONS:
+            return {"proceed": False, "why": ["unknown action: %s (use read, cite, connect, transact or administer)" % raw]}
+        domain, action = _domain(args.get("site")), raw or "read"
         if not domain:
             return {"proceed": False, "why": ["not a public domain name: %s" % args.get("site")]}
         try:
@@ -60,6 +64,8 @@ def agent_tools(cc, agent=None, allow_warn=False, confirm=None, max_chars=20000)
 
     def fetch(args):
         args = args or {}
+        if args.get("action") not in (None, "", "read", "cite"):
+            return {"proceed": False, "url": str(args.get("url") or ""), "why": ["unknown action: %s (use read or cite)" % args.get("action")]}
         r = cc.guarded_fetch(str(args.get("url") or ""), action="cite" if args.get("action") == "cite" else "read", allow_warn=allow_warn, confirm=confirm)
         hops = [{"url": h.get("url"), "domain": h.get("domain"), "decision": h.get("decision"), "proceed": h.get("proceed"), "status": h.get("status")} for h in r.get("hops", [])]
         if not r.get("proceed") or r.get("body") is None:

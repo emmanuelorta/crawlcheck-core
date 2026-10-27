@@ -608,7 +608,11 @@ function atDomain(v) { const s = String(v ?? "").trim(); try {
 catch {
     return "";
 } }
-function atAction(v) { return AT_ACTIONS.includes(String(v)) ? String(v) : "read"; }
+// 1.9.2: an action that is GIVEN but not one of the five fails closed (it used to fall back to "read", so a crew asking about
+// "pay" got a read decision). An absent action still means read.
+function atAction(v) { if (v === undefined || v === null || v === "")
+    return "read"; return AT_ACTIONS.includes(String(v)) ? String(v) : null; }
+const atBadAction = (v) => ({ proceed: false, why: ["unknown action: " + String(v) + " (use read, cite, connect, transact or administer)"] });
 export function agentTools(cc, opts = {}) {
     const max = opts.maxChars ?? 20000;
     return [
@@ -620,6 +624,8 @@ export function agentTools(cc, opts = {}) {
                 } },
             execute: async (a) => {
                 const domain = atDomain(a?.site), action = atAction(a?.action);
+                if (!action)
+                    return atBadAction(a?.action);
                 if (!domain)
                     return { proceed: false, why: ["not a public domain name: " + String(a?.site ?? "")] };
                 const g = await cc.guard(domain, action, opts);
@@ -657,6 +663,8 @@ export function agentTools(cc, opts = {}) {
                     action: { type: "string", enum: ["read", "cite"], description: "read (default) or cite, if the text will be quoted back to someone" }
                 } },
             execute: async (a) => {
+                if (a?.action !== undefined && a?.action !== null && a?.action !== "" && a.action !== "read" && a.action !== "cite")
+                    return Object.assign(atBadAction(a.action), { url: String(a?.url ?? "") });
                 const r = await cc.guardedFetch(String(a?.url ?? ""), Object.assign({}, opts, { action: (a?.action === "cite" ? "cite" : "read") }));
                 const hops = r.hops.map((h) => ({ url: h.url, domain: h.domain, decision: h.decision, proceed: h.proceed, status: h.status ?? null }));
                 if (!r.proceed || !r.response)

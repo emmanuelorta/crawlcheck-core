@@ -603,7 +603,10 @@ export interface AgentTool { name: string; description: string; parameters: Json
 export interface AgentToolOptions extends GuardOptions { /** Characters of page text returned by crawlcheck_fetch (default 20000). */ maxChars?: number }
 const AT_ACTIONS: Action[] = ["read", "cite", "connect", "transact", "administer"];
 function atDomain(v: unknown): string { const s = String(v ?? "").trim(); try { return normalizeDomain(/^[a-z][a-z0-9+.-]*:\/\//i.test(s) ? new URL(s).hostname : s); } catch { return ""; } }
-function atAction(v: unknown): Action { return (AT_ACTIONS as string[]).includes(String(v)) ? (String(v) as Action) : "read"; }
+// 1.9.2: an action that is GIVEN but not one of the five fails closed (it used to fall back to "read", so a crew asking about
+// "pay" got a read decision). An absent action still means read.
+function atAction(v: unknown): Action | null { if (v === undefined || v === null || v === "") return "read"; return (AT_ACTIONS as string[]).includes(String(v)) ? (String(v) as Action) : null; }
+const atBadAction = (v: unknown) => ({ proceed: false, why: ["unknown action: " + String(v) + " (use read, cite, connect, transact or administer)"] });
 export function agentTools(cc: CrawlCheck, opts: AgentToolOptions = {}): AgentTool[] {
   const max = opts.maxChars ?? 20000;
   return [
@@ -614,6 +617,7 @@ export function agentTools(cc: CrawlCheck, opts: AgentToolOptions = {}): AgentTo
         action: { type: "string", enum: AT_ACTIONS, description: "What you are about to do: read (default), cite, connect (an API or MCP server), transact (pay, book, submit personal data) or administer" } } },
       execute: async (a: any) => {
         const domain = atDomain(a?.site), action = atAction(a?.action);
+        if (!action) return atBadAction(a?.action);
         if (!domain) return { proceed: false, why: ["not a public domain name: " + String(a?.site ?? "")] };
         const g = await cc.guard(domain, action, opts);
         return { domain, action, proceed: g.proceed, decision: g.receipt ? String(g.receipt.decision) : null, why: g.why, reasons: Array.isArray((g.receipt as any)?.steps) ? (g.receipt as any).steps.map((x: any) => String(x?.why ?? "")).filter(Boolean) : [], reason_codes: (g.receipt as any)?.reason_codes ?? [],
@@ -641,6 +645,7 @@ export function agentTools(cc: CrawlCheck, opts: AgentToolOptions = {}): AgentTo
         url: { type: "string", description: "The http(s) URL to fetch" },
         action: { type: "string", enum: ["read", "cite"], description: "read (default) or cite, if the text will be quoted back to someone" } } },
       execute: async (a: any) => {
+        if (a?.action !== undefined && a?.action !== null && a?.action !== "" && a.action !== "read" && a.action !== "cite") return Object.assign(atBadAction(a.action), { url: String(a?.url ?? "") });
         const r = await cc.guardedFetch(String(a?.url ?? ""), Object.assign({}, opts, { action: (a?.action === "cite" ? "cite" : "read") as Action }));
         const hops = r.hops.map((h) => ({ url: h.url, domain: h.domain, decision: h.decision, proceed: h.proceed, status: h.status ?? null }));
         if (!r.proceed || !r.response) return { proceed: false, url: r.url, why: r.why, hops };

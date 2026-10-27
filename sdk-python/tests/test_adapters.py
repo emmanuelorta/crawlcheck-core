@@ -39,3 +39,15 @@ class LlamaIndexAdapter(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class UnknownActionFailsClosed(unittest.TestCase):
+    """1.10.1: a given action outside the five fails closed instead of becoming read (no network call)."""
+    def test_check_site_and_fetch(self):
+        from crawlcheck.tools import agent_tools
+        t = agent_tools(_Stub())
+        r = t[0]["execute"]({"site": "example.com", "action": "pay"})
+        self.assertFalse(r["proceed"]); self.assertIn("unknown action: pay", r["why"][0])
+        self.assertTrue(t[0]["execute"]({"site": "example.com"})["proceed"])
+        f = t[2]["execute"]({"url": "https://example.com/", "action": "transact"})
+        self.assertFalse(f["proceed"])

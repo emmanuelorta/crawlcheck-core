@@ -44,3 +44,10 @@ test("live: verify_fact returns a signed verdict that verifies", async () => {
   if (r.ok) { assert.equal(r.kind, "crawlcheck-field-check"); assert.equal(r.verified, true); assert.ok(r.verdict); }
   else assert.ok(r.why.length);
 });
+
+test("1.9.2: an unknown action fails closed (no fallback to read), without calling the API", async () => {
+  const r = await tools[0].execute({ site: "crawlcheck.io", action: "pay" });
+  assert.equal(r.proceed, false); assert.match(r.why[0], /unknown action: pay/);
+  const f = await tools[2].execute({ url: "https://crawlcheck.io/", action: "transact" });
+  assert.equal(f.proceed, false); assert.match(f.why[0], /unknown action/);
+});
