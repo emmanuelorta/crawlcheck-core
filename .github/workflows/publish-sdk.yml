@@ -1,0 +1,52 @@
+name: publish-sdk
+# Publishes the SDKs from THIS public repo, with no stored secrets:
+#   PyPI  - Trusted Publishing (OIDC): project "crawlcheck", owner "emmanuelorta", repository "crawlcheck-core",
+#           workflow "publish-sdk.yml", environment (blank).
+#   npm   - Trusted Publishing (OIDC): @crawlcheck/sdk lists emmanuelorta/crawlcheck-core publish-sdk.yml as its
+#           trusted publisher. Publishing from a public repo lets npm attach PROVENANCE (sigstore attestation), which
+#           it refuses for a private repo (E422) - the reason this moved here from emmanuelorta/crawlcheck on 2026-10-29.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "pypi or npm"
+        required: true
+        type: choice
+        options: [pypi, npm]
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  pypi:
+    if: ${{ inputs.target == 'pypi' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with: { python-version: "3.12" }
+      - name: Build the wheel (deterministic) and an sdist
+        working-directory: sdk-python
+        run: |
+          python build_wheel.py
+          python -m pip install --quiet build
+          python -m build --sdist --outdir dist .
+          ls -la dist
+      - name: Tests against production
+        working-directory: sdk-python
+        run: python -m unittest discover -s tests
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with: { packages-dir: sdk-python/dist }
+  npm:
+    if: ${{ inputs.target == 'npm' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with: { check-latest: true, node-version: "22", registry-url: "https://registry.npmjs.org" }
+      - run: npm install -g npm@12.2.0
+      - name: Tests
+        working-directory: sdk
+        run: npm test
+      - name: Publish @crawlcheck/sdk (trusted publishing, OIDC - no token; provenance attached by npm)
+        working-directory: sdk
+        run: npm publish --access public --provenance
