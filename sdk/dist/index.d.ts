@@ -762,4 +762,23 @@ export declare function toolsFor(format: ToolFormat, tools: AgentTool[]): {
     tools: unknown;
     call: (name: string, args: unknown) => Promise<JsonObject>;
 };
+/** Structural view of the Vercel AI SDK module ("ai") - passed in, so this package keeps no dependency. */
+export interface VercelAiModule {
+    tool: (def: any) => any;
+    jsonSchema: (schema: any) => any;
+}
+/** Vercel AI SDK adapter (1.10.0): `import * as ai from "ai"; const tools = vercelTools(cc, ai);` then generateText({ tools, ... }).
+ * Same three tools as agentTools(); they fail closed. The schema is given as both inputSchema (AI SDK 5+) and parameters (AI SDK 4). */
+export declare function vercelTools(cc: CrawlCheck, ai: VercelAiModule, opts?: AgentToolOptions): Record<string, unknown>;
+/** Structural view of "@langchain/core/tools" - passed in, so this package keeps no dependency. */
+export interface LangChainToolsModule {
+    tool: (fn: (input: any) => any, fields: {
+        name: string;
+        description: string;
+        schema: any;
+    }) => any;
+}
+/** LangChain.js adapter (1.10.0): `import * as lc from "@langchain/core/tools"; const tools = langchainTools(cc, lc);`
+ * Same three tools as agentTools(); each returns its result as a JSON string; they fail closed. */
+export declare function langchainTools(cc: CrawlCheck, lc: LangChainToolsModule, opts?: AgentToolOptions): unknown[];
 export default CrawlCheck;

@@ -25,7 +25,7 @@ class Session:
     async def list_tools(self): return {"tools": self.tools}
     async def call_tool(self, name, arguments=None): self.sent.append("tools/call " + name); return {"content": []}
 
-def run(c): return asyncio.get_event_loop().run_until_complete(c)
+def run(c): return asyncio.run(c)   # 1.11.0: get_event_loop() raises on Python 3.13+ with no running loop
 
 class T(unittest.TestCase):
     def test_unsupported_refuses_before_initialize(self):

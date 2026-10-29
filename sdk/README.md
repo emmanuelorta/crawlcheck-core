@@ -35,16 +35,19 @@ Since 1.8.0 they also apply the signing policy (https://crawlcheck.io/keys#polic
 Three tools your agent can call itself: `crawlcheck_check_site` (the signed, verified decision for an action on a site, including the business facts the site publishes and which AI engines get them wrong), `crawlcheck_verify_fact` (one signed verdict on a phone number, address, hours or service area you hold: does the business publish it, did it once, or whose is it) and `crawlcheck_fetch` (fetches a page only after its domain, and every redirect hop, is allowed). All fail closed.
 
 ```js
-import { CrawlCheck, agentTools, toolsFor } from "@crawlcheck/sdk";
+import { CrawlCheck, agentTools, toolsFor, vercelTools, langchainTools } from "@crawlcheck/sdk";
 const tools = agentTools(new CrawlCheck(), { agent: "MyAgentBot" });
 
 // OpenAI function calling
 const oa = toolsFor("openai", tools);          // oa.tools → tools: [...]; on a tool call: await oa.call(name, argumentsJson)
 // Anthropic tool use
 const an = toolsFor("anthropic", tools);       // an.tools → tools: [...]; on tool_use: await an.call(block.name, block.input)
-// Vercel AI SDK
-import { tool, jsonSchema } from "ai";
-const vt = Object.fromEntries(tools.map((t) => [t.name, tool({ description: t.description, parameters: jsonSchema(t.parameters), execute: t.execute })]));
+// Vercel AI SDK (1.10.0): one call; the "ai" module is passed in, so this package keeps no dependency
+import * as ai from "ai";
+const vt = vercelTools(new CrawlCheck(), ai);  // generateText({ model, tools: vt, ... })
+// LangChain.js (1.10.0)
+import * as lc from "@langchain/core/tools";
+const lt = langchainTools(new CrawlCheck(), lc); // createAgent({ model, tools: lt }) or model.bindTools(lt)
 // An MCP server you run
 const mc = toolsFor("mcp", tools);             // list mc.tools; answer tools/call with mc.call(name, args)
 ```

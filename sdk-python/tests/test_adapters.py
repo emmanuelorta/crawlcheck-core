@@ -37,6 +37,30 @@ class LlamaIndexAdapter(unittest.TestCase):
         self.assertFalse(json.loads(t[0].call(site="blocked.example", action="transact").content)["proceed"])
 
 
+@unittest.skipUnless(_have("crewai"), "crewai not installed")
+class CrewAIAdapter(unittest.TestCase):
+    def test_tools_and_fail_closed(self):
+        from crawlcheck.crewai import crawlcheck_tools
+        t = crawlcheck_tools(_Stub())
+        self.assertEqual([x.name for x in t], ["crawlcheck_check_site", "crawlcheck_verify_fact", "crawlcheck_fetch"])
+        self.assertTrue(json.loads(t[0].run(site="example.com"))["proceed"])
+        self.assertFalse(json.loads(t[0].run(site="blocked.example", action="transact"))["proceed"])
+
+
+@unittest.skipUnless(_have("agents"), "openai-agents not installed")
+class OpenAIAgentsAdapter(unittest.TestCase):
+    def test_tools_and_fail_closed(self):
+        import asyncio
+        from crawlcheck.openai_agents import crawlcheck_tools
+        t = crawlcheck_tools(_Stub())
+        self.assertEqual([x.name for x in t], ["crawlcheck_check_site", "crawlcheck_verify_fact", "crawlcheck_fetch"])
+        run = lambda a: json.loads(asyncio.run(t[0].on_invoke_tool(None, a)))
+        self.assertTrue(run('{"site": "example.com"}')["proceed"])
+        self.assertFalse(run('{"site": "blocked.example", "action": "transact"}')["proceed"])
+        self.assertFalse(run('not json')["proceed"])
+        self.assertFalse(run('[1]')["proceed"])
+
+
 if __name__ == "__main__":
     unittest.main()
 

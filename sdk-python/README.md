@@ -25,17 +25,19 @@ Command line: `python -m crawlcheck preflight example.com cite GPTBot`, `python 
 Decisions: `allow`, `warn`, `require_confirmation`, `block`, `unsupported`. A policy (`max_age_hours`, `on_warn`, `require_entity`, `human_approval`, `allow`, `deny`) can only make a decision stricter.
 
 
-## LangChain and LlamaIndex (1.10.0)
+## LangChain, LlamaIndex, CrewAI and the OpenAI Agents SDK (CrewAI and OpenAI Agents 1.11.0)
 
 ```python
 from crawlcheck import CrawlCheck
 from crawlcheck.langchain import crawlcheck_tools        # needs langchain-core
 # from crawlcheck.llama_index import crawlcheck_tools   # needs llama-index-core
+# from crawlcheck.crewai import crawlcheck_tools        # needs crewai: Agent(..., tools=tools)
+# from crawlcheck.openai_agents import crawlcheck_tools # needs openai-agents: Agent(..., tools=tools)
 
 tools = crawlcheck_tools(CrawlCheck(key="cc_..."))       # or CrawlCheck() with no key
 ```
 
-Three tools, the same in both frameworks: `crawlcheck_check_site` (a signed allow / warn / block decision before an agent
+Three tools, the same in every framework: `crawlcheck_check_site` (a signed allow / warn / block decision before an agent
 reads, cites, connects to, pays or administers a site), `crawlcheck_verify_fact` (one phone, address, hours or service area
 checked against what the business publishes) and `crawlcheck_fetch` (fetches a page only after its domain and every
 redirect hop proceed). They fail closed. The package itself still has no dependencies; each adapter imports its framework

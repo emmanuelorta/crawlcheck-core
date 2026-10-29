@@ -13,7 +13,7 @@ from . import log as _log
 from .staple import staple_check, staple_from_headers
 from .revocations import new_revocation_store, apply_revocations, revoked_for
 
-VERSION = "1.10.1"
+VERSION = "1.11.0"
 ACTIONS = ("read", "cite", "connect", "transact", "administer")
 
 
@@ -362,7 +362,7 @@ class CrawlCheck:
         if not proceed:
             why.append("decision is warn and allow_warn is not set" if d == "warn" else
                        ("a human did not confirm" if confirm is not None else "decision is require_confirmation and no confirm was given") if d == "require_confirmation" else "decision is %s" % d)
-        self.last_guard = {"proceed": proceed, "why": why, "domain": domain, "action": action}
+        self.last_guard = {"proceed": proceed, "why": why, "domain": domain, "action": action, "verified": bool(v.get("accepted"))}   # 1.11.0: same field the JS tool returns
         return proceed, rc
 
     def guarded_fetch(self, url, action="read", method="GET", headers=None, data=None, allow_warn=False, confirm=None, max_hops=10, transport=None, now=None, nonce=None, timeout=None):

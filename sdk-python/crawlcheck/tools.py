@@ -40,7 +40,7 @@ def agent_tools(cc, agent=None, allow_warn=False, confirm=None, max_chars=20000)
         last = getattr(cc, "last_guard", None) or {}
         return {"domain": domain, "action": action, "proceed": bool(proceed), "decision": rc.get("decision"), "why": last.get("why", []),
                 "reasons": [s.get("why") for s in rc.get("steps", []) if isinstance(s, dict) and s.get("why")], "reason_codes": rc.get("reason_codes", []),
-                "receipt_sha256": rc.get("sha256"), "alternatives": rc.get("alternatives"), "facts": rc.get("facts")}
+                "receipt_sha256": rc.get("sha256"), "verified": bool(last.get("verified")), "alternatives": rc.get("alternatives"), "facts": rc.get("facts")}
 
     def verify_fact(args):
         args = args or {}

@@ -664,4 +664,20 @@ export function toolsFor(format: ToolFormat, tools: AgentTool[]): { tools: unkno
   if (format === "mcp") return { tools: tools.map((t) => ({ name: t.name, description: t.description, inputSchema: t.parameters, annotations: { readOnlyHint: true, openWorldHint: true } })), call };
   return { tools: Object.fromEntries(tools.map((t) => [t.name, { description: t.description, parameters: t.parameters, execute: t.execute }])), call };
 }
+/** Structural view of the Vercel AI SDK module ("ai") - passed in, so this package keeps no dependency. */
+export interface VercelAiModule { tool: (def: any) => any; jsonSchema: (schema: any) => any }
+/** Vercel AI SDK adapter (1.10.0): `import * as ai from "ai"; const tools = vercelTools(cc, ai);` then generateText({ tools, ... }).
+ * Same three tools as agentTools(); they fail closed. The schema is given as both inputSchema (AI SDK 5+) and parameters (AI SDK 4). */
+export function vercelTools(cc: CrawlCheck, ai: VercelAiModule, opts: AgentToolOptions = {}): Record<string, unknown> {
+  if (!ai || typeof ai.tool !== "function" || typeof ai.jsonSchema !== "function") throw new Error('vercelTools needs the "ai" module: import * as ai from "ai"');
+  return Object.fromEntries(agentTools(cc, opts).map((t) => { const sc = ai.jsonSchema(t.parameters); return [t.name, ai.tool({ description: t.description, inputSchema: sc, parameters: sc, execute: (args: any) => t.execute(args) })]; }));
+}
+/** Structural view of "@langchain/core/tools" - passed in, so this package keeps no dependency. */
+export interface LangChainToolsModule { tool: (fn: (input: any) => any, fields: { name: string; description: string; schema: any }) => any }
+/** LangChain.js adapter (1.10.0): `import * as lc from "@langchain/core/tools"; const tools = langchainTools(cc, lc);`
+ * Same three tools as agentTools(); each returns its result as a JSON string; they fail closed. */
+export function langchainTools(cc: CrawlCheck, lc: LangChainToolsModule, opts: AgentToolOptions = {}): unknown[] {
+  if (!lc || typeof lc.tool !== "function") throw new Error('langchainTools needs "@langchain/core/tools": import * as lc from "@langchain/core/tools"');
+  return agentTools(cc, opts).map((t) => lc.tool(async (input: any) => JSON.stringify(await t.execute(input ?? {})), { name: t.name, description: t.description, schema: t.parameters }));
+}
 export default CrawlCheck;
