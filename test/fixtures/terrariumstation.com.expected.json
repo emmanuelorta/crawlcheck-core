@@ -763,7 +763,7 @@
   },
   {
    "ua": "Google-Extended",
-   "label": "Gemini training",
+   "label": "Gemini training and grounding",
    "role": "train",
    "allowed": false,
    "allowed_root": true,

@@ -92,7 +92,7 @@ export const CRAWLERS = [
   ["Claude-SearchBot", "Anthropic", "indexing", "Indexes pages so Claude can find them.", "published IP ranges"],
   ["PerplexityBot", "Perplexity", "indexing", "Builds Perplexity\u2019s index.", "published IP ranges"],
   ["Perplexity-User", "Perplexity", "live fetch", "Opens a page because a user followed a citation.", "published IP ranges"],
-  ["Google-Extended", "Google", "training", "Controls Gemini training use ONLY. It does not affect Google Search or AI Overviews.", "Googlebot verification"],
+  ["Google-Extended", "Google", "training", "A robots.txt control token, not a crawler: no request carries it. Controls whether pages Google already crawled are used to train Gemini models and to ground answers in Gemini Apps and Vertex AI. It does not affect Google Search inclusion or ranking.", "Googlebot verification"],
   ["Googlebot", "Google", "indexing", "Search indexing, and the source most AI Overviews draw on.", "reverse DNS to googlebot.com"],
   ["Bingbot", "Microsoft", "indexing", "Search indexing; feeds Copilot.", "reverse DNS to search.msn.com"],
   ["Applebot", "Apple", "indexing", "Siri and Spotlight.", "reverse DNS to applebot.apple.com"],

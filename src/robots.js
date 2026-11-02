@@ -48,7 +48,7 @@ export const AGENTS = [
 ["YandexBot","Yandex","search"],["Baiduspider","Baidu","search"],["Seznambot","Seznam","search"],
 ["Neevabot","Neeva","search"],["PetalBot","Huawei Petal","search"],["GPTBot","OpenAI training and index","train"],
 ["ClaudeBot","Anthropic training","train"],["anthropic-ai","Anthropic legacy agent","train"],["Claude-Web","Anthropic legacy agent","train"],
-["Google-Extended","Gemini training","train"],["Applebot-Extended","Apple training","train"],["CCBot","Common Crawl","train"],
+["Google-Extended","Gemini training and grounding","train"],["Applebot-Extended","Apple training","train"],["CCBot","Common Crawl","train"],
 ["Bytespider","ByteDance","train"],["meta-externalagent","Meta AI training","train"],["FacebookBot","Meta legacy","train"],
 ["cohere-ai","Cohere","train"],["Diffbot","Diffbot knowledge graph","train"],["Omgilibot","Webz.io","train"],
 ["ImagesiftBot","Imagesift","train"],["Timpibot","Timpi","train"],["AI2Bot","Allen Institute","train"],
