@@ -1,5 +1,5 @@
 {
- "_": "Production's crawlerPolicy() run on this robots.txt at a path that a `*` rule decides, 2026-10-23 (live head 398e6cfd). The functions were taken from the deployed source unaltered; the public /api/tool/robots endpoint drops query strings, so it cannot be asked this path.",
+ "_": "Production's crawlerPolicy() run on this robots.txt at a path that a `*` rule decides, re-captured 2026-11-02 after production fixed robots.txt group selection (build rbgrp1: a group for a more specific token no longer applies to the general crawler, so Applebot is not read by the Applebot-Extended group). The functions were taken from the deployed source unaltered; the public /api/tool/robots endpoint drops query strings, so it cannot be asked this path.",
  "domain": "crawlcheck.io",
  "path": "/de/tools/agent-view?u=example.com",
  "groups": 4,
@@ -659,7 +659,7 @@
    "role": "search",
    "allowed": false,
    "allowed_root": true,
-   "named": true,
+   "named": false,
    "rules_shadowed": false
   },
   {

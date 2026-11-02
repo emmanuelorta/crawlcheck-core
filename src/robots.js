@@ -86,13 +86,37 @@ export function starGroup(groups) {
   return found;
 }
 
+// Google documents crawlers that obey another crawler's group when they have
+// none of their own (Google-InspectionTool and Google-CloudVertexBot obey
+// Googlebot; GoogleOther-Image/-Video obey GoogleOther). Exact or prefix
+// matches on the agent's own token always win over a fallback.
+// Source: developers.google.com/crawling/docs/crawlers-fetchers/google-common-crawlers
+export const UA_FALLBACK = {
+  "google-inspectiontool": ["googlebot"], "google-cloudvertexbot": ["googlebot"],
+  "googleother-image": ["googleother"], "googleother-video": ["googleother"],
+  "googlebot-image": ["googlebot"], "googlebot-video": ["googlebot"], "googlebot-news": ["googlebot"]
+};
+
+// RFC 9309 2.2.1: the most specific matching product token wins, a token is
+// matched without its version ("GPTBot/1.1" is GPTBot), and every group that
+// names that same token is combined into one. A group for a MORE specific
+// token never applies to the general crawler: Googlebot does not obey a
+// Googlebot-News group.
 export function groupFor(groups, ua) {
-  const u = String(ua).toLowerCase(); let best = null; let bestLen = -1;
-  for (const g of groups) for (const a of g.uas) {
-    if (a === "*") { if (bestLen < 0) { best = g; bestLen = 0; } continue; }
-    if (u === a || u.startsWith(a) || a.startsWith(u)) { if (a.length > bestLen) { best = g; bestLen = a.length; } }
+  const u = String(ua).toLowerCase(); const fb = UA_FALLBACK[u] || [];
+  let bestLen = -1; let hits = []; let star = [];
+  for (const g of groups || []) for (const a0 of g.uas || []) {
+    if (a0 === "*") { if (star.indexOf(g) < 0) star.push(g); continue; }
+    const a = String(a0).toLowerCase().replace(/\/.*$/, "").trim(); if (!a) continue;
+    let score = -1;
+    if (u === a || u.startsWith(a)) score = a.length + 1000; else if (fb.indexOf(a) > -1) score = a.length;
+    if (score < 0) continue;
+    if (score > bestLen) { bestLen = score; hits = [g]; } else if (score === bestLen && hits.indexOf(g) < 0) hits.push(g);
   }
-  return { group: best, named: bestLen > 0 };
+  if (bestLen < 0) { hits = star; bestLen = star.length ? 0 : -1; }
+  let group = hits[0] || null;
+  if (hits.length > 1) { group = { uas: [], rules: [] }; hits.forEach(function (g) { g.uas.forEach(function (x) { if (group.uas.indexOf(x) < 0) group.uas.push(x); }); g.rules.forEach(function (r) { group.rules.push(r); }); }); }
+  return { group: group, named: bestLen > 0 };
 }
 
 // groupFor() returns an envelope ({ group, named }) so callers can tell a

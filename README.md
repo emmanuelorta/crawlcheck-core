@@ -58,7 +58,7 @@ GPTBot no longer sees `Disallow: /wp-admin/` — the `*` group stops applying to
 |---|---|
 | `crawlerPolicy(txt, unreadable, path)` | Full per-agent policy for one file. `measured:false` with a reason when the file is empty or unreadable — an absence is never reported as a policy |
 | `parseGroups(txt)` | RFC 9309 groups: consecutive `User-agent` lines share one group; `Allow`/`Disallow` rules in order |
-| `groupFor(groups, ua)` | The group that applies to an agent: longest-prefix match on the agent token, `*` as fallback |
+| `groupFor(groups, ua)` | The group that applies to an agent, per RFC 9309: the most specific matching token wins (version suffix ignored), every group naming that token is combined, a group for a more specific token (`Googlebot-News`) never applies to the general crawler, Google's documented fallbacks (`Google-InspectionTool` obeys `Googlebot`) apply, and `*` is the last resort |
 | `pathAllowed(group, path)` / `rootAllowed(group)` | RFC 9309 matching (`*` anywhere, trailing `$` anchors the end); longest rule wins; `Allow` beats `Disallow` at equal length |
 | `ruleMatches(rule, path)` / `decide(rules, path)` | The matcher itself, and the decision with the rule that made it |
 | `shadowedGroups(groups)` | Named groups for which a `*` disallow is lost (not covered by one of the group's own rules, e.g. its own `Disallow: /`) |

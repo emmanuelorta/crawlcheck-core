@@ -124,3 +124,45 @@ test("longest match wins, and an equal-length tie goes to Allow", () => {
   assert.deepEqual(decide([{ path: "/p", allow: false }, { path: "/p", allow: true }], "/p"), { allowed: true, rule: "/p" });
   assert.deepEqual(decide([], "/x"), { allowed: true, rule: null });
 });
+
+// 0.6.1 — RFC 9309 group selection. Googlebot used to match a Googlebot-News
+// group (the general crawler obeyed the specific one), versioned tokens could
+// miss, and two groups naming one token were not combined.
+test("groupFor: specific token never captures the general crawler", () => {
+  const g = parseGroups("User-agent: Googlebot-News\nDisallow: /\n\nUser-agent: *\nAllow: /\n");
+  assert.equal(groupFor(g, "Googlebot").named, false);
+  assert.equal(pathAllowed(groupFor(g, "Googlebot"), "/x"), true);
+  assert.equal(pathAllowed(groupFor(g, "Googlebot-News"), "/x"), false);
+});
+test("groupFor: Googlebot-News falls back to Googlebot, not *", () => {
+  const g = parseGroups("User-agent: Googlebot\nDisallow: /private\n\nUser-agent: *\nDisallow: /\n");
+  assert.equal(groupFor(g, "Googlebot-News").named, true);
+  assert.equal(pathAllowed(groupFor(g, "Googlebot-News"), "/news"), true);
+  assert.equal(pathAllowed(groupFor(g, "Googlebot-News"), "/private/a"), false);
+});
+test("groupFor: Google-InspectionTool and CloudVertexBot obey the Googlebot group", () => {
+  const g = parseGroups("User-agent: Googlebot\nAllow: /\n\nUser-agent: *\nDisallow: /\n");
+  for (const ua of ["Google-InspectionTool", "Google-CloudVertexBot"]) {
+    assert.equal(groupFor(g, ua).named, true, ua);
+    assert.equal(pathAllowed(groupFor(g, ua), "/"), true, ua);
+  }
+  const own = parseGroups("User-agent: Googlebot\nAllow: /\n\nUser-agent: Google-InspectionTool\nDisallow: /\n");
+  assert.equal(pathAllowed(groupFor(own, "Google-InspectionTool"), "/"), false);
+});
+test("groupFor: version suffix is ignored", () => {
+  const g = parseGroups("User-agent: GPTBot/1.1\nDisallow: /\n\nUser-agent: *\nAllow: /\n");
+  assert.equal(groupFor(g, "GPTBot").named, true);
+  assert.equal(pathAllowed(groupFor(g, "GPTBot"), "/"), false);
+});
+test("groupFor: groups naming the same token are combined", () => {
+  const g = parseGroups("User-agent: GPTBot\nDisallow: /a\n\nUser-agent: *\nAllow: /\n\nUser-agent: gptbot\nDisallow: /b\n");
+  const m = groupFor(g, "GPTBot");
+  assert.equal(pathAllowed(m, "/a/1"), false);
+  assert.equal(pathAllowed(m, "/b/1"), false);
+  assert.equal(pathAllowed(m, "/c"), true);
+});
+test("groupFor: no group and no * still returns a usable envelope", () => {
+  const m = groupFor(parseGroups("User-agent: Bingbot\nDisallow: /\n"), "GPTBot");
+  assert.equal(m.group, null); assert.equal(m.named, false);
+  assert.equal(pathAllowed(m, "/"), true);
+});
