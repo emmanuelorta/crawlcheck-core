@@ -63,7 +63,7 @@ await Promise.all(Array.from({ length: CONC }, async () => {
 }));
 
 results.sort((a, b) => a.rank - b.rank);
-writeFileSync("/home/claude/tranco-surfaces.json", JSON.stringify({
+writeFileSync("tranco-surfaces.json", JSON.stringify({
   list: "Tranco ZJQ6G", sampled: rows.length, measured_at: new Date().toISOString(),
   method: "One HTTPS request per path with the CrawlCheck user-agent and a browser-shaped Accept, except the markdown probe which sends Accept: text/markdown. A 200 whose body is HTML is recorded as absent (soft 404).",
   results,

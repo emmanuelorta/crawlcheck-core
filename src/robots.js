@@ -181,7 +181,7 @@ export function shadowedGroups(groups) {
   for (const g of groups || []) {
     if ((g.uas || []).indexOf("*") > -1) continue;
     const own = (g.rules || []).filter(function (r) { return !r.allow && r.path !== ""; }).map(function (r) { return r.path; });
-    // shadow2 (SCORE_VERSION 28): a `*` Disallow is only missing if none of the group's OWN Disallow rules covers it the way
+    // a `*` Disallow is only missing if none of the group's OWN Disallow rules covers it the way
     // robots.txt matching works (longest-prefix, `*` wildcard, `$` end). Exact string comparison reported every site that
     // blocks an AI crawler with `Disallow: /` as shadowing its `*` rules - `/` already covers every path. Measured
     // 2026-10-06 on 139,788 homepages: 83% of sites blocking an AI crawler carried the finding, almost all for this reason.
