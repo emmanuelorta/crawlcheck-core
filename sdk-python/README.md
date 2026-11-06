@@ -25,6 +25,8 @@ Command line: `python -m crawlcheck preflight example.com cite GPTBot`, `python 
 Decisions: `allow`, `warn`, `require_confirmation`, `block`, `unsupported`. A policy (`max_age_hours`, `on_warn`, `require_entity`, `human_approval`, `allow`, `deny`) can only make a decision stricter.
 
 
+<a id="langchain-and-llamaindex-1100"></a>
+
 ## LangChain, LlamaIndex, CrewAI and the OpenAI Agents SDK (CrewAI and OpenAI Agents 1.11.0)
 
 ```python
