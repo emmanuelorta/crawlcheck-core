@@ -18,10 +18,10 @@ Both are published from the private service repository by a workflow that refuse
 ## Install
 
 ```bash
-npm install github:emmanuelorta/crawlcheck-core
+npm install crawlcheck-core
 ```
 
-Not on the npm registry yet, so install it from the repository. Every subpath below resolves from that install.
+Published on the npm registry as [`crawlcheck-core`](https://www.npmjs.com/package/crawlcheck-core); `npm install github:emmanuelorta/crawlcheck-core` still works if you want the repository head. Every subpath below resolves from either install.
 
 ## robots — which crawlers your robots.txt actually admits
 
