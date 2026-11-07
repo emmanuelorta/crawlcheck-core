@@ -4,6 +4,7 @@ import * as S from "./staple.js";
 import * as M from "./mcp.js";
 import * as R from "./revocations.js";
 import * as C from "./continuity.js";
+import * as F from "./frameworks.js";
 export const CONTINUITY_DEFAULT_POLICY = C.CONTINUITY_DEFAULT_POLICY;
 export const CONTINUITY_CHANGE_CLASSES = C.CONTINUITY_CHANGE_CLASSES;
 export const CONTINUITY_FAILURE_CLASSES = C.CONTINUITY_FAILURE_CLASSES;
@@ -20,6 +21,14 @@ export const lockParts = C.lockParts;
 /** Which continuity failure class a refused guard() result is. */
 export const continuityClassOf = C.continuityClassOf;
 export const acceptanceOf = C.acceptanceOf;
+/** Thrown in review/enforce when a record's outcome is pause, refresh or deny and nobody re-approved (or a paused tool is called). */
+export const ContinuityRefused = F.ContinuityRefused;
+/** The shared gate behind the framework adapters. Default mode observe. */
+export const continuityGate = F.continuityGate;
+/** @openai/agents: wrap an MCP server so every listTools() is checked against lock. Records at server.continuity. */
+export const withContinuity = F.withContinuity;
+/** @langchain/mcp-adapters: loadMcpTools with the check. client: a MultiServerMCPClient or a connected MCP SDK Client. */
+export const loadMcpToolsWithContinuity = F.loadMcpToolsWithContinuity;
 /** The signing policy as data (https://crawlcheck.io/keys#policy): object purposes, purpose chains, start times. */
 export const KEY_POLICY = V.KEY_POLICY;
 /** Build the policy input from a key directory you hold and, optionally, the rotation record saved with it. */

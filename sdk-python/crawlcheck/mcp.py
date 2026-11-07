@@ -236,15 +236,11 @@ class McpPreflight:
 
 
 def _tool_dict(t):
-    if isinstance(t, dict):
-        return t
-    out = {}
-    for k in ("name", "description", "inputSchema", "annotations"):
-        v = getattr(t, k, None)
-        if v is not None and not isinstance(v, (str, int, float, bool, list, dict, type(None))):
-            v = v.model_dump() if hasattr(v, "model_dump") else dict(v)
-        out[k] = v
-    return out
+    # 1.13.0: shared with the framework adapters. Before, a real mcp.types.Tool's annotations were dumped with their
+    # None keys ({"title": None, "readOnlyHint": True, ...}), which hashes differently from the server's raw JSON, so
+    # every annotated tool read as changed against a lockfile built from that JSON.
+    from .continuity_gate import tool_dict
+    return tool_dict(t)
 
 
 class with_preflight:

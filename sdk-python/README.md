@@ -98,6 +98,30 @@ Options: `lock=` (an approved lockfile: changed tools refuse, tools outside it r
 
 The promise, and only this one: your agent does not silently proceed with a changed tool definition when your policy requires renewed approval ([spec](https://crawlcheck.io/spec/continuity)). Keep per-part hashes in the lockfile (`lock["parts"] = lock_parts(tools)`), then `McpPreflight(cc, lock=lock, confirm=ask, continuity={"mode": "observe", "on_record": log.write})`, moving to `"review"` and then `"enforce"`. observe never blocks and records what the policy would do; review sends every change to a person (integrity failures still deny); enforce pauses a changed or new tool on its own while the rest stay usable, and denies on an invalid signature, an unpublished or retired key, or a different server. Every check leaves a `crawlcheck-continuity-record` in `pf.records` with the baseline, what was observed, each event, the policy's sha256, the outcome and its own `record_sha256`. `continuity_check(lock, tools, mode=...)` and `continuity_failure(cls, mode=...)` run the same logic without a session and match the JS SDK byte for byte. A record states interface continuity at the check point: not code attestation, not a judgement that a tool is harmless, not user authorisation.
 
+### Continuity in your agent framework (1.13.0)
+
+The same check where the framework fetches an MCP server's tool list, against your approved lockfile. Nothing here calls CrawlCheck, needs a key, or adds a dependency: each adapter imports its framework only when you call it.
+
+```python
+# OpenAI Agents SDK
+from crawlcheck.openai_agents import with_continuity
+async with MCPServerStreamableHttp(params={"url": url}) as server:
+    agent = Agent(name="a", instructions="...", mcp_servers=[with_continuity(server, lock, mode="observe")])
+
+# LangChain (langchain-mcp-adapters)
+from crawlcheck.langchain import load_mcp_tools_with_continuity
+tools = await load_mcp_tools_with_continuity(MultiServerMCPClient({"shop": conn}), lock, server_name="shop", mode="observe")
+
+# CrewAI (crewai-tools MCPServerAdapter)
+from crawlcheck.crewai import with_continuity
+with with_continuity(MCPServerAdapter(server_params), lock, mode="observe") as tools:
+    agent = Agent(role="...", goal="...", backstory="...", tools=tools)
+```
+
+`observe` records every difference (the `crawlcheck.continuity` logger, `on_record=`, `log_path=` as JSON lines, `.gate.records`) and passes the tools through. `review` pauses the whole server on any change until `confirm=` says yes. `enforce` applies the policy: a changed or new tool is withheld from the agent, and a call to it is refused, until `confirm({"tool": name, "continuity": record})` re-approves it; the rest stay usable. A refusal raises `ContinuityRefused` (with `.record`). A yes is remembered for that exact definition, so a framework that lists tools every turn does not ask twice. The LangChain and CrewAI adapters build the agent's tools from exactly the definitions that were compared.
+
+1.13.0 also fixes `with_preflight` continuity with the MCP Python SDK: a real `mcp.types.Tool` was hashed with its annotations' unset keys, so every annotated tool read as changed against a lockfile built from the server's JSON.
+
 ## Catch a split view
 
 Every Resolve answer carries its place in CrawlCheck's transparency log. The client keeps every signed tree head it sees in `client.log` (plain JSON; persist it and pass it back as `log_store=`) and treats two heads for one batch, or a head that does not chain to the one before, as a fork with both signed heads as proof. `guard()` returns `False` while the client holds one.

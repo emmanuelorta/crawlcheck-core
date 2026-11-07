@@ -160,6 +160,25 @@ const client = withPreflight(new Client(...), new CrawlCheck(), {
 
 The default policy (`CONTINUITY_DEFAULT_POLICY`) pauses added, changed-description, changed-schema and changed-annotation tools, refreshes expired evidence, pauses on an unreachable server or service, a truncated or unreadable tool list, a stale baseline or an unexpected policy version, and denies on an invalid signature, an unpublished or retired key, or a different server. Override any effect; the integrity classes stay `deny` unless you set `allow_integrity_override`, and the record says so. Exceptions (`{ tool, class, until, by, reason }`) proceed as `proceed_recorded`, never as an ordinary pass. Every record (`crawlcheck-continuity-record`) names the baseline, what was observed, each event, the policy's sha256, the mode, the outcome and its own `record_sha256`. It states interface continuity at the check point: not code attestation, not a judgement that a tool is harmless, not user authorisation. `continuityCheck(lock, tools, opts)` and `continuityFailure(cls, opts)` run the same logic without a client; the Python SDK reproduces every record byte for byte (shared golden file `test/fixtures/continuity.json`). Other client stacks use the bare hooks: `mcpPreflight(cc, opts)` returns `beforeConnect`, `afterConnect` and `beforeToolCall`. A runnable demo is in `examples/mcp-preflight-demo.mjs`.
 
+### Continuity in your agent framework (1.12.0)
+
+The same check where the framework fetches an MCP server's tool list, against your approved lockfile. No CrawlCheck call, no key, no new dependency: each adapter uses the framework you already have.
+
+```js
+import { withContinuity, loadMcpToolsWithContinuity } from "@crawlcheck/sdk";
+
+// OpenAI Agents SDK (@openai/agents)
+const server = new MCPServerStreamableHttp({ url });
+await server.connect();
+const agent = new Agent({ name: "a", instructions: "...", mcpServers: [withContinuity(server, lock, { mode: "observe" })] });
+
+// LangChain (@langchain/mcp-adapters)
+const client = new MultiServerMCPClient({ mcpServers: { shop: { url } } });
+const tools = await loadMcpToolsWithContinuity("shop", client, lock, { mode: "observe" });
+```
+
+`observe` records every difference (`console.warn`, `onRecord`, `server.continuity.records` / `tools.continuity.records`) and passes the tools through. `review` pauses the whole server on any change until `confirm` says yes. `enforce` applies the policy: a changed or new tool is withheld from the agent, and a call to it is refused, until `confirm({ tool, continuity })` re-approves it; the rest stay usable. A refusal throws `ContinuityRefused` (with `.record`). A yes is remembered for that exact definition, so a framework that lists tools every turn does not ask twice. For CrewAI, use the Python package (`crawlcheck.crewai.with_continuity`).
+
 ## Do not trust the API: check the evidence yourself
 
 ```js

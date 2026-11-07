@@ -126,6 +126,58 @@ export declare const acceptanceOf: (receipt: unknown, verification: unknown, sco
     confirmed?: boolean | null;
     lock?: unknown;
 }) => Acceptance;
+export interface ContinuityGateOptions extends ContinuityOptions {
+    /** A person's re-approval: { continuity } for the server, { tool, continuity } for one tool. Remembered per definition. */
+    confirm?: (request: {
+        tool?: string;
+        continuity: ContinuityRecord;
+    }) => boolean | Promise<boolean>;
+    onRecord?: (record: ContinuityRecord) => unknown;
+    /** false: no console.warn on a change. */ log?: boolean;
+    logger?: {
+        warn: (msg: string) => unknown;
+    };
+    /** Records kept in gate.records (default 50). */ keep?: number;
+}
+export interface ContinuityGate {
+    mode: "observe" | "review" | "enforce";
+    records: ContinuityRecord[];
+    record: ContinuityRecord | null;
+    paused: Set<string>;
+    check(tools: McpTool[], meta?: {
+        complete?: boolean;
+    }): Promise<ContinuityRecord>;
+    fail(cls: string, detail?: string): Promise<ContinuityRecord>;
+    allowed<T>(tools: T[], nameOf?: (t: T) => string): T[];
+    callOk(name: string): true;
+}
+/** Thrown in review/enforce when a record's outcome is pause, refresh or deny and nobody re-approved (or a paused tool is called). */
+export declare const ContinuityRefused: new (why: string, record?: ContinuityRecord | null, tool?: string | null) => Error & {
+    why: string;
+    record: ContinuityRecord | null;
+    tool: string | null;
+};
+/** The shared gate behind the framework adapters. Default mode observe. */
+export declare const continuityGate: (lock: McpLock, opts?: ContinuityGateOptions) => ContinuityGate;
+/** @openai/agents: wrap an MCP server so every listTools() is checked against lock. Records at server.continuity. */
+export declare const withContinuity: <S extends {
+    listTools: (...a: any[]) => Promise<any[]>;
+    callTool: (...a: any[]) => Promise<any>;
+}>(server: S, lock: McpLock, opts?: ContinuityGateOptions & {
+    serverUrl?: string;
+    gate?: ContinuityGate;
+}) => S & {
+    continuity: ContinuityGate;
+};
+/** @langchain/mcp-adapters: loadMcpTools with the check. client: a MultiServerMCPClient or a connected MCP SDK Client. */
+export declare const loadMcpToolsWithContinuity: (serverName: string, client: unknown, lock: McpLock, opts?: ContinuityGateOptions & {
+    serverUrl?: string;
+    gate?: ContinuityGate;
+    adapters?: unknown;
+    loadOptions?: unknown;
+}) => Promise<any[] & {
+    continuity: ContinuityGate;
+}>;
 /** One verifier check. ok: true passed, false FAILED, null could not run (why says why) - never a pass. */
 export interface VerifyCheck {
     id: string;

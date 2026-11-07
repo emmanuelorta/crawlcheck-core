@@ -9,6 +9,7 @@ import * as S from "./staple.js";
 import * as M from "./mcp.js";
 import * as R from "./revocations.js";
 import * as C from "./continuity.js";
+import * as F from "./frameworks.js";
 
 export type { paths, components };
 // ── acceptance, split, and tool-interface continuity (1.11.0, https://crawlcheck.io/spec/continuity) ──
@@ -35,6 +36,24 @@ export const lockParts = C.lockParts as (tools: McpTool[]) => Promise<Record<str
 /** Which continuity failure class a refused guard() result is. */
 export const continuityClassOf = (C as any).continuityClassOf as (g: GuardResult | null) => string;
 export const acceptanceOf = C.acceptanceOf as (receipt: unknown, verification: unknown, scope: { fields?: unknown } | null, opts?: { allowWarn?: boolean; confirmed?: boolean | null; lock?: unknown }) => Acceptance;
+
+// ── continuity at the framework's tool-list fetch (1.12.0): @openai/agents and @langchain/mcp-adapters, no dependency ──
+export interface ContinuityGateOptions extends ContinuityOptions {
+  /** A person's re-approval: { continuity } for the server, { tool, continuity } for one tool. Remembered per definition. */
+  confirm?: (request: { tool?: string; continuity: ContinuityRecord }) => boolean | Promise<boolean>;
+  onRecord?: (record: ContinuityRecord) => unknown;
+  /** false: no console.warn on a change. */ log?: boolean; logger?: { warn: (msg: string) => unknown };
+  /** Records kept in gate.records (default 50). */ keep?: number;
+}
+export interface ContinuityGate { mode: "observe" | "review" | "enforce"; records: ContinuityRecord[]; record: ContinuityRecord | null; paused: Set<string>; check(tools: McpTool[], meta?: { complete?: boolean }): Promise<ContinuityRecord>; fail(cls: string, detail?: string): Promise<ContinuityRecord>; allowed<T>(tools: T[], nameOf?: (t: T) => string): T[]; callOk(name: string): true }
+/** Thrown in review/enforce when a record's outcome is pause, refresh or deny and nobody re-approved (or a paused tool is called). */
+export const ContinuityRefused = F.ContinuityRefused as unknown as new (why: string, record?: ContinuityRecord | null, tool?: string | null) => Error & { why: string; record: ContinuityRecord | null; tool: string | null };
+/** The shared gate behind the framework adapters. Default mode observe. */
+export const continuityGate = F.continuityGate as (lock: McpLock, opts?: ContinuityGateOptions) => ContinuityGate;
+/** @openai/agents: wrap an MCP server so every listTools() is checked against lock. Records at server.continuity. */
+export const withContinuity = F.withContinuity as <S extends { listTools: (...a: any[]) => Promise<any[]>; callTool: (...a: any[]) => Promise<any> }>(server: S, lock: McpLock, opts?: ContinuityGateOptions & { serverUrl?: string; gate?: ContinuityGate }) => S & { continuity: ContinuityGate };
+/** @langchain/mcp-adapters: loadMcpTools with the check. client: a MultiServerMCPClient or a connected MCP SDK Client. */
+export const loadMcpToolsWithContinuity = F.loadMcpToolsWithContinuity as (serverName: string, client: unknown, lock: McpLock, opts?: ContinuityGateOptions & { serverUrl?: string; gate?: ContinuityGate; adapters?: unknown; loadOptions?: unknown }) => Promise<any[] & { continuity: ContinuityGate }>;
 /** One verifier check. ok: true passed, false FAILED, null could not run (why says why) - never a pass. */
 export interface VerifyCheck { id: string; ok: boolean | null; why: string; [k: string]: unknown }
 /**
