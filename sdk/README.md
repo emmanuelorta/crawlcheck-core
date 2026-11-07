@@ -179,6 +179,32 @@ const tools = await loadMcpToolsWithContinuity("shop", client, lock, { mode: "ob
 
 `observe` records every difference (`console.warn`, `onRecord`, `server.continuity.records` / `tools.continuity.records`) and passes the tools through. `review` pauses the whole server on any change until `confirm` says yes. `enforce` applies the policy: a changed or new tool is withheld from the agent, and a call to it is refused, until `confirm({ tool, continuity })` re-approves it; the rest stay usable. A refusal throws `ContinuityRefused` (with `.record`). A yes is remembered for that exact definition, so a framework that lists tools every turn does not ask twice. For CrewAI, use the Python package (`crawlcheck.crewai.with_continuity`).
 
+### Check the baseline before trusting it (1.13.0)
+
+Whoever can edit your approved lockfile can approve their own tools. So every gate (`withPreflight` with `lock`, `continuityGate`, `withContinuity`, `loadMcpToolsWithContinuity`) checks the lockfile's signature once, when it is created, before it compares anything against it:
+
+| `baseline.trust` | meaning |
+|---|---|
+| `verified` | signed by CrawlCheck (`cc.mcpLock(url)` / `GET /api/v1/mcp/lock`) with a CrawlCheck key. The package ships the published key ids (`CRAWLCHECK_LOCK_KIDS`); pass `keyPolicy: await cc.publishedKeyPolicy()` to follow a key rotation. These lockfiles carry `parts` inside the signature; `parts` added afterwards are not used. |
+| `operator_signed` | you signed it with `signLock` and passed your public key in `operatorKeys`. Use this when you edit a lockfile yourself, for example to drop a tool. |
+| `unsigned` | no signature. Accepted unless `requireSignedBaseline` (on by default once you pass `operatorKeys`). |
+| `invalid` | the signature does not verify, the file was changed after signing, or the key is neither CrawlCheck's nor one of yours. |
+
+`invalid`, or `unsigned` when a signed one is required, is the failure class `baseline_untrusted`: `enforce` and `review` refuse (`ContinuityRefused` / `McpPreflightRefused`), `observe` records it and goes on. `openContinuityGate(lock, opts)` throws at startup; `continuityGate` exposes `gate.ready` and `gate.baseline`. Every record names the result in `baseline.trust`. Nothing is verified per call.
+
+Sign your own lockfile, with no command line:
+
+```js
+import { newOperatorKey, signLock, openContinuityGate } from "@crawlcheck/sdk";
+
+const key = await newOperatorKey();                 // once; store key.privateKey where the agent cannot read it
+const signed = await signLock(lock, key.privateKey); // after you review (or edit) the lockfile; save signed
+// at startup, with only the public key:
+const gate = await openContinuityGate(signed, { mode: "enforce", operatorKeys: [key.publicKey] });
+```
+
+`verifyLockBaseline(lock, opts)` runs the same check on its own. The signature is Ed25519 over `"crawlcheck-lock-operator-v1\n" + sha256(canonical JSON of the lockfile without operator_signature)`; the Python package signs and verifies byte for byte the same.
+
 ## Do not trust the API: check the evidence yourself
 
 ```js

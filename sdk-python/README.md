@@ -122,6 +122,33 @@ with with_continuity(MCPServerAdapter(server_params), lock, mode="observe") as t
 
 1.13.0 also fixes `with_preflight` continuity with the MCP Python SDK: a real `mcp.types.Tool` was hashed with its annotations' unset keys, so every annotated tool read as changed against a lockfile built from the server's JSON.
 
+### Check the baseline before trusting it (1.14.0)
+
+Whoever can edit your approved lockfile can approve their own tools. So every gate (`McpPreflight` / `with_preflight` with `lock=`, `ContinuityGate` and the three framework adapters) checks the lockfile's signature once, when it is constructed, before it compares anything against it:
+
+| `baseline["trust"]` | meaning |
+|---|---|
+| `verified` | signed by CrawlCheck (`cc.mcp_lock(url)` / `GET /api/v1/mcp/lock`) with a CrawlCheck key. The package ships the published key ids (`CRAWLCHECK_LOCK_KIDS`); pass `key_policy=key_policy_from(directory)` to follow a key rotation. These lockfiles carry `parts` inside the signature; `parts` added afterwards are not used. |
+| `operator_signed` | you signed it with `sign_lock` and passed your public key in `operator_keys`. Use this when you edit a lockfile yourself, for example to drop a tool. |
+| `unsigned` | no signature. Accepted unless `require_signed_baseline=True` (on by default once you pass `operator_keys`). |
+| `invalid` | the signature does not verify, the file was changed after signing, or the key is neither CrawlCheck's nor one of yours. |
+
+`invalid`, or `unsigned` when a signed one is required, is the failure class `baseline_untrusted`: in `enforce` and `review` the constructor raises (`ContinuityRefused` / `McpPreflightRefused`), so the agent fails at startup; `observe` records it and goes on. Every record names the result in `baseline.trust`. Nothing is verified per call. The adapters take the options as `baseline={"operator_keys": [...], "require_signed_baseline": True}`; `McpPreflight` takes them in `continuity={...}` or as keyword arguments.
+
+Sign your own lockfile, with no command line:
+
+```python
+from crawlcheck import new_operator_key, sign_lock
+from crawlcheck.continuity_gate import ContinuityGate
+
+key = new_operator_key()                       # once; store key["private_key"] where the agent cannot read it
+signed = sign_lock(lock, key["private_key"])   # after you review (or edit) the lockfile; save signed
+# at startup, with only the public key:
+gate = ContinuityGate(signed, mode="enforce", operator_keys=[key["public_key"]])
+```
+
+`verify_lock_baseline(lock, ...)` runs the same check on its own. The signature is Ed25519 over `"crawlcheck-lock-operator-v1\n" + sha256(canonical JSON of the lockfile without operator_signature)`, the same bytes the JS SDK signs; signing is pure Python and not constant-time, so sign on a machine you control.
+
 ## Catch a split view
 
 Every Resolve answer carries its place in CrawlCheck's transparency log. The client keeps every signed tree head it sees in `client.log` (plain JSON; persist it and pass it back as `log_store=`) and treats two heads for one batch, or a head that does not chain to the one before, as a fork with both signed heads as proof. `guard()` returns `False` while the client holds one.

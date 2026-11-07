@@ -21,10 +21,19 @@ export const lockParts = C.lockParts;
 /** Which continuity failure class a refused guard() result is. */
 export const continuityClassOf = C.continuityClassOf;
 export const acceptanceOf = C.acceptanceOf;
+export const CRAWLCHECK_LOCK_KIDS = C.CRAWLCHECK_LOCK_KIDS;
+/** Is this the lockfile CrawlCheck or the operator signed? Offline. lock is the baseline to compare against (unsigned parts removed). */
+export const verifyLockBaseline = C.verifyLockBaseline;
+/** Sign a lockfile you approved (or edited) with your own Ed25519 key, over its canonical JSON. Returns a copy with operator_signature. */
+export const signLock = C.signLock;
+/** A new operator key: keep privateKey away from the agent; pass publicKey in operatorKeys. */
+export const newOperatorKey = C.newOperatorKey;
 /** Thrown in review/enforce when a record's outcome is pause, refresh or deny and nobody re-approved (or a paused tool is called). */
 export const ContinuityRefused = F.ContinuityRefused;
 /** The shared gate behind the framework adapters. Default mode observe. */
 export const continuityGate = F.continuityGate;
+/** 1.13.0: continuityGate that fails at startup: throws ContinuityRefused when the baseline is untrusted (outside observe). */
+export const openContinuityGate = F.openContinuityGate;
 /** @openai/agents: wrap an MCP server so every listTools() is checked against lock. Records at server.continuity. */
 export const withContinuity = F.withContinuity;
 /** @langchain/mcp-adapters: loadMcpTools with the check. client: a MultiServerMCPClient or a connected MCP SDK Client. */

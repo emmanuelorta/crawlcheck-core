@@ -27,6 +27,7 @@ export declare const CONTINUITY_DEFAULT_POLICY: Readonly<{
         check_timeout: "pause";
         service_unavailable: "pause";
         decision_refused: "deny";
+        baseline_untrusted: "deny";
     }>;
 }>;
 /** Per-part hashes of one tool, so a change can be named (description, schema, annotations). */
@@ -63,6 +64,7 @@ export declare function continuityPolicy(p: any): Promise<{
         check_timeout: "pause";
         service_unavailable: "pause";
         decision_refused: "deny";
+        baseline_untrusted: "deny";
     }>;
     allow_integrity_override: boolean;
 } & {
@@ -103,3 +105,45 @@ export declare function acceptanceOf(receipt: any, verification: any, scope: any
 };
 /** Which failure class a refused guard() result is (for continuityFailure). */
 export declare function continuityClassOf(g: any): "check_timeout" | "decision_refused" | "evidence_expired" | "key_retired" | "key_unknown" | "response_malformed" | "server_identity_mismatch" | "service_unavailable" | "signature_invalid";
+/** CrawlCheck's lockfile signing keys (RFC 7638 thumbprints), as published at /.well-known/http-message-signatures-directory on 2026-11-07. */
+export declare const CRAWLCHECK_LOCK_KIDS: readonly string[];
+/** The operator's signature over the canonical lockfile (every field but operator_signature). privateKey: an Ed25519 private JWK ({kty, crv, x, d}). */
+export declare function signLock(lock: any, privateKey: any): Promise<{
+    operator_signature: {
+        v: number;
+        alg: string;
+        kid: string;
+        message: string;
+        sig: string;
+    };
+}>;
+/** A new operator signing key: { privateKey (JWK, keep it out of the agent's reach), publicKey ({kty, crv, x}: pass it as operatorKeys) }. */
+export declare function newOperatorKey(): Promise<{
+    privateKey: {
+        kty: string;
+        crv: string;
+        x: string | undefined;
+        d: string | undefined;
+    };
+    publicKey: {
+        kty: string;
+        crv: string;
+        x: string | undefined;
+    };
+    kid: string;
+}>;
+/**
+ * Is this baseline the one CrawlCheck or the operator signed? opts: operatorKeys (public JWKs or their x), keyPolicy,
+ * publishedKids, trustedKids. Returns { trust: verified | operator_signed | unsigned | invalid, signer, kid, why, parts_used,
+ * lock } where lock is the baseline to compare against (without unsigned parts). Offline; no network.
+ */
+export declare function verifyLockBaseline(lock: any, opts?: {}): Promise<{
+    trust: any;
+    signer: any;
+    kid: any;
+    why: any;
+    parts_used: boolean;
+    lock: any;
+}>;
+/** Why a baseline is refused (null when it is accepted). */
+export declare function baselineRefusal(b: any, requireSigned: any): any;

@@ -147,12 +147,12 @@ def _server_url(server):
 
 
 def with_continuity(server, lock, mode="observe", policy=None, exceptions=None, confirm=None, on_record=None, log_path=None,
-                    server_url=None, server_identity=None, expect_policy_sha256=None, gate=None):
+                    server_url=None, server_identity=None, expect_policy_sha256=None, gate=None, baseline=None):
     """Wrap an agents.mcp server (MCPServerStdio, MCPServerSse, MCPServerStreamableHttp or your own) so every tool-list
     fetch runs continuity_check against lock. server_url defaults to the server's params["url"] (HTTP transports); the
     lock's server.url must match it or the check reports server_identity_mismatch (deny outside observe)."""
     from .continuity_gate import ContinuityGate
     g = gate or ContinuityGate(lock, mode=mode, policy=policy, exceptions=exceptions, server=server_url or _server_url(server),
                                server_identity=server_identity, expect_policy_sha256=expect_policy_sha256, confirm=confirm,
-                               on_record=on_record, log_path=log_path)
+                               on_record=on_record, log_path=log_path, **(baseline or {}))
     return _server_class()(server, g)

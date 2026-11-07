@@ -131,7 +131,7 @@ class _Guarded:
 
 
 def with_continuity(adapter, lock, mode="observe", policy=None, exceptions=None, confirm=None, on_record=None, log_path=None,
-                    server_url=None, server_identity=None, expect_policy_sha256=None, gate=None):
+                    server_url=None, server_identity=None, expect_policy_sha256=None, gate=None, baseline=None):
     """Wrap a crewai_tools.MCPServerAdapter (not yet started) so its tools are checked against lock. The returned object
     has .tools, .start(), .stop(), works as a context manager, and keeps the records at .gate.records. server_url
     defaults to the adapter's serverparams["url"] (HTTP transports)."""
@@ -139,5 +139,5 @@ def with_continuity(adapter, lock, mode="observe", policy=None, exceptions=None,
     sp = getattr(adapter, "_serverparams", None)
     url = server_url or (sp.get("url") if isinstance(sp, dict) else None)
     g = gate or ContinuityGate(lock, mode=mode, policy=policy, exceptions=exceptions, server=url, server_identity=server_identity,
-                               expect_policy_sha256=expect_policy_sha256, confirm=confirm, on_record=on_record, log_path=log_path)
+                               expect_policy_sha256=expect_policy_sha256, confirm=confirm, on_record=on_record, log_path=log_path, **(baseline or {}))
     return _Guarded(adapter, g)

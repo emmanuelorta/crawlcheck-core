@@ -10,7 +10,11 @@
 // confirm(request) may return a promise; request is { continuity: record } for the server or { tool, continuity } for one
 // tool. A yes is remembered for that exact definition, so a framework that lists tools every turn does not ask twice.
 // No framework is a dependency of this package: each adapter imports its framework only when called.
-import { continuityCheck, continuityFailure } from "./continuity.js";
+// 1.13.0 signed baseline: when the gate is created it checks the lockfile's signature (verifyLockBaseline) before trusting
+// it. opts.operatorKeys, keyPolicy, publishedKids, trustedKids, requireSignedBaseline. A bad or forged signature, or an
+// unsigned lockfile when requireSignedBaseline, is recorded as baseline_untrusted; outside observe every check then throws.
+// await gate.ready (or use openContinuityGate) to fail at startup.
+import { continuityCheck, continuityFailure, verifyLockBaseline, baselineRefusal } from "./continuity.js";
 import { canon } from "./verify.js";
 export class ContinuityRefused extends Error {
     constructor(why, record = null, tool = null) {
@@ -30,10 +34,12 @@ export function continuityGate(lock, opts = {}) {
     if (!lock || !Array.isArray(lock.tools))
         throw new Error("lock must be an approved mcp-lockfile (an object with a tools array); see https://crawlcheck.io/spec/mcp-lockfile");
     const keep = opts.keep ?? 50, okTools = new Set(), okLists = new Set();
-    let lastKey = null;
+    let lastKey = null, base = lock, refused = null;
     const co = { mode, policy: opts.policy, exceptions: opts.exceptions, server: opts.server ?? undefined, serverIdentity: opts.serverIdentity, expectPolicySha256: opts.expectPolicySha256 };
+    const requireSigned = opts.requireSignedBaseline ?? !!(opts.operatorKeys && opts.operatorKeys.length);
     const gate = {
-        mode, records: [], record: null, paused: new Set(),
+        mode, records: [], record: null, paused: new Set(), baseline: null, ready: null,
+        get refused() { return refused; },
         async keepRecord(rec) {
             gate.record = rec;
             gate.records = gate.records.concat([rec]).slice(-keep);
@@ -60,9 +66,12 @@ export function continuityGate(lock, opts = {}) {
         },
         /** Compare the offered tools with the lock and apply the mode. Returns the record; throws ContinuityRefused. */
         async check(tools, meta = {}) {
+            await gate.ready;
+            if (refused)
+                throw refused;
             const complete = meta.complete !== false;
             const rows = Array.isArray(tools) ? tools.map(pick) : tools;
-            let rec = await continuityCheck(lock, rows, Object.assign({}, co, { complete }));
+            let rec = await continuityCheck(base, rows, Object.assign({}, co, { complete, baselineTrust: gate.baseline && gate.baseline.trust }));
             const key = (rec.observed?.tools_sha256 ?? "") + "|" + complete;
             if (lastKey === key && gate.record)
                 rec = gate.record;
@@ -101,6 +110,9 @@ export function continuityGate(lock, opts = {}) {
         },
         /** Record a check that could not compare anything. Throws ContinuityRefused outside observe. */
         async fail(cls, detail) {
+            await gate.ready;
+            if (refused)
+                throw refused;
             const rec = await continuityFailure(cls, Object.assign({}, co, { detail: detail ? String(detail).slice(0, 300) : undefined }));
             lastKey = null;
             await gate.keepRecord(rec);
@@ -114,7 +126,35 @@ export function continuityGate(lock, opts = {}) {
         callOk(name) { if (mode !== "observe" && gate.paused.has(name))
             throw new ContinuityRefused("tool " + name + " changed since it was approved (or is new) and no person re-approved it", gate.record, name); return true; },
     };
+    gate.ready = (async () => {
+        let b;
+        try {
+            b = await verifyLockBaseline(lock, opts);
+        }
+        catch (e) {
+            b = { trust: "invalid", signer: null, kid: null, why: "the baseline could not be checked: " + (e && e.message || e), parts_used: false, lock };
+        }
+        gate.baseline = { trust: b.trust, signer: b.signer, kid: b.kid, why: b.why, parts_used: b.parts_used };
+        base = b.lock || lock;
+        const bad = baselineRefusal(b, requireSigned);
+        if (bad) {
+            const rec = await continuityFailure("baseline_untrusted", Object.assign({}, co, { detail: String(bad).slice(0, 300) }));
+            await gate.keepRecord(rec);
+            if (mode !== "observe" && rec.outcome !== "proceed")
+                refused = new ContinuityRefused(rec.why.join("; ") + ": " + bad, rec);
+        }
+        return gate.baseline;
+    })();
+    gate.ready.catch(() => { }); // a bad policy is thrown by check(), which awaits ready
     return gate;
+}
+/** continuityGate, checked at startup: resolves to the gate once the baseline verifies, throws ContinuityRefused when it does not (outside observe). */
+export async function openContinuityGate(lock, opts = {}) {
+    const g = continuityGate(lock, opts);
+    await g.ready;
+    if (g.refused)
+        throw g.refused;
+    return g;
 }
 const urlOf = (s) => {
     for (const p of [s && s.params, s && s.underlying && s.underlying.params, s && s.options])
@@ -198,6 +238,9 @@ export async function loadMcpToolsWithContinuity(serverName, client, lock, opts 
         conn = null;
     }
     const gate = opts.gate || continuityGate(lock, Object.assign({ server: opts.serverUrl ?? (conn && conn.url) ?? undefined }, opts));
+    await gate.ready;
+    if (gate.refused)
+        throw gate.refused; // 1.13.0: an untrusted baseline fails before the server is read
     let listed;
     try {
         listed = await listAll(mcp);

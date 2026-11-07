@@ -18,8 +18,8 @@ export type ContinuityEffect = "proceed" | "proceed_recorded" | "refresh" | "pau
 export interface ContinuityPolicy { v?: 1; id?: string; max_baseline_age_days?: number; effects?: Partial<Record<string, ContinuityEffect>>; allow_integrity_override?: boolean }
 export interface ContinuityException { tool?: string; class: string; until?: string; by?: string; reason?: string }
 export interface ContinuityEvent { class: string; tool: string | null; why: string; policy_effect: ContinuityEffect; effect: ContinuityEffect; exception?: { by: string | null; reason: string | null; until: string | null }; detail?: string }
-export interface ContinuityRecord { kind: "crawlcheck-continuity-record"; v: 1; checked_at: string; mode: "observe" | "review" | "enforce"; server: string | null; policy: { id: string; sha256: string; integrity_override: boolean }; claims: string; baseline: { tools_sha256: string | null; approved_at: string | null; age_days: number | null; server: string | null; per_part: boolean } | null; observed: { tools_sha256: string; count: number; complete: boolean } | null; events: ContinuityEvent[]; would: ContinuityEffect; enforced: boolean; outcome: "proceed" | "refresh" | "pause" | "deny"; paused_tools: string[]; why: string[]; record_sha256: string }
-export interface ContinuityOptions { mode?: "observe" | "review" | "enforce"; policy?: ContinuityPolicy; exceptions?: ContinuityException[]; complete?: boolean; server?: string; serverIdentity?: string; expectPolicySha256?: string; now?: number; detail?: string }
+export interface ContinuityRecord { kind: "crawlcheck-continuity-record"; v: 1; checked_at: string; mode: "observe" | "review" | "enforce"; server: string | null; policy: { id: string; sha256: string; integrity_override: boolean }; claims: string; baseline: { tools_sha256: string | null; approved_at: string | null; age_days: number | null; server: string | null; per_part: boolean; /** 1.13.0: verified | operator_signed | unsigned | invalid (null when the caller did not check). */ trust: BaselineTrust["trust"] | null } | null; observed: { tools_sha256: string; count: number; complete: boolean } | null; events: ContinuityEvent[]; would: ContinuityEffect; enforced: boolean; outcome: "proceed" | "refresh" | "pause" | "deny"; paused_tools: string[]; why: string[]; record_sha256: string }
+export interface ContinuityOptions { mode?: "observe" | "review" | "enforce"; policy?: ContinuityPolicy; exceptions?: ContinuityException[]; complete?: boolean; server?: string; serverIdentity?: string; expectPolicySha256?: string; now?: number; detail?: string; /** 1.13.0: the result of verifyLockBaseline, named in record.baseline.trust. */ baselineTrust?: BaselineTrust["trust"] }
 export const CONTINUITY_DEFAULT_POLICY = C.CONTINUITY_DEFAULT_POLICY as { v: 1; id: string; max_baseline_age_days: number; effects: Record<string, ContinuityEffect> };
 export const CONTINUITY_CHANGE_CLASSES = C.CONTINUITY_CHANGE_CLASSES as string[];
 export const CONTINUITY_FAILURE_CLASSES = C.CONTINUITY_FAILURE_CLASSES as string[];
@@ -37,19 +37,43 @@ export const lockParts = C.lockParts as (tools: McpTool[]) => Promise<Record<str
 export const continuityClassOf = (C as any).continuityClassOf as (g: GuardResult | null) => string;
 export const acceptanceOf = C.acceptanceOf as (receipt: unknown, verification: unknown, scope: { fields?: unknown } | null, opts?: { allowWarn?: boolean; confirmed?: boolean | null; lock?: unknown }) => Acceptance;
 
+// ── signed baseline (1.13.0): the lockfile's signature is checked before it is trusted ──
+/** An Ed25519 public key ({kty: "OKP", crv: "Ed25519", x}) or its x. */
+export type OperatorKey = { kty?: "OKP"; crv?: "Ed25519"; x: string } | string;
+export interface BaselineOptions {
+  /** The operator's Ed25519 public keys; a lockfile signed with signLock by one of them is operator_signed. */
+  operatorKeys?: OperatorKey[];
+  /** keyPolicyFrom(directory) / publishedKeyPolicy(): CrawlCheck's keys with purposes and rotation, instead of the pinned ids. */
+  keyPolicy?: unknown;
+  /** CrawlCheck key ids to accept instead of the pinned CRAWLCHECK_LOCK_KIDS (publishedKeyIds()). */
+  publishedKids?: string[]; trustedKids?: string[];
+  /** Refuse an unsigned lockfile (default: true when operatorKeys are given). */
+  requireSignedBaseline?: boolean;
+}
+export interface BaselineTrust { trust: "verified" | "operator_signed" | "unsigned" | "invalid"; signer: "crawlcheck" | "operator" | null; kid: string | null; why: string; parts_used: boolean }
+export const CRAWLCHECK_LOCK_KIDS = C.CRAWLCHECK_LOCK_KIDS as readonly string[];
+/** Is this the lockfile CrawlCheck or the operator signed? Offline. lock is the baseline to compare against (unsigned parts removed). */
+export const verifyLockBaseline = C.verifyLockBaseline as (lock: unknown, opts?: BaselineOptions) => Promise<BaselineTrust & { lock: McpLock }>;
+/** Sign a lockfile you approved (or edited) with your own Ed25519 key, over its canonical JSON. Returns a copy with operator_signature. */
+export const signLock = C.signLock as <T extends McpLock>(lock: T, privateKey: { kty?: "OKP"; crv?: "Ed25519"; x: string; d: string }) => Promise<T & { operator_signature: { v: 1; alg: "Ed25519"; kid: string; message: string; sig: string } }>;
+/** A new operator key: keep privateKey away from the agent; pass publicKey in operatorKeys. */
+export const newOperatorKey = C.newOperatorKey as () => Promise<{ privateKey: { kty: "OKP"; crv: "Ed25519"; x: string; d: string }; publicKey: { kty: "OKP"; crv: "Ed25519"; x: string }; kid: string }>;
+
 // ── continuity at the framework's tool-list fetch (1.12.0): @openai/agents and @langchain/mcp-adapters, no dependency ──
-export interface ContinuityGateOptions extends ContinuityOptions {
+export interface ContinuityGateOptions extends ContinuityOptions, BaselineOptions {
   /** A person's re-approval: { continuity } for the server, { tool, continuity } for one tool. Remembered per definition. */
   confirm?: (request: { tool?: string; continuity: ContinuityRecord }) => boolean | Promise<boolean>;
   onRecord?: (record: ContinuityRecord) => unknown;
   /** false: no console.warn on a change. */ log?: boolean; logger?: { warn: (msg: string) => unknown };
   /** Records kept in gate.records (default 50). */ keep?: number;
 }
-export interface ContinuityGate { mode: "observe" | "review" | "enforce"; records: ContinuityRecord[]; record: ContinuityRecord | null; paused: Set<string>; check(tools: McpTool[], meta?: { complete?: boolean }): Promise<ContinuityRecord>; fail(cls: string, detail?: string): Promise<ContinuityRecord>; allowed<T>(tools: T[], nameOf?: (t: T) => string): T[]; callOk(name: string): true }
+export interface ContinuityGate { mode: "observe" | "review" | "enforce"; records: ContinuityRecord[]; record: ContinuityRecord | null; paused: Set<string>; /** 1.13.0: the startup check of the lockfile's signature. */ ready: Promise<BaselineTrust>; baseline: BaselineTrust | null; readonly refused: Error | null; check(tools: McpTool[], meta?: { complete?: boolean }): Promise<ContinuityRecord>; fail(cls: string, detail?: string): Promise<ContinuityRecord>; allowed<T>(tools: T[], nameOf?: (t: T) => string): T[]; callOk(name: string): true }
 /** Thrown in review/enforce when a record's outcome is pause, refresh or deny and nobody re-approved (or a paused tool is called). */
 export const ContinuityRefused = F.ContinuityRefused as unknown as new (why: string, record?: ContinuityRecord | null, tool?: string | null) => Error & { why: string; record: ContinuityRecord | null; tool: string | null };
 /** The shared gate behind the framework adapters. Default mode observe. */
-export const continuityGate = F.continuityGate as (lock: McpLock, opts?: ContinuityGateOptions) => ContinuityGate;
+export const continuityGate = F.continuityGate as unknown as (lock: McpLock, opts?: ContinuityGateOptions) => ContinuityGate;
+/** 1.13.0: continuityGate that fails at startup: throws ContinuityRefused when the baseline is untrusted (outside observe). */
+export const openContinuityGate = F.openContinuityGate as unknown as (lock: McpLock, opts?: ContinuityGateOptions) => Promise<ContinuityGate>;
 /** @openai/agents: wrap an MCP server so every listTools() is checked against lock. Records at server.continuity. */
 export const withContinuity = F.withContinuity as <S extends { listTools: (...a: any[]) => Promise<any[]>; callTool: (...a: any[]) => Promise<any> }>(server: S, lock: McpLock, opts?: ContinuityGateOptions & { serverUrl?: string; gate?: ContinuityGate }) => S & { continuity: ContinuityGate };
 /** @langchain/mcp-adapters: loadMcpTools with the check. client: a MultiServerMCPClient or a connected MCP SDK Client. */
@@ -272,7 +296,7 @@ export const applyRevocations = R.applyRevocations as (store: RevocationStore, d
 export const revokedFor = R.revokedFor as (store: RevocationStore, domain: string, action?: string) => (RevokedEntry & { domain: string }) | null;
 
 // ── preflight as an MCP client extension (https://crawlcheck.io/spec/mcp-preflight) ──
-export interface McpPreflightOptions extends PreflightOptions {
+export interface McpPreflightOptions extends PreflightOptions, BaselineOptions {
   /** Proceed on warn too (default false). */
   allowWarn?: boolean;
   /** Called on require_confirmation (and, with confirmDestructive, before a destructive tool call); the connect or call proceeds only if it resolves true. */
@@ -288,10 +312,10 @@ export interface McpPreflightOptions extends PreflightOptions {
   /** The server URL when the transport does not expose it. */
   serverUrl?: string;
   /** 1.11.0: tool-interface continuity with lock. mode observe (record only), review (changes go to confirm), enforce (the policy applies). Every check is kept in state.records and passed to onRecord. https://crawlcheck.io/spec/continuity */
-  continuity?: ContinuityOptions & { onRecord?: (record: ContinuityRecord) => unknown };
+  continuity?: ContinuityOptions & BaselineOptions & { onRecord?: (record: ContinuityRecord) => unknown };
   onlineKeys?: boolean;
 }
-export interface McpPreflightState { url: string | null; host: string | null; receipt: DecisionReceipt | null; verification: (DocumentVerification & Trust) | null; decidedAt: number; lockCheck: McpLockCheck | ContinuityRecord | null; approved: Set<string> | null; continuity: ContinuityRecord | null; records: ContinuityRecord[]; pausedTools: Set<string> | null }
+export interface McpPreflightState { url: string | null; host: string | null; receipt: DecisionReceipt | null; verification: (DocumentVerification & Trust) | null; decidedAt: number; lockCheck: McpLockCheck | ContinuityRecord | null; approved: Set<string> | null; continuity: ContinuityRecord | null; records: ContinuityRecord[]; pausedTools: Set<string> | null; /** 1.13.0 */ baseline: BaselineTrust | null; ready: Promise<BaselineTrust | null> }
 export interface McpPreflightHooks {
   state: McpPreflightState;
   beforeConnect(url: string | null | undefined): Promise<{ local: boolean; host?: string; receipt: DecisionReceipt | null; verification?: DocumentVerification & Trust }>;
@@ -301,7 +325,7 @@ export interface McpPreflightHooks {
 /** Thrown by the hooks when a connect or tools/call is refused; the request was never sent. */
 export const McpPreflightRefused = M.McpPreflightRefused as unknown as new (stage: "connect" | "tools/call", why: string, detail?: { receipt?: DecisionReceipt | null; lock?: McpLockCheck | null; verification?: unknown }) => Error & { stage: "connect" | "tools/call"; why: string; receipt: DecisionReceipt | null; lock: McpLockCheck | null; verification: unknown };
 /** The two hooks (beforeConnect, beforeToolCall) plus afterConnect for lockfiles, for any MCP client stack. */
-export const mcpPreflight = M.mcpPreflight as (cc: CrawlCheck, opts?: McpPreflightOptions) => McpPreflightHooks;
+export const mcpPreflight = M.mcpPreflight as unknown as (cc: CrawlCheck, opts?: McpPreflightOptions) => McpPreflightHooks;
 /** Wrap an MCP client (the official @modelcontextprotocol/sdk Client, or anything with connect(transport) and callTool(params)) so both run the preflight first. Returns the same client with client.preflight set. */
 export const withPreflight = M.withPreflight as <C extends { connect: (...a: any[]) => Promise<any>; callTool: (...a: any[]) => Promise<any> }>(client: C, cc: CrawlCheck, opts?: McpPreflightOptions) => C & { preflight: McpPreflightHooks };
 /** The server URL a transport will talk to, if it exposes one (Streamable HTTP and SSE transports do). */

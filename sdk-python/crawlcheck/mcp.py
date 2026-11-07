@@ -30,7 +30,7 @@ from urllib.parse import urlparse
 
 from .client import normalize_domain
 from .lock import check_lock
-from .continuity import continuity_check, continuity_failure, continuity_class_of
+from .continuity import continuity_check, continuity_failure, continuity_class_of, verify_lock_baseline, baseline_refusal
 
 
 class McpPreflightRefused(Exception):
@@ -67,7 +67,8 @@ class McpPreflight:
     """The hooks, for any client stack: before_connect(url), after_connect(tools), before_tool_call(name, annotations)."""
 
     def __init__(self, cc, template="safe_mcp_tool", policy=None, agent=None, confirm=None, allow_warn=False, lock=None,
-                 confirm_destructive=False, max_age_s=None, local="allow", tool_receipts="write", scopes=None, continuity=None):
+                 confirm_destructive=False, max_age_s=None, local="allow", tool_receipts="write", scopes=None, continuity=None,
+                 operator_keys=None, key_policy=None, published_kids=None, trusted_kids=None, require_signed_baseline=None):
         self.cc, self.template, self.policy, self.agent = cc, template, policy, agent
         self.confirm, self.allow_warn, self.lock, self.confirm_destructive = confirm, allow_warn, lock, confirm_destructive
         self.max_age_s, self.local = max_age_s, local
@@ -79,6 +80,32 @@ class McpPreflight:
         self.co = continuity
         self._acc = None
         self.records, self.continuity, self.paused_tools = [], None, None
+        # 1.14.0 signed baseline: the lockfile's signature is checked once, here, before anything is compared against it.
+        # Options in continuity={...} or as keyword arguments: operator_keys, key_policy, published_kids, trusted_kids,
+        # require_signed_baseline. A bad or forged signature (or an unsigned lockfile when one is required) raises
+        # McpPreflightRefused now, outside observe; observe records baseline_untrusted and goes on.
+        self.baseline, self._base = None, lock
+        if lock is not None:
+            c = self.co or {}
+            pick = lambda k, v: c.get(k) if c.get(k) is not None else v   # noqa: E731
+            okeys = pick("operator_keys", operator_keys)
+            try:
+                b = verify_lock_baseline(lock, operator_keys=okeys, key_policy=pick("key_policy", key_policy),
+                                         published_kids=pick("published_kids", published_kids), trusted_kids=pick("trusted_kids", trusted_kids))
+            except Exception as e:  # noqa: BLE001
+                b = {"trust": "invalid", "signer": None, "kid": None, "why": "the baseline could not be checked: %s" % e, "parts_used": False, "lock": lock}
+            self._base = b.get("lock") or lock
+            self.baseline = {k: b[k] for k in ("trust", "signer", "kid", "why", "parts_used")}
+            req = pick("require_signed_baseline", require_signed_baseline)
+            bad = baseline_refusal(b, req if req is not None else bool(okeys))
+            if bad and self.co:
+                from .continuity_gate import _run_sync
+                o = self._co()
+                rec = _run_sync(self._keep(continuity_failure("baseline_untrusted", mode=o["mode"], policy=o["policy"], exceptions=o["exceptions"], server=None, detail=str(bad)[:300])))
+                if rec["outcome"] != "proceed":
+                    raise McpPreflightRefused("connect", "; ".join(rec["why"]) + ": " + bad, None, rec)
+            elif bad:
+                raise McpPreflightRefused("connect", "the approved lockfile is not trusted: " + bad)
 
     async def _keep(self, rec):
         self.continuity = rec
@@ -185,7 +212,8 @@ class McpPreflight:
     async def after_connect(self, tools, next_cursor=None):
         if self.co and self.lock:   # 1.12.0: classify, apply the operator's policy, keep the record
             o = self._co()
-            rec = await self._keep(continuity_check(self.lock, tools, mode=o["mode"], policy=o["policy"], exceptions=o["exceptions"], server=o["server"], complete=not next_cursor))
+            rec = await self._keep(continuity_check(self._base, tools, mode=o["mode"], policy=o["policy"], exceptions=o["exceptions"], server=o["server"], complete=not next_cursor,
+                                                     baseline_trust=(self.baseline or {}).get("trust")))
             self.lock_check, self.approved, self.paused_tools = rec, None, set(rec["paused_tools"])
             if rec["outcome"] == "deny":
                 raise McpPreflightRefused("connect", "; ".join(rec["why"]), self.receipt, rec)
@@ -198,7 +226,7 @@ class McpPreflight:
         if not self.lock:
             self.approved = None
             return None
-        lc = check_lock(self.lock, tools or [])
+        lc = check_lock(self._base, tools or [])
         self.lock_check = lc
         self.approved = set(t.get("name") for t in self.lock.get("tools", []))
         if lc["decision"] != "connect":

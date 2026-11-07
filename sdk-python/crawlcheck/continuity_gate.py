@@ -13,14 +13,20 @@ re-approves it; a whole-server pause or refresh asks confirm() once; deny raises
 
 confirm(request) may be sync or async. request is {"continuity": record} for the server, or {"tool": name,
 "continuity": record} for one tool. A yes is remembered for that exact tool definition (or tool list), so a framework
-that lists tools on every turn does not ask twice. No network, no key: the comparison is local."""
+that lists tools on every turn does not ask twice. No network, no key: the comparison is local.
+
+1.14.0 signed baseline: the constructor checks the lockfile's signature (verify_lock_baseline) before trusting it:
+operator_keys, key_policy, published_kids, trusted_kids, require_signed_baseline (default: on when operator_keys are
+given). A bad or forged signature, or an unsigned lockfile when one is required, is recorded as baseline_untrusted; in
+review and enforce the constructor raises ContinuityRefused (a startup failure), in observe it records and goes on.
+gate.baseline is the result; every record names it in baseline.trust."""
 import asyncio
 import inspect
 import json
 import logging
 import threading
 
-from .continuity import continuity_check, continuity_failure, _tool_hash
+from .continuity import continuity_check, continuity_failure, _tool_hash, verify_lock_baseline, baseline_refusal
 
 log = logging.getLogger("crawlcheck.continuity")
 
@@ -82,7 +88,8 @@ async def _maybe(v):
 
 class ContinuityGate:
     def __init__(self, lock, mode="observe", policy=None, exceptions=None, server=None, server_identity=None,
-                 expect_policy_sha256=None, confirm=None, on_record=None, log_path=None, keep=50):
+                 expect_policy_sha256=None, confirm=None, on_record=None, log_path=None, keep=50, operator_keys=None,
+                 key_policy=None, published_kids=None, trusted_kids=None, require_signed_baseline=None):
         if mode not in ("observe", "review", "enforce"):
             raise ValueError("mode must be observe, review or enforce")
         if not isinstance(lock, dict) or not isinstance(lock.get("tools"), list):
@@ -92,6 +99,22 @@ class ContinuityGate:
         self.confirm, self.on_record, self.log_path, self.keep = confirm, on_record, log_path, keep
         self.records, self.record, self.paused = [], None, set()
         self._ok_tools, self._ok_lists, self._last = set(), set(), None
+        # startup: the baseline is checked once, before anything is compared against it
+        try:
+            b = verify_lock_baseline(lock, operator_keys=operator_keys, key_policy=key_policy, published_kids=published_kids, trusted_kids=trusted_kids)
+        except Exception as e:  # noqa: BLE001
+            b = {"trust": "invalid", "signer": None, "kid": None, "why": "the baseline could not be checked: %s" % e, "parts_used": False, "lock": lock}
+        self._base = b.get("lock") or lock
+        self.baseline = {k: b[k] for k in ("trust", "signer", "kid", "why", "parts_used")}
+        req = require_signed_baseline if require_signed_baseline is not None else bool(operator_keys)
+        bad = baseline_refusal(b, req)
+        self.refused = None
+        if bad:
+            rec = continuity_failure("baseline_untrusted", mode=self.mode, policy=self.policy, exceptions=self.exceptions, server=self.server, detail=str(bad)[:300])
+            _run_sync(self._keep(rec))
+            if self.mode != "observe" and rec["outcome"] != "proceed":
+                self.refused = ContinuityRefused("; ".join(rec["why"]) + ": " + bad, rec)
+                raise self.refused
 
     # -- records ---------------------------------------------------------------------------------------------------
     async def _keep(self, rec):
@@ -126,7 +149,7 @@ class ContinuityGate:
     async def acheck(self, tools, complete=True):
         """Compare the offered tools with the lock and apply the mode. Returns the record; raises ContinuityRefused."""
         rows = [tool_dict(t) for t in (tools or [])] if isinstance(tools, list) else tools
-        rec = continuity_check(self.lock, rows, mode=self.mode, policy=self.policy, exceptions=self.exceptions, complete=complete,
+        rec = continuity_check(self._base, rows, baseline_trust=self.baseline["trust"], mode=self.mode, policy=self.policy, exceptions=self.exceptions, complete=complete,
                                server=self.server, server_identity=self.server_identity, expect_policy_sha256=self.expect_policy_sha256)
         key = ((rec.get("observed") or {}).get("tools_sha256"), complete is not False)
         if self._last and self._last[0] == key and self.record:   # same list as last time: no new record, same verdict

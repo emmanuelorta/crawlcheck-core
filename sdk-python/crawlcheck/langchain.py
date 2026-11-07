@@ -57,7 +57,7 @@ async def _all_tools(session):
 
 async def load_mcp_tools_with_continuity(source, lock, server_name=None, mode="observe", policy=None, exceptions=None, confirm=None,
                                          on_record=None, log_path=None, server_url=None, server_identity=None, expect_policy_sha256=None,
-                                         gate=None, **load_kwargs):
+                                         gate=None, baseline=None, **load_kwargs):
     """load_mcp_tools with the continuity check. source: a MultiServerMCPClient (server_name required when it has more
     than one server) or an initialised mcp ClientSession. load_kwargs go to convert_mcp_tool_to_langchain_tool
     (callbacks, tool_interceptors, tool_name_prefix, handle_tool_errors). Pass gate= (a ContinuityGate) to keep the
@@ -81,7 +81,7 @@ async def load_mcp_tools_with_continuity(source, lock, server_name=None, mode="o
                 load_kwargs[k] = getattr(source, k)
     url = server_url or (connection.get("url") if isinstance(connection, dict) else None)
     g = gate or ContinuityGate(lock, mode=mode, policy=policy, exceptions=exceptions, server=url, server_identity=server_identity,
-                               expect_policy_sha256=expect_policy_sha256, confirm=confirm, on_record=on_record, log_path=log_path)
+                               expect_policy_sha256=expect_policy_sha256, confirm=confirm, on_record=on_record, log_path=log_path, **(baseline or {}))
     try:
         if connection is not None:
             async with source.session(server_name) as s:

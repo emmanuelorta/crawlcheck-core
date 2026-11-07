@@ -1,4 +1,6 @@
-"""Pure-Python Ed25519 signature verification (RFC 8032, section 5.1.7). Verify only; no secret keys are handled."""
+"""Pure-Python Ed25519 (RFC 8032): verification (section 5.1.7) and, for sign_lock() since 1.14.0, signing (5.1.6).
+Signing is not constant-time: use it to sign configuration such as a lockfile on a machine you control, not as a
+general-purpose signing service."""
 import hashlib
 
 _p = 2 ** 255 - 19
@@ -82,3 +84,33 @@ def verify(public: bytes, msg: bytes, sig: bytes) -> bool:
         return False
     h = int.from_bytes(hashlib.sha512(Rs + public + msg).digest(), "little") % _q
     return _equal(_mul(s, _G), _add(R, _mul(h, A)))
+
+
+def _compress(P):
+    zi = _inv(P[2])
+    x, y = P[0] * zi % _p, P[1] * zi % _p
+    return int.to_bytes(y | ((x & 1) << 255), 32, "little")
+
+
+def _expand(seed):
+    if len(seed) != 32:
+        raise ValueError("an Ed25519 private key (seed) is 32 bytes")
+    h = hashlib.sha512(seed).digest()
+    a = int.from_bytes(h[:32], "little")
+    a &= (1 << 254) - 8
+    a |= 1 << 254
+    return a, h[32:]
+
+
+def public_key(seed: bytes) -> bytes:
+    a, _ = _expand(seed)
+    return _compress(_mul(a, _G))
+
+
+def sign(seed: bytes, msg: bytes) -> bytes:
+    a, prefix = _expand(seed)
+    A = _compress(_mul(a, _G))
+    r = int.from_bytes(hashlib.sha512(prefix + msg).digest(), "little") % _q
+    R = _compress(_mul(r, _G))
+    h = int.from_bytes(hashlib.sha512(R + A + msg).digest(), "little") % _q
+    return R + int.to_bytes((r + h * a) % _q, 32, "little")

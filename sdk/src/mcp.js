@@ -17,7 +17,7 @@
 // request is never sent.
 import { normalizeDomain } from "./index.js";
 import { checkLock, toolOperation } from "./index.js";
-import { continuityCheck, continuityFailure, continuityClassOf } from "./continuity.js";
+import { continuityCheck, continuityFailure, continuityClassOf, verifyLockBaseline, baselineRefusal } from "./continuity.js";
 
 export class McpPreflightRefused extends Error {
   constructor(stage, why, detail) { super("MCP preflight refused " + stage + ": " + why); this.name = "McpPreflightRefused"; this.stage = stage; this.why = why; this.receipt = detail && detail.receipt || null; this.lock = detail && detail.lock || null; this.verification = detail && detail.verification || null; }
@@ -45,6 +45,25 @@ export function mcpPreflight(cc, opts = {}) {
   const CO = opts.continuity || null;
   const keep = async function (rec) { state.continuity = rec; state.records.push(rec); if (state.records.length > 50) state.records.shift(); if (CO && typeof CO.onRecord === "function") { try { await CO.onRecord(rec); } catch (e) { } } return rec; };
   const coOpts = function (extra) { return Object.assign({ mode: CO.mode, policy: CO.policy, exceptions: CO.exceptions, server: state.url }, extra || {}); };
+  // 1.13.0 signed baseline: the lockfile's signature is checked once, now, before anything is compared against it. Options
+  // (in opts.continuity, or top level without continuity): operatorKeys, keyPolicy, publishedKids, trustedKids,
+  // requireSignedBaseline. A bad or forged signature (or an unsigned lockfile when one is required) refuses the connect
+  // outside observe; observe records baseline_untrusted and goes on.
+  let baseLock = opts.lock || null, baseRefused = null;
+  state.baseline = null;
+  state.ready = !opts.lock ? Promise.resolve(null) : (async () => {
+    const bo = Object.assign({}, opts, CO || {}), req = bo.requireSignedBaseline ?? !!(bo.operatorKeys && bo.operatorKeys.length);
+    let b; try { b = await verifyLockBaseline(opts.lock, bo); } catch (e) { b = { trust: "invalid", signer: null, kid: null, why: "the baseline could not be checked: " + (e && e.message || e), parts_used: false, lock: opts.lock }; }
+    state.baseline = { trust: b.trust, signer: b.signer, kid: b.kid, why: b.why, parts_used: b.parts_used }; baseLock = b.lock || opts.lock;
+    const bad = baselineRefusal(b, req);
+    if (bad && CO) {
+      const rec = await keep(await continuityFailure("baseline_untrusted", coOpts({ detail: String(bad).slice(0, 300) })));
+      if (rec.outcome !== "proceed") baseRefused = new McpPreflightRefused("connect", rec.why.join("; ") + ": " + bad, { lock: rec });
+    } else if (bad) baseRefused = new McpPreflightRefused("connect", "the approved lockfile is not trusted: " + bad);
+    return state.baseline;
+  })();
+  state.ready.catch(function () { });
+  const baseOk = async function () { await state.ready; if (baseRefused) throw baseRefused; };
   const fresh = function () {
     if (!state.receipt) return false;
     const exp = Date.parse(state.receipt.expires_at || "");
@@ -76,6 +95,7 @@ export function mcpPreflight(cc, opts = {}) {
     state,
     /** Before initialize. url: the server URL (a stdio/local server has none and is not decided; pass opts.local = "allow" | "refuse", default allow). */
     async beforeConnect(url) {
+      await baseOk();
       if (!url) { if (opts.local === "refuse") throw new McpPreflightRefused("connect", "a local (stdio) server cannot be resolved and opts.local is refuse"); state.url = null; state.host = null; return { local: true, receipt: null }; }
       const host = hostOf(url); if (!host) throw new McpPreflightRefused("connect", "not a server URL: " + url);
       state.url = url; state.host = host;
@@ -84,8 +104,9 @@ export function mcpPreflight(cc, opts = {}) {
     },
     /** After initialize, with the tools the server lists. Refuses (and the wrapper closes the client) when they differ from the approved lockfile. */
     async afterConnect(tools, meta) {
+      await baseOk();
       if (CO && opts.lock) {   // 1.11.0: classify, apply the operator's policy, keep the record
-        const rec = await keep(await continuityCheck(opts.lock, tools, coOpts({ complete: !(meta && meta.nextCursor) })));
+        const rec = await keep(await continuityCheck(baseLock, tools, coOpts({ complete: !(meta && meta.nextCursor), baselineTrust: state.baseline && state.baseline.trust })));
         state.lockCheck = rec; state.approved = null; state.pausedTools = new Set(rec.paused_tools);
         if (rec.outcome === "deny") throw new McpPreflightRefused("connect", rec.why.join("; "), { lock: rec, receipt: state.receipt });
         if (rec.outcome === "pause" || rec.outcome === "refresh") {
@@ -96,13 +117,14 @@ export function mcpPreflight(cc, opts = {}) {
         return rec;
       }
       if (!opts.lock) { state.approved = null; return null; }
-      const lc = await checkLock(opts.lock, tools || []);
+      const lc = await checkLock(baseLock, tools || []);
       state.lockCheck = lc; state.approved = new Set((opts.lock.tools || []).map(function (t) { return t.name; }));
       if (lc.decision !== "connect") throw new McpPreflightRefused("connect", "the server's tools differ from the approved lockfile (added " + lc.added.length + ", removed " + lc.removed.length + ", modified " + lc.modified.length + ")", { lock: lc });
       return lc;
     },
     /** Before tools/call. */
     async beforeToolCall(name, annotations, tool) {
+      await baseOk();
       if (state.host && !fresh()) await decide(state.host);
       if (state.pausedTools && state.pausedTools.has(name)) {   // 1.11.0: a changed or new tool waits for a person; the others stay usable
         let ok = false; if (opts.confirm) { try { ok = (await opts.confirm(Object.assign({}, state.receipt || {}, { tool: name, continuity: state.continuity }))) === true; } catch (e) { ok = false; } }

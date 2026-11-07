@@ -10,6 +10,9 @@ export declare function continuityGate(lock: any, opts?: {}): {
     records: never[];
     record: null;
     paused: Set<any>;
+    baseline: null;
+    ready: null;
+    readonly refused: any;
     keepRecord(rec: any): Promise<any>;
     ask(req: any): Promise<boolean>;
     /** Compare the offered tools with the lock and apply the mode. Returns the record; throws ContinuityRefused. */
@@ -21,6 +24,26 @@ export declare function continuityGate(lock: any, opts?: {}): {
     /** Refuse a call to a paused tool (a framework that cached an earlier list could still try it). */
     callOk(name: any): boolean;
 };
+/** continuityGate, checked at startup: resolves to the gate once the baseline verifies, throws ContinuityRefused when it does not (outside observe). */
+export declare function openContinuityGate(lock: any, opts?: {}): Promise<{
+    mode: any;
+    records: never[];
+    record: null;
+    paused: Set<any>;
+    baseline: null;
+    ready: null;
+    readonly refused: any;
+    keepRecord(rec: any): Promise<any>;
+    ask(req: any): Promise<boolean>;
+    /** Compare the offered tools with the lock and apply the mode. Returns the record; throws ContinuityRefused. */
+    check(tools: any, meta?: {}): Promise<any>;
+    /** Record a check that could not compare anything. Throws ContinuityRefused outside observe. */
+    fail(cls: any, detail: any): Promise<any>;
+    /** The tools the agent may see: all of them in observe mode, else without the paused ones. */
+    allowed(tools: any, nameOf?: (t: any) => any): any;
+    /** Refuse a call to a paused tool (a framework that cached an earlier list could still try it). */
+    callOk(name: any): boolean;
+}>;
 /**
  * OpenAI Agents SDK (@openai/agents): wrap an MCP server (MCPServerStdio, MCPServerStreamableHttp, MCPServerSSE or your
  * own MCPServer) so every listTools() the SDK makes is checked against lock. Everything else is the server's own.

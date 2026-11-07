@@ -14,16 +14,19 @@ Modes: observe (record only; outcome is always proceed), review (every change go
 deny), enforce (the policy applies). Effects, weakest to strongest: proceed, proceed_recorded, refresh, pause_tool, pause, deny.
 """
 import hashlib
+import json
 import math
+import os
 from datetime import datetime, timezone
 
-from .verify import canon
+from . import _ed25519
+from .verify import canon, key_policy_check, _b64u, _b64u_decode
 
 CONTINUITY_EFFECTS = ["proceed", "proceed_recorded", "refresh", "pause_tool", "pause", "deny"]
 CONTINUITY_CHANGE_CLASSES = ["tool_added", "tool_removed", "description_changed", "schema_changed", "annotations_changed", "tool_changed"]
 CONTINUITY_FAILURE_CLASSES = ["evidence_expired", "signature_invalid", "key_unknown", "key_retired", "server_identity_mismatch", "server_unavailable",
-                              "tool_list_truncated", "response_malformed", "baseline_stale", "policy_version_mismatch", "check_timeout", "service_unavailable", "decision_refused"]
-_INTEGRITY = ["signature_invalid", "key_unknown", "key_retired", "server_identity_mismatch"]
+                              "tool_list_truncated", "response_malformed", "baseline_stale", "policy_version_mismatch", "check_timeout", "service_unavailable", "decision_refused", "baseline_untrusted"]
+_INTEGRITY = ["signature_invalid", "key_unknown", "key_retired", "server_identity_mismatch", "baseline_untrusted"]
 CONTINUITY_DEFAULT_POLICY = {
     "v": 1, "id": "crawlcheck-continuity-default", "max_baseline_age_days": 90,
     "effects": {
@@ -31,6 +34,7 @@ CONTINUITY_DEFAULT_POLICY = {
         "annotations_changed": "pause_tool", "tool_changed": "pause_tool", "evidence_expired": "refresh", "signature_invalid": "deny", "key_unknown": "deny",
         "key_retired": "deny", "server_identity_mismatch": "deny", "server_unavailable": "pause", "tool_list_truncated": "pause", "response_malformed": "pause",
         "baseline_stale": "pause", "policy_version_mismatch": "pause", "check_timeout": "pause", "service_unavailable": "pause", "decision_refused": "deny",
+        "baseline_untrusted": "deny",
     },
 }
 _WHY = {
@@ -44,6 +48,7 @@ _WHY = {
     "baseline_stale": "the approved baseline is older than the policy allows", "policy_version_mismatch": "the policy in force is not the version the deployment expects",
     "check_timeout": "the check did not finish in time", "service_unavailable": "the verification service could not be reached; the local fallback applies",
     "decision_refused": "CrawlCheck's signed decision for the server's host did not allow the connection",
+    "baseline_untrusted": "the approved baseline is not trusted: its signature does not verify, its key is neither CrawlCheck's nor a given operator key, or it is unsigned where a signed one is required",
 }
 _CLAIMS = "interface continuity at this check point: the offered tool definitions were compared with the approved baseline. Not code attestation, not a judgement that any tool is harmless, not user authorisation."
 
@@ -188,7 +193,7 @@ def _strip(u):
     return str(u).rstrip("/")
 
 
-def continuity_check(lock, tools, mode="enforce", policy=None, exceptions=None, complete=True, server=None, server_identity=None, expect_policy_sha256=None, now=None):
+def continuity_check(lock, tools, mode="enforce", policy=None, exceptions=None, complete=True, server=None, server_identity=None, expect_policy_sha256=None, now=None, baseline_trust=None):
     """Compare the offered tools with the approved baseline and apply the policy. complete=False when tools/list returned a
     nextCursor you did not follow. server: the URL checked; server_identity: the URL the baseline was approved for."""
     if mode not in ("observe", "review", "enforce"):
@@ -210,7 +215,7 @@ def continuity_check(lock, tools, mode="enforce", policy=None, exceptions=None, 
     appr = _ms(lock.get("approved_at"))
     srv = (lock.get("server") or {}).get("url") if isinstance(lock.get("server"), dict) else None
     rec["baseline"] = {"tools_sha256": lock.get("tools_sha256"), "approved_at": lock.get("approved_at"), "age_days": int(math.floor((now - appr) / 864e5)) if appr is not None else None,
-                       "server": srv, "per_part": bool(lock.get("parts"))}
+                       "server": srv, "per_part": bool(lock.get("parts")), "trust": baseline_trust}
     rec["observed"] = {"tools_sha256": list_hash, "count": len(rows), "complete": complete is not False}
     if expect_policy_sha256 and expect_policy_sha256 != pol["sha256"]:
         _ev(rec, pol, mode, "policy_version_mismatch", None, exceptions, now, "expected %s, in force %s" % (expect_policy_sha256, pol["sha256"]))
@@ -340,3 +345,148 @@ def continuity_class_of(proceed, receipt, acceptance, why):
         if not A.get("subject_matches") or A.get("operation_matches") is False or A.get("replay_safe") is False:
             return "server_identity_mismatch"
     return "decision_refused"
+
+
+# -- signed baseline (1.14.0) ---------------------------------------------------------------------------------------------
+# Whoever can edit the approved lockfile can approve their own tools. So the baseline's signature is checked once, when a
+# gate is created (startup), before anything is compared against it. Same contract as the JS SDK's verifyLockBaseline:
+#   verified         signed by CrawlCheck (/api/v1/mcp/lock, kind crawlcheck-mcp-lock, scheme crawlcheck-data-v1) with a
+#                    CrawlCheck key: the pinned ids below, published_kids, or key_policy (key_policy_from(directory)).
+#                    lock["parts"] added after signing is not covered, so it is dropped.
+#   operator_signed  signed with sign_lock() by a key in operator_keys (the operator's Ed25519 public keys).
+#   unsigned         no signature. Accepted unless require_signed_baseline (default: on when operator_keys are given).
+#   invalid          a signature that does not verify, a changed lockfile, or a key that is neither: baseline_untrusted.
+CRAWLCHECK_LOCK_KIDS = ("1hHmE3fo1rg5Ig70wuFtJ5wBc7G-sUTgUJkxyPWFRps", "hcIAczGf-8EFBnkunmZlvFWnD2nHHeHeC9cM4BTiBVo")
+_DATA_PREFIX = "crawlcheck-data-v1\n"
+_OP_PREFIX = "crawlcheck-lock-operator-v1\n"
+
+
+def _thumb(x):
+    return _b64u(hashlib.sha256(json.dumps({"crv": "Ed25519", "kty": "OKP", "x": str(x)}, separators=(",", ":")).encode()).digest())
+
+
+def _ed_ok(x, msg, sig):
+    try:
+        return _ed25519.verify(_b64u_decode(x), msg.encode("utf-8"), _b64u_decode(sig))
+    except Exception:  # noqa: BLE001 - a malformed key or signature is a signature that does not verify
+        return False
+
+
+def _without(o, keys):
+    return {k: v for k, v in o.items() if k not in keys}
+
+
+def _x_of(k):
+    if isinstance(k, str):
+        return k
+    if isinstance(k, dict) and isinstance(k.get("x"), str):
+        return k["x"]
+    return None
+
+
+def _seed_of(private_key):
+    if isinstance(private_key, (bytes, bytearray)):
+        return bytes(private_key)
+    if isinstance(private_key, dict) and isinstance(private_key.get("d"), str):
+        return _b64u_decode(private_key["d"])
+    raise ValueError("private_key must be an Ed25519 private JWK with d (see new_operator_key) or the 32-byte seed")
+
+
+def new_operator_key():
+    """A new operator signing key: {"private_key": JWK (keep it away from the agent), "public_key": {kty, crv, x} (pass it
+    in operator_keys), "kid"}."""
+    seed = os.urandom(32)
+    x = _b64u(_ed25519.public_key(seed))
+    return {"private_key": {"kty": "OKP", "crv": "Ed25519", "x": x, "d": _b64u(seed)}, "public_key": {"kty": "OKP", "crv": "Ed25519", "x": x}, "kid": _thumb(x)}
+
+
+def sign_lock(lock, private_key):
+    """The operator's signature over the canonical lockfile (every field but operator_signature). Returns a copy with
+    lock["operator_signature"]. private_key: an Ed25519 private JWK ({kty, crv, x, d}) or the 32-byte seed."""
+    if not isinstance(lock, dict) or not isinstance(lock.get("tools"), list):
+        raise ValueError("lock must be an mcp-lockfile (a dict with a tools list)")
+    seed = _seed_of(private_key)
+    x = _b64u(_ed25519.public_key(seed))
+    if isinstance(private_key, dict) and private_key.get("x") not in (None, x):
+        raise ValueError("private_key: x is not the public key of d")
+    body = _without(lock, ("operator_signature",))
+    message = _OP_PREFIX + _h(canon(body))
+    out = dict(body)
+    out["operator_signature"] = {"v": 1, "alg": "Ed25519", "kid": _thumb(x), "message": message, "sig": _b64u(_ed25519.sign(seed, message.encode("utf-8")))}
+    return out
+
+
+def _has_parts(L):
+    return isinstance(L, dict) and isinstance(L.get("parts"), dict) and len(L["parts"]) > 0
+
+
+def verify_lock_baseline(lock, operator_keys=None, key_policy=None, published_kids=None, trusted_kids=None):
+    """Is this baseline the one CrawlCheck or the operator signed? Returns {"trust": verified | operator_signed | unsigned |
+    invalid, "signer", "kid", "why", "parts_used", "lock"}; lock is the baseline to compare against (unsigned parts
+    removed). Offline; no network."""
+    def R(trust, signer, kid, why, L):
+        return {"trust": trust, "signer": signer, "kid": kid, "why": why, "parts_used": _has_parts(L), "lock": L if L is not None else lock}
+    if not isinstance(lock, dict) or not isinstance(lock.get("tools"), list):
+        return R("invalid", None, None, "the baseline is not an mcp-lockfile (an object with a tools array)", None)
+    op = lock.get("operator_signature")
+    okeys = [x for x in (_x_of(k) for k in (operator_keys or [])) if x]
+    if op is not None and (okeys or lock.get("signature") is None):
+        if not okeys:
+            return R("invalid", None, None, "the baseline carries an operator signature, but no operator key was given to check it", None)
+        if not isinstance(op, dict) or op.get("alg") != "Ed25519" or not all(isinstance(op.get(k), str) for k in ("kid", "sig", "message")):
+            return R("invalid", None, None, "the operator signature is malformed", None)
+        x = None
+        for k in okeys:
+            if _thumb(k) == op["kid"]:
+                x = k
+        if not x:
+            return R("invalid", None, op["kid"], "the operator signature is by key %s, which is not one of the operator keys given" % op["kid"], None)
+        sha = _h(canon(_without(lock, ("operator_signature",))))
+        if op["message"] != _OP_PREFIX + sha:
+            return R("invalid", "operator", op["kid"], "the baseline was changed after the operator signed it (it hashes to %s)" % sha, None)
+        if not _ed_ok(x, op["message"], op["sig"]):
+            return R("invalid", "operator", op["kid"], "the operator signature does not verify", None)
+        return R("operator_signed", "operator", op["kid"], "signed by operator key " + op["kid"], lock)
+    s = lock.get("signature")
+    if s is None:
+        return R("unsigned", None, None, "the baseline carries no signature", lock)
+    if lock.get("kind") != "crawlcheck-mcp-lock" or not isinstance(s, dict) or not str(s.get("message") or "").startswith(_DATA_PREFIX):
+        return R("invalid", None, None, "the signature is not a CrawlCheck lockfile signature (kind crawlcheck-mcp-lock, scheme crawlcheck-data-v1)", None)
+    kid = s.get("kid") if isinstance(s.get("kid"), str) else None
+    L, stated = lock, lock.get("sha256")
+    sha = _h(canon(_without(lock, ("sha256", "signature", "operator_signature"))))
+    if sha != stated and "parts" in lock:
+        sha2 = _h(canon(_without(lock, ("sha256", "signature", "operator_signature", "parts"))))
+        if sha2 == stated:
+            sha, L = sha2, _without(lock, ("parts",))
+    if sha != stated:
+        return R("invalid", "crawlcheck", kid, "the baseline was changed after it was signed (it hashes to %s, the signature covers %s)" % (sha, "null" if stated is None else str(stated)), None)
+    if s.get("message") != _DATA_PREFIX + str(stated):
+        return R("invalid", "crawlcheck", kid, "the signature does not cover this baseline's digest", None)
+    jx = ((s.get("key") or {}).get("jwk") or {}).get("x") if isinstance(s.get("key"), dict) else None
+    if not isinstance(jx, str):
+        return R("invalid", "crawlcheck", kid, "the signature carries no key", None)
+    if _thumb(jx) != kid:
+        return R("invalid", "crawlcheck", kid, "the signing key's thumbprint is not its stated key id", None)
+    if not _ed_ok(jx, s["message"], s.get("sig") or ""):
+        return R("invalid", "crawlcheck", kid, "the signature does not verify", None)
+    if key_policy is not None:
+        kp = key_policy_check(lock, key_policy)
+        if kp.get("ok") is not True:
+            return R("invalid", "crawlcheck", kid, "the key policy rejects the signing key: " + str(kp.get("why")), None)
+    else:
+        ids = published_kids if published_kids is not None else trusted_kids if trusted_kids is not None else CRAWLCHECK_LOCK_KIDS
+        if kid not in ids:
+            return R("invalid", "crawlcheck", kid, "the baseline is signed by key %s, which is not a CrawlCheck key" % kid, None)
+    return R("verified", "crawlcheck", kid, "signed by CrawlCheck key " + kid + ("; lock.parts was added after signing and is not used" if L is not lock else ""), L)
+
+
+def baseline_refusal(b, require_signed):
+    """Why a baseline is refused (None when it is accepted)."""
+    if not b:
+        return "the baseline was not checked"
+    if b["trust"] == "invalid":
+        return b["why"]
+    if b["trust"] == "unsigned" and require_signed:
+        return "the baseline is unsigned and a signed one is required"
+    return None

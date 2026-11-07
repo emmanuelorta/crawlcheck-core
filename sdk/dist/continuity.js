@@ -15,15 +15,19 @@
 //   enforce   the policy's effects apply as written
 // Effects, weakest to strongest: proceed, proceed_recorded (an approved exception), refresh, pause_tool, pause, deny.
 // A failed exact comparison is never overridden by an interpretive assessment: nothing here reads descriptions for intent.
-import { canon } from "./verify.js";
+import { canon, keyPolicyCheck } from "./verify.js";
 const subtle = globalThis.crypto && globalThis.crypto.subtle;
 const enc = new TextEncoder();
 const hex = (u8) => Array.from(u8, (b) => b.toString(16).padStart(2, "0")).join("");
 async function sha256Hex(s) { return hex(new Uint8Array(await subtle.digest("SHA-256", enc.encode(s)))); }
+const b64d = (s) => { const t = String(s || "").replace(/-/g, "+").replace(/_/g, "/"); const bin = atob(t.padEnd(Math.ceil(t.length / 4) * 4, "=")); const o = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++)
+    o[i] = bin.charCodeAt(i); return o; };
+const b64e = (u8) => { let s = ""; for (const b of u8)
+    s += String.fromCharCode(b); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); };
 export const CONTINUITY_EFFECTS = ["proceed", "proceed_recorded", "refresh", "pause_tool", "pause", "deny"];
 export const CONTINUITY_CHANGE_CLASSES = ["tool_added", "tool_removed", "description_changed", "schema_changed", "annotations_changed", "tool_changed"];
-export const CONTINUITY_FAILURE_CLASSES = ["evidence_expired", "signature_invalid", "key_unknown", "key_retired", "server_identity_mismatch", "server_unavailable", "tool_list_truncated", "response_malformed", "baseline_stale", "policy_version_mismatch", "check_timeout", "service_unavailable", "decision_refused"];
-const INTEGRITY = ["signature_invalid", "key_unknown", "key_retired", "server_identity_mismatch"];
+export const CONTINUITY_FAILURE_CLASSES = ["evidence_expired", "signature_invalid", "key_unknown", "key_retired", "server_identity_mismatch", "server_unavailable", "tool_list_truncated", "response_malformed", "baseline_stale", "policy_version_mismatch", "check_timeout", "service_unavailable", "decision_refused", "baseline_untrusted"];
+const INTEGRITY = ["signature_invalid", "key_unknown", "key_retired", "server_identity_mismatch", "baseline_untrusted"];
 /** The default operator policy. Every value can be overridden; the record names the policy's sha256, so what decided is attributable. */
 export const CONTINUITY_DEFAULT_POLICY = Object.freeze({
     v: 1, id: "crawlcheck-continuity-default", max_baseline_age_days: 90,
@@ -31,7 +35,8 @@ export const CONTINUITY_DEFAULT_POLICY = Object.freeze({
         unchanged: "proceed", tool_added: "pause_tool", tool_removed: "proceed", description_changed: "pause_tool", schema_changed: "pause_tool",
         annotations_changed: "pause_tool", tool_changed: "pause_tool", evidence_expired: "refresh", signature_invalid: "deny", key_unknown: "deny",
         key_retired: "deny", server_identity_mismatch: "deny", server_unavailable: "pause", tool_list_truncated: "pause", response_malformed: "pause",
-        baseline_stale: "pause", policy_version_mismatch: "pause", check_timeout: "pause", service_unavailable: "pause", decision_refused: "deny"
+        baseline_stale: "pause", policy_version_mismatch: "pause", check_timeout: "pause", service_unavailable: "pause", decision_refused: "deny",
+        baseline_untrusted: "deny"
     })
 });
 const WHY = {
@@ -44,7 +49,8 @@ const WHY = {
     tool_list_truncated: "the tool list is incomplete (a further page was not read)", response_malformed: "the tool list could not be parsed",
     baseline_stale: "the approved baseline is older than the policy allows", policy_version_mismatch: "the policy in force is not the version the deployment expects",
     check_timeout: "the check did not finish in time", service_unavailable: "the verification service could not be reached; the local fallback applies",
-    decision_refused: "CrawlCheck's signed decision for the server's host did not allow the connection"
+    decision_refused: "CrawlCheck's signed decision for the server's host did not allow the connection",
+    baseline_untrusted: "the approved baseline is not trusted: its signature does not verify, its key is neither CrawlCheck's nor a given operator key, or it is unsigned where a signed one is required"
 };
 /** Per-part hashes of one tool, so a change can be named (description, schema, annotations). */
 export async function lockToolParts(t) {
@@ -138,7 +144,7 @@ export async function continuityCheck(lock, tools, opts = {}) {
     const was = {};
     (lock?.tools ?? []).forEach((r) => { was[r.name] = r.sha256; });
     const approvedAt = Date.parse(lock?.approved_at ?? "");
-    rec.baseline = { tools_sha256: lock?.tools_sha256 ?? null, approved_at: lock?.approved_at ?? null, age_days: isFinite(approvedAt) ? Math.floor((now - approvedAt) / 864e5) : null, server: lock?.server?.url ?? null, per_part: !!(lock && lock.parts) };
+    rec.baseline = { tools_sha256: lock?.tools_sha256 ?? null, approved_at: lock?.approved_at ?? null, age_days: isFinite(approvedAt) ? Math.floor((now - approvedAt) / 864e5) : null, server: lock?.server?.url ?? null, per_part: !!(lock && lock.parts), trust: opts.baselineTrust ?? null };
     rec.observed = { tools_sha256: listHash, count: rows.length, complete: opts.complete !== false };
     if (opts.expectPolicySha256 && opts.expectPolicySha256 !== pol.sha256)
         ev(rec, pol, mode, "policy_version_mismatch", null, X, now, "expected " + opts.expectPolicySha256 + ", in force " + pol.sha256);
@@ -281,4 +287,128 @@ export function continuityClassOf(g) {
     else if (g.verification === null)
         return "response_malformed";
     return "decision_refused";
+}
+// ── signed baseline (1.13.0) ───────────────────────────────────────────────────────────────────────────────────────
+// Whoever can edit the approved lockfile can approve their own tools. So the baseline's signature is checked once, when a
+// gate is created (startup), before anything is compared against it:
+//   verified         signed by CrawlCheck (/api/v1/mcp/lock, kind crawlcheck-mcp-lock, scheme crawlcheck-data-v1) with a
+//                    CrawlCheck key: the pinned ids below, opts.publishedKids, or opts.keyPolicy (keyPolicyFrom /
+//                    publishedKeyPolicy, which follows rotation). lock.parts added after signing is not covered: dropped.
+//   operator_signed  signed with signLock() by a key in opts.operatorKeys (the operator's Ed25519 public keys).
+//   unsigned         no signature. Accepted unless requireSignedBaseline (default: on when operatorKeys are given).
+//   invalid          a signature that does not verify, a changed lockfile, or a key that is neither: baseline_untrusted.
+/** CrawlCheck's lockfile signing keys (RFC 7638 thumbprints), as published at /.well-known/http-message-signatures-directory on 2026-11-07. */
+export const CRAWLCHECK_LOCK_KIDS = Object.freeze(["1hHmE3fo1rg5Ig70wuFtJ5wBc7G-sUTgUJkxyPWFRps", "hcIAczGf-8EFBnkunmZlvFWnD2nHHeHeC9cM4BTiBVo"]);
+const DATA_PREFIX = "crawlcheck-data-v1\n", OP_PREFIX = "crawlcheck-lock-operator-v1\n";
+async function thumbOf(x) { return b64e(new Uint8Array(await subtle.digest("SHA-256", enc.encode(JSON.stringify({ crv: "Ed25519", kty: "OKP", x: String(x) }))))); }
+async function edVerify(x, msg, sig) {
+    try {
+        const k = await subtle.importKey("jwk", { kty: "OKP", crv: "Ed25519", x: String(x) }, { name: "Ed25519" }, false, ["verify"]);
+        return await subtle.verify({ name: "Ed25519" }, k, b64d(sig), enc.encode(msg));
+    }
+    catch (e) {
+        return /not supported|unrecognized|unknown algorithm|NotSupported/i.test(String(e && (e.name + " " + e.message))) ? null : false;
+    }
+}
+const without = (o, keys) => { const b = {}; for (const k of Object.keys(o))
+    if (keys.indexOf(k) < 0)
+        b[k] = o[k]; return b; };
+const xOf = (k) => (typeof k === "string" ? k : k && typeof k.x === "string" ? k.x : null);
+/** The operator's signature over the canonical lockfile (every field but operator_signature). privateKey: an Ed25519 private JWK ({kty, crv, x, d}). */
+export async function signLock(lock, privateKey) {
+    if (!lock || typeof lock !== "object" || !Array.isArray(lock.tools))
+        throw new Error("lock must be an mcp-lockfile (an object with a tools array)");
+    const j = privateKey || {};
+    if (typeof j.d !== "string" || typeof j.x !== "string")
+        throw new Error("privateKey must be an Ed25519 private JWK with d and x (see newOperatorKey)");
+    const body = without(lock, ["operator_signature"]), message = OP_PREFIX + (await sha256Hex(canon(body)));
+    const k = await subtle.importKey("jwk", { kty: "OKP", crv: "Ed25519", x: j.x, d: j.d }, { name: "Ed25519" }, false, ["sign"]);
+    const sig = b64e(new Uint8Array(await subtle.sign({ name: "Ed25519" }, k, enc.encode(message))));
+    return Object.assign(body, { operator_signature: { v: 1, alg: "Ed25519", kid: await thumbOf(j.x), message, sig } });
+}
+/** A new operator signing key: { privateKey (JWK, keep it out of the agent's reach), publicKey ({kty, crv, x}: pass it as operatorKeys) }. */
+export async function newOperatorKey() {
+    const kp = await subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]), j = await subtle.exportKey("jwk", kp.privateKey);
+    return { privateKey: { kty: "OKP", crv: "Ed25519", x: j.x, d: j.d }, publicKey: { kty: "OKP", crv: "Ed25519", x: j.x }, kid: await thumbOf(j.x) };
+}
+/**
+ * Is this baseline the one CrawlCheck or the operator signed? opts: operatorKeys (public JWKs or their x), keyPolicy,
+ * publishedKids, trustedKids. Returns { trust: verified | operator_signed | unsigned | invalid, signer, kid, why, parts_used,
+ * lock } where lock is the baseline to compare against (without unsigned parts). Offline; no network.
+ */
+export async function verifyLockBaseline(lock, opts = {}) {
+    const R = (trust, signer, kid, why, L) => ({ trust, signer, kid, why, parts_used: !!(L && L.parts && typeof L.parts === "object" && !Array.isArray(L.parts) && Object.keys(L.parts).length > 0), lock: L || lock });
+    if (!lock || typeof lock !== "object" || !Array.isArray(lock.tools))
+        return R("invalid", null, null, "the baseline is not an mcp-lockfile (an object with a tools array)", null);
+    const op = lock.operator_signature, okeys = (opts.operatorKeys || []).map(xOf).filter(Boolean);
+    if (op !== undefined && op !== null && (okeys.length || !lock.signature)) {
+        if (!okeys.length)
+            return R("invalid", null, null, "the baseline carries an operator signature, but no operator key was given to check it", null);
+        if (!op || typeof op !== "object" || op.alg !== "Ed25519" || typeof op.kid !== "string" || typeof op.sig !== "string" || typeof op.message !== "string")
+            return R("invalid", null, null, "the operator signature is malformed", null);
+        let x = null;
+        for (const k of okeys)
+            if ((await thumbOf(k)) === op.kid)
+                x = k;
+        if (!x)
+            return R("invalid", null, op.kid, "the operator signature is by key " + op.kid + ", which is not one of the operator keys given", null);
+        const sha = await sha256Hex(canon(without(lock, ["operator_signature"])));
+        if (op.message !== OP_PREFIX + sha)
+            return R("invalid", "operator", op.kid, "the baseline was changed after the operator signed it (it hashes to " + sha + ")", null);
+        const ok = await edVerify(x, op.message, op.sig);
+        if (ok === null)
+            return R("invalid", "operator", op.kid, "this runtime cannot verify Ed25519", null);
+        if (!ok)
+            return R("invalid", "operator", op.kid, "the operator signature does not verify", null);
+        return R("operator_signed", "operator", op.kid, "signed by operator key " + op.kid, lock);
+    }
+    const s = lock.signature;
+    if (s === undefined || s === null)
+        return R("unsigned", null, null, "the baseline carries no signature", lock);
+    if (lock.kind !== "crawlcheck-mcp-lock" || typeof s !== "object" || String(s.message || "").indexOf(DATA_PREFIX) !== 0)
+        return R("invalid", null, null, "the signature is not a CrawlCheck lockfile signature (kind crawlcheck-mcp-lock, scheme crawlcheck-data-v1)", null);
+    const kid = typeof s.kid === "string" ? s.kid : null;
+    let L = lock, sha = await sha256Hex(canon(without(lock, ["sha256", "signature", "operator_signature"])));
+    if (sha !== lock.sha256 && lock.parts !== undefined) {
+        const sha2 = await sha256Hex(canon(without(lock, ["sha256", "signature", "operator_signature", "parts"])));
+        if (sha2 === lock.sha256) {
+            sha = sha2;
+            L = without(lock, ["parts"]);
+        }
+    }
+    if (sha !== lock.sha256)
+        return R("invalid", "crawlcheck", kid, "the baseline was changed after it was signed (it hashes to " + sha + ", the signature covers " + (lock.sha256 == null ? "null" : String(lock.sha256)) + ")", null);
+    if (s.message !== DATA_PREFIX + lock.sha256)
+        return R("invalid", "crawlcheck", kid, "the signature does not cover this baseline's digest", null);
+    const jx = s.key && s.key.jwk && s.key.jwk.x;
+    if (typeof jx !== "string")
+        return R("invalid", "crawlcheck", kid, "the signature carries no key", null);
+    if ((await thumbOf(jx)) !== kid)
+        return R("invalid", "crawlcheck", kid, "the signing key's thumbprint is not its stated key id", null);
+    const ok = await edVerify(jx, s.message, s.sig);
+    if (ok === null)
+        return R("invalid", "crawlcheck", kid, "this runtime cannot verify Ed25519", null);
+    if (!ok)
+        return R("invalid", "crawlcheck", kid, "the signature does not verify", null);
+    if (opts.keyPolicy != null) {
+        const kp = keyPolicyCheck(lock, opts.keyPolicy);
+        if (kp.ok !== true)
+            return R("invalid", "crawlcheck", kid, "the key policy rejects the signing key: " + kp.why, null);
+    }
+    else {
+        const ids = opts.publishedKids ?? opts.trustedKids ?? CRAWLCHECK_LOCK_KIDS;
+        if (ids.indexOf(kid) < 0)
+            return R("invalid", "crawlcheck", kid, "the baseline is signed by key " + kid + ", which is not a CrawlCheck key", null);
+    }
+    return R("verified", "crawlcheck", kid, "signed by CrawlCheck key " + kid + (L !== lock ? "; lock.parts was added after signing and is not used" : ""), L);
+}
+/** Why a baseline is refused (null when it is accepted). */
+export function baselineRefusal(b, requireSigned) {
+    if (!b)
+        return "the baseline was not checked";
+    if (b.trust === "invalid")
+        return b.why;
+    if (b.trust === "unsigned" && requireSigned)
+        return "the baseline is unsigned and a signed one is required";
+    return null;
 }
