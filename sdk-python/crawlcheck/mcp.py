@@ -30,6 +30,7 @@ from urllib.parse import urlparse
 
 from .client import normalize_domain
 from .lock import check_lock
+from .continuity import continuity_check, continuity_failure, continuity_class_of
 
 
 class McpPreflightRefused(Exception):
@@ -66,13 +67,33 @@ class McpPreflight:
     """The hooks, for any client stack: before_connect(url), after_connect(tools), before_tool_call(name, annotations)."""
 
     def __init__(self, cc, template="safe_mcp_tool", policy=None, agent=None, confirm=None, allow_warn=False, lock=None,
-                 confirm_destructive=False, max_age_s=None, local="allow", tool_receipts="write", scopes=None):
+                 confirm_destructive=False, max_age_s=None, local="allow", tool_receipts="write", scopes=None, continuity=None):
         self.cc, self.template, self.policy, self.agent = cc, template, policy, agent
         self.confirm, self.allow_warn, self.lock, self.confirm_destructive = confirm, allow_warn, lock, confirm_destructive
         self.max_age_s, self.local = max_age_s, local
         self.tool_receipts, self.scopes = tool_receipts, scopes   # 1.4.0: per-call receipts ("write" | "all" | "none")
         self.url = self.host = self.receipt = self.lock_check = self.approved = None
         self.decided_at = 0.0
+        # 1.12.0 continuity: {"mode": observe|review|enforce, "policy", "exceptions", "on_record"}. Every check leaves a
+        # crawlcheck-continuity-record in self.records (and goes to on_record); paused tools wait for confirm().
+        self.co = continuity
+        self._acc = None
+        self.records, self.continuity, self.paused_tools = [], None, None
+
+    async def _keep(self, rec):
+        self.continuity = rec
+        self.records = (self.records + [rec])[-50:]
+        cb = (self.co or {}).get("on_record")
+        if cb:
+            try:
+                await _maybe_await(cb(rec))
+            except Exception:  # noqa: BLE001 - a logging hook never changes the outcome
+                pass
+        return rec
+
+    def _co(self, **kw):
+        c = self.co or {}
+        return dict({"mode": c.get("mode", "enforce"), "policy": c.get("policy"), "exceptions": c.get("exceptions"), "server": self.url}, **kw)
 
     def _fresh(self):
         if not self.receipt:
@@ -99,7 +120,22 @@ class McpPreflight:
         else:
             rc = self.cc.preflight(host, "connect", agent=self.agent, template=self.template, policy=self.policy)
         self.receipt, self.decided_at = rc, time.time()
-        return await self._judge(rc, host, "connect")
+        if not self.co:
+            return await self._judge(rc, host, "connect")
+        try:
+            return await self._judge(rc, host, "connect")
+        except McpPreflightRefused as e:
+            acc = (getattr(self.cc, "last_guard", None) or {}).get("acceptance")
+            if acc is None and isinstance(rc, dict):
+                acc = self._acc
+            cls = "decision_refused" if getattr(self, "_stage_kind", None) == "decision" else continuity_class_of(False, rc if isinstance(rc, dict) else None, acc, [e.why])
+            o = self._co(detail=str(e.why)[:300])
+            rec = await self._keep(continuity_failure(cls, mode=o["mode"], policy=o["policy"], exceptions=o["exceptions"], server=o["server"], detail=o["detail"]))
+            if rec["outcome"] == "proceed":
+                return rc
+            if rec["outcome"] == "pause" and self.confirm and bool(await _maybe_await(self.confirm(dict(rc or {}, continuity=rec)))):
+                return rc
+            raise McpPreflightRefused("connect", "; ".join(rec["why"]), rc, rec)
 
     async def _judge(self, rc, host, stage, operation=None):
         d = rc.get("decision")
@@ -107,10 +143,17 @@ class McpPreflight:
         if self.cc.log.get("forks"):
             raise McpPreflightRefused(stage, "the transparency log showed two histories; no answer is trusted", rc)
         from .client import check_decision
-        ok, why = check_decision(rc, host, "connect", operation=operation)
+        self._stage_kind = "scope"
+        from .client import decision_scope
+        from .continuity import acceptance_of
+        sc = decision_scope(rc, host, "connect", operation=operation)
+        ok, why = sc["ok"], sc["why"]
+        self._acc = acceptance_of(rc, None, sc)
         if not ok:
             raise McpPreflightRefused(stage, "; ".join(why), rc)
         v = self.cc.verify(rc)
+        self._acc = acceptance_of(rc, v, sc, allow_warn=self.allow_warn)
+        self._stage_kind = "decision" if v.get("accepted") else "verify"
         if not v.get("accepted"):
             raise McpPreflightRefused(stage, "the decision receipt did not verify" if not v.get("verified") else "the receipt was signed with a key CrawlCheck does not publish", rc)
         if d == "allow" or (d == "warn" and self.allow_warn):
@@ -139,7 +182,19 @@ class McpPreflight:
         self.url, self.host = url, host
         return await self._decide(host)
 
-    async def after_connect(self, tools):
+    async def after_connect(self, tools, next_cursor=None):
+        if self.co and self.lock:   # 1.12.0: classify, apply the operator's policy, keep the record
+            o = self._co()
+            rec = await self._keep(continuity_check(self.lock, tools, mode=o["mode"], policy=o["policy"], exceptions=o["exceptions"], server=o["server"], complete=not next_cursor))
+            self.lock_check, self.approved, self.paused_tools = rec, None, set(rec["paused_tools"])
+            if rec["outcome"] == "deny":
+                raise McpPreflightRefused("connect", "; ".join(rec["why"]), self.receipt, rec)
+            if rec["outcome"] in ("pause", "refresh"):
+                ok = bool(await _maybe_await(self.confirm(dict(self.receipt or {}, continuity=rec)))) if self.confirm else False
+                if not ok:
+                    raise McpPreflightRefused("connect", "; ".join(rec["why"]), self.receipt, rec)
+                self.paused_tools = set()
+            return rec
         if not self.lock:
             self.approved = None
             return None
@@ -154,6 +209,11 @@ class McpPreflight:
     async def before_tool_call(self, name, annotations=None, tool=None):
         if self.host and not self._fresh():
             await self._decide(self.host)
+        if self.paused_tools and name in self.paused_tools:   # 1.12.0: a changed or new tool waits for a person
+            ok = bool(await _maybe_await(self.confirm(dict(self.receipt or {}, tool=name, continuity=self.continuity)))) if self.confirm else False
+            if not ok:
+                raise McpPreflightRefused("tools/call", "tool %s changed since it was approved (or is new) and no person re-approved it" % name, self.receipt, self.continuity)
+            self.paused_tools.discard(name)
         if self.approved is not None and name not in self.approved:
             raise McpPreflightRefused("tools/call", "tool %s is not in the approved lockfile" % name, self.receipt, self.lock_check)
         if self.confirm_destructive and _destructive(annotations):
@@ -210,15 +270,19 @@ class with_preflight:
         await self.preflight.before_connect(self.server_url)
         r = await self._s.initialize(*a, **k)
         if self.preflight.lock or self.preflight.confirm_destructive or self.preflight.tool_receipts != "none":
-            tools = []
+            tools, bad, cursor = [], False, None
             try:
                 lt = await self._s.list_tools()
-                tools = [_tool_dict(t) for t in (getattr(lt, "tools", None) or (lt.get("tools") if isinstance(lt, dict) else []) or [])]
+                raw = getattr(lt, "tools", None) if not isinstance(lt, dict) else lt.get("tools")
+                cursor = getattr(lt, "nextCursor", None) if not isinstance(lt, dict) else lt.get("nextCursor")
+                if not isinstance(raw, list):
+                    bad = True
+                tools = [_tool_dict(t) for t in (raw or [])]
             except Exception:
-                tools = []
+                tools, bad = [], True
             self._tools = {t.get("name"): t for t in tools}
             if self.preflight.lock or self.preflight.confirm_destructive:
-                await self.preflight.after_connect(tools)   # a refusal propagates; the caller's context manager closes the session
+                await self.preflight.after_connect(None if (bad and self.preflight.co) else tools, next_cursor=cursor)   # a refusal propagates; the caller's context manager closes the session
         return r
 
     async def call_tool(self, name, arguments=None, *a, **k):

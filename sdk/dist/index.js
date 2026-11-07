@@ -3,6 +3,23 @@ import * as L from "./log.js";
 import * as S from "./staple.js";
 import * as M from "./mcp.js";
 import * as R from "./revocations.js";
+import * as C from "./continuity.js";
+export const CONTINUITY_DEFAULT_POLICY = C.CONTINUITY_DEFAULT_POLICY;
+export const CONTINUITY_CHANGE_CLASSES = C.CONTINUITY_CHANGE_CLASSES;
+export const CONTINUITY_FAILURE_CLASSES = C.CONTINUITY_FAILURE_CLASSES;
+/** Compare offered tools with the approved baseline and apply the operator's policy; returns the record to keep. */
+export const continuityCheck = C.continuityCheck;
+/** The record for a check that could not compare (server, evidence or service failed). */
+export const continuityFailure = C.continuityFailure;
+/** The policy in force (default + yours) and its sha256. */
+export const continuityPolicy = C.continuityPolicy;
+/** Per-part hashes (description, schema, annotations) so a change can be named. Store lockParts(tools) as lock.parts. */
+export const lockToolParts = C.lockToolParts;
+export const lockParts = C.lockParts;
+/** The separate acceptance questions for one decision receipt. Act on policy_result, never on integrity_valid alone. */
+/** Which continuity failure class a refused guard() result is. */
+export const continuityClassOf = C.continuityClassOf;
+export const acceptanceOf = C.acceptanceOf;
 /** The signing policy as data (https://crawlcheck.io/keys#policy): object purposes, purpose chains, start times. */
 export const KEY_POLICY = V.KEY_POLICY;
 /** Build the policy input from a key directory you hold and, optionally, the rotation record saved with it. */
@@ -84,46 +101,63 @@ export const ACTION_MAX_LIFETIME_S = { read: 86400, cite: 86400, connect: 3600, 
 /** The most clock skew a receipt may claim (seconds). */
 export const MAX_CLOCK_SKEW_S = 300;
 const DECISIONS = ["allow", "warn", "require_confirmation", "block", "unsupported"];
-/**
- * Is this receipt about the operation you are about to perform? Checks the scope only (kind, domain, action, nonce,
- * time window, per-action lifetime, known decision, resolve binding); the signature and issuer are checked by
- * verifyDocument. guard() runs both. https://crawlcheck.io/spec/guard
- */
 export function checkDecision(receipt, want) {
     const why = [], r = receipt;
+    const f = { kind_ok: false, domain_matches: false, action_matches: false, times_present: false, not_expired: false, not_future: false, lifetime_ok: false, decision_known: false, resolve_bound: false };
+    if (want.operation)
+        f.operation_matches = false;
+    if (want.nonce)
+        f.nonce_matches = false;
     if (!r || typeof r !== "object" || Array.isArray(r))
-        return { ok: false, why: ["no receipt: CrawlCheck sent " + (r === null || r === undefined ? "nothing" : typeof r)] };
-    if (r.kind !== "crawlcheck-decision" || r.v !== 1)
+        return { ok: false, why: ["no receipt: CrawlCheck sent " + (r === null || r === undefined ? "nothing" : typeof r)], fields: f };
+    f.kind_ok = r.kind === "crawlcheck-decision" && r.v === 1;
+    if (!f.kind_ok)
         why.push("not a v1 decision receipt (kind " + r.kind + ", v " + r.v + ")");
     const wd = normalizeDomain(want.domain);
-    if (!wd || normalizeDomain(r.domain) !== wd)
+    f.domain_matches = !!wd && normalizeDomain(r.domain) === wd;
+    if (!f.domain_matches)
         why.push("the receipt is for " + r.domain + ", not " + want.domain);
-    if (String(r.action) !== String(want.action))
+    f.action_matches = String(r.action) === String(want.action);
+    if (!f.action_matches)
         why.push("the receipt is for action " + r.action + ", not " + want.action);
-    if (want.operation && canon(r.operation ?? null) !== canon(want.operation))
-        why.push(r.operation ? "the receipt is for another operation (" + canon(r.operation).slice(0, 120) + ")" : "the receipt is not scoped to an operation, and this request named one");
-    if (want.nonce && r.nonce !== want.nonce)
-        why.push(r.nonce ? "the receipt carries another request's nonce (replayed)" : "the receipt does not carry the nonce this request sent");
+    if (want.operation) {
+        f.operation_matches = canon(r.operation ?? null) === canon(want.operation);
+        if (!f.operation_matches)
+            why.push(r.operation ? "the receipt is for another operation (" + canon(r.operation).slice(0, 120) + ")" : "the receipt is not scoped to an operation, and this request named one");
+    }
+    if (want.nonce) {
+        f.nonce_matches = r.nonce === want.nonce;
+        if (!f.nonce_matches)
+            why.push(r.nonce ? "the receipt carries another request's nonce (replayed)" : "the receipt does not carry the nonce this request sent");
+    }
     const now = want.now ?? Date.now(), skew = Math.min(Math.max(Number(r.clock_skew_s) || 0, 0), MAX_CLOCK_SKEW_S) * 1000;
     const at = Date.parse(r.decided_at), exp = Date.parse(r.expires_at);
     if (!isFinite(at) || !isFinite(exp))
         why.push("decided_at or expires_at missing");
     else {
-        if (now > exp + skew)
+        f.times_present = true;
+        f.not_expired = !(now > exp + skew);
+        if (!f.not_expired)
             why.push("expired at " + r.expires_at);
-        if (at > now + skew)
+        f.not_future = !(at > now + skew);
+        if (!f.not_future)
             why.push("decided in the future (" + r.decided_at + "): check the clock");
         const max = ACTION_MAX_LIFETIME_S[String(want.action)];
         if (max === undefined)
             why.push("unknown action " + want.action);
-        else if (exp - at > max * 1000 + 1000)
-            why.push("valid for " + Math.round((exp - at) / 1000) + " s; a " + want.action + " receipt may last at most " + max + " s");
+        else {
+            f.lifetime_ok = !(exp - at > max * 1000 + 1000);
+            if (!f.lifetime_ok)
+                why.push("valid for " + Math.round((exp - at) / 1000) + " s; a " + want.action + " receipt may last at most " + max + " s");
+        }
     }
-    if (DECISIONS.indexOf(r.decision) < 0)
+    f.decision_known = DECISIONS.indexOf(r.decision) >= 0;
+    if (!f.decision_known)
         why.push("unknown decision " + r.decision);
-    if (!r.resolve || !/^[0-9a-f]{64}$/.test(String(r.resolve.sha256 || "")))
+    f.resolve_bound = !!(r.resolve && /^[0-9a-f]{64}$/.test(String(r.resolve.sha256 || "")));
+    if (!f.resolve_bound)
         why.push("the receipt names no resolve answer");
-    return { ok: why.length === 0, why };
+    return { ok: why.length === 0, why, fields: f };
 }
 export const LOG_ID = L.LOG_ID;
 /** A new, empty transparency-log store (plain JSON: persist it between runs). */
@@ -347,7 +381,8 @@ export class CrawlCheck {
      */
     async guard(domain, action = "read", opts = {}) {
         const nonce = opts.nonce || randomNonce();
-        const no = (why, receipt = null, verification = null) => ({ proceed: false, receipt, verification, header: null, why });
+        let scope = null;
+        const no = (why, receipt = null, verification = null) => ({ proceed: false, receipt, verification, header: null, why, acceptance: receipt && scope ? acceptanceOf(receipt, verification, scope, { allowWarn: !!opts.allowWarn }) : null });
         const rv = revokedFor(this.revocations, normalizeDomain(domain) || domain, action); // rvd1: refused offline, before any request
         if (rv)
             return Object.assign(no([rv.domain + " is on CrawlCheck's signed revocation list for " + action + " (" + (rv.causes.join(", ") || rv.state || "revoked") + (rv.since ? ", since " + rv.since : "") + "; list of " + this.revocations.generated_at + ")"]), { revoked: rv });
@@ -360,7 +395,7 @@ export class CrawlCheck {
         }
         if (this.log.forks.length)
             return Object.assign(no(["the transparency log has shown this client two histories (split view)"], receipt), { split_view: this.log.forks.slice() });
-        const scope = checkDecision(receipt, { domain, action, nonce, now: opts.now, operation: opts.operation });
+        scope = checkDecision(receipt, { domain, action, nonce, now: opts.now, operation: opts.operation });
         if (!receipt || typeof receipt !== "object")
             return no(scope.why);
         const online = opts.onlineKeys ?? true;
@@ -386,20 +421,21 @@ export class CrawlCheck {
         if (why.length)
             return no(why, receipt, verification);
         const d = receipt.decision;
-        let proceed = d === "allow" || (d === "warn" && !!opts.allowWarn);
+        let proceed = d === "allow" || (d === "warn" && !!opts.allowWarn), confirmed = null;
         if (d === "require_confirmation") {
             if (opts.confirm) {
                 try {
-                    proceed = (await opts.confirm(receipt)) === true;
+                    proceed = confirmed = (await opts.confirm(receipt)) === true;
                 }
                 catch {
-                    proceed = false;
+                    proceed = confirmed = false;
                 }
             }
         }
         if (!proceed)
             why.push(d === "warn" ? "decision is warn and allowWarn is not set" : d === "require_confirmation" ? (opts.confirm ? "a human did not confirm" : "decision is require_confirmation and no confirm() was given") : "decision is " + d);
-        return { proceed, receipt, verification, header: proceed ? receiptHeader(receipt) : null, why };
+        const acceptance = acceptanceOf(receipt, verification, scope, { allowWarn: !!opts.allowWarn, confirmed });
+        return { proceed: proceed && acceptance.accepted, receipt, verification, header: proceed && acceptance.accepted ? receiptHeader(receipt) : null, why, acceptance };
     }
     /**
      * fetch() with the check where the action runs: guard() before the first request, and again before every redirect hop

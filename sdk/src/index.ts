@@ -8,8 +8,33 @@ import * as L from "./log.js";
 import * as S from "./staple.js";
 import * as M from "./mcp.js";
 import * as R from "./revocations.js";
+import * as C from "./continuity.js";
 
 export type { paths, components };
+// ── acceptance, split, and tool-interface continuity (1.11.0, https://crawlcheck.io/spec/continuity) ──
+export interface Acceptance { integrity_valid: boolean; issuer_trusted: boolean | null; key_policy_valid: boolean | null; freshness_valid: boolean; subject_matches: boolean; operation_matches: boolean | null; replay_safe: boolean | null; baseline_matches: boolean | null; assessment_complete: boolean; decision: string | null; policy_source: string | null; evidence_level: "A" | "B" | "C" | null; policy_result: "proceed" | "pause" | "deny"; accepted: boolean; why: string[] }
+export type ContinuityEffect = "proceed" | "proceed_recorded" | "refresh" | "pause_tool" | "pause" | "deny";
+export interface ContinuityPolicy { v?: 1; id?: string; max_baseline_age_days?: number; effects?: Partial<Record<string, ContinuityEffect>>; allow_integrity_override?: boolean }
+export interface ContinuityException { tool?: string; class: string; until?: string; by?: string; reason?: string }
+export interface ContinuityEvent { class: string; tool: string | null; why: string; policy_effect: ContinuityEffect; effect: ContinuityEffect; exception?: { by: string | null; reason: string | null; until: string | null }; detail?: string }
+export interface ContinuityRecord { kind: "crawlcheck-continuity-record"; v: 1; checked_at: string; mode: "observe" | "review" | "enforce"; server: string | null; policy: { id: string; sha256: string; integrity_override: boolean }; claims: string; baseline: { tools_sha256: string | null; approved_at: string | null; age_days: number | null; server: string | null; per_part: boolean } | null; observed: { tools_sha256: string; count: number; complete: boolean } | null; events: ContinuityEvent[]; would: ContinuityEffect; enforced: boolean; outcome: "proceed" | "refresh" | "pause" | "deny"; paused_tools: string[]; why: string[]; record_sha256: string }
+export interface ContinuityOptions { mode?: "observe" | "review" | "enforce"; policy?: ContinuityPolicy; exceptions?: ContinuityException[]; complete?: boolean; server?: string; serverIdentity?: string; expectPolicySha256?: string; now?: number; detail?: string }
+export const CONTINUITY_DEFAULT_POLICY = C.CONTINUITY_DEFAULT_POLICY as { v: 1; id: string; max_baseline_age_days: number; effects: Record<string, ContinuityEffect> };
+export const CONTINUITY_CHANGE_CLASSES = C.CONTINUITY_CHANGE_CLASSES as string[];
+export const CONTINUITY_FAILURE_CLASSES = C.CONTINUITY_FAILURE_CLASSES as string[];
+/** Compare offered tools with the approved baseline and apply the operator's policy; returns the record to keep. */
+export const continuityCheck = C.continuityCheck as (lock: McpLock, tools: unknown, opts?: ContinuityOptions) => Promise<ContinuityRecord>;
+/** The record for a check that could not compare (server, evidence or service failed). */
+export const continuityFailure = C.continuityFailure as (cls: string, opts?: ContinuityOptions) => Promise<ContinuityRecord>;
+/** The policy in force (default + yours) and its sha256. */
+export const continuityPolicy = C.continuityPolicy as (p?: ContinuityPolicy) => Promise<Required<ContinuityPolicy> & { sha256: string }>;
+/** Per-part hashes (description, schema, annotations) so a change can be named. Store lockParts(tools) as lock.parts. */
+export const lockToolParts = C.lockToolParts as (t: McpTool) => Promise<{ description_sha256: string; schema_sha256: string; annotations_sha256: string }>;
+export const lockParts = C.lockParts as (tools: McpTool[]) => Promise<Record<string, { description_sha256: string; schema_sha256: string; annotations_sha256: string }>>;
+/** The separate acceptance questions for one decision receipt. Act on policy_result, never on integrity_valid alone. */
+/** Which continuity failure class a refused guard() result is. */
+export const continuityClassOf = (C as any).continuityClassOf as (g: GuardResult | null) => string;
+export const acceptanceOf = C.acceptanceOf as (receipt: unknown, verification: unknown, scope: { fields?: unknown } | null, opts?: { allowWarn?: boolean; confirmed?: boolean | null; lock?: unknown }) => Acceptance;
 /** One verifier check. ok: true passed, false FAILED, null could not run (why says why) - never a pass. */
 export interface VerifyCheck { id: string; ok: boolean | null; why: string; [k: string]: unknown }
 /**
@@ -93,7 +118,7 @@ async function sha256Hex(s: string): Promise<string> {
 }
 /** MCP tool lockfile (https://crawlcheck.io/spec/mcp-lockfile). A tool's hash is sha256 of the canonical JSON of {name, description, inputSchema, annotations}. */
 export interface McpTool { name?: string; description?: string; inputSchema?: unknown; input_schema?: unknown; annotations?: unknown; [k: string]: unknown }
-export interface McpLock { tools_sha256: string; tools: { name: string; sha256: string }[]; descriptions?: Record<string, string>; server?: { url?: string | null } | null; approved_at?: string; [k: string]: unknown }
+export interface McpLock { tools_sha256: string; tools: { name: string; sha256: string }[]; /** 1.11.0: per-part hashes (lockParts) so continuityCheck can name what changed. */ parts?: Record<string, { description_sha256: string; schema_sha256: string; annotations_sha256: string }>; descriptions?: Record<string, string>; server?: { url?: string | null } | null; approved_at?: string; [k: string]: unknown }
 export interface McpLockCheck { verdict: "unchanged" | "changed"; decision: "connect" | "block"; approved_tools_sha256: string; current_tools_sha256: string; added: string[]; removed: string[]; modified: string[] }
 export async function lockToolHash(t: McpTool): Promise<string> {
   return sha256Hex(V.canon({ name: t?.name ?? null, description: t?.description ?? null, inputSchema: t?.inputSchema ?? t?.input_schema ?? null, annotations: t?.annotations ?? null }));
@@ -153,30 +178,34 @@ export interface DecisionWant { domain: string; action: Action | string; nonce?:
  * time window, per-action lifetime, known decision, resolve binding); the signature and issuer are checked by
  * verifyDocument. guard() runs both. https://crawlcheck.io/spec/guard
  */
-export function checkDecision(receipt: unknown, want: DecisionWant): { ok: boolean; why: string[] } {
+export interface DecisionScopeFields { kind_ok: boolean; domain_matches: boolean; action_matches: boolean; operation_matches?: boolean; nonce_matches?: boolean; times_present: boolean; not_expired: boolean; not_future: boolean; lifetime_ok: boolean; decision_known: boolean; resolve_bound: boolean }
+export function checkDecision(receipt: unknown, want: DecisionWant): { ok: boolean; why: string[]; fields: DecisionScopeFields } {
   const why: string[] = [], r: any = receipt;
-  if (!r || typeof r !== "object" || Array.isArray(r)) return { ok: false, why: ["no receipt: CrawlCheck sent " + (r === null || r === undefined ? "nothing" : typeof r)] };
-  if (r.kind !== "crawlcheck-decision" || r.v !== 1) why.push("not a v1 decision receipt (kind " + r.kind + ", v " + r.v + ")");
+  const f: DecisionScopeFields = { kind_ok: false, domain_matches: false, action_matches: false, times_present: false, not_expired: false, not_future: false, lifetime_ok: false, decision_known: false, resolve_bound: false };
+  if (want.operation) f.operation_matches = false; if (want.nonce) f.nonce_matches = false;
+  if (!r || typeof r !== "object" || Array.isArray(r)) return { ok: false, why: ["no receipt: CrawlCheck sent " + (r === null || r === undefined ? "nothing" : typeof r)], fields: f };
+  f.kind_ok = r.kind === "crawlcheck-decision" && r.v === 1; if (!f.kind_ok) why.push("not a v1 decision receipt (kind " + r.kind + ", v " + r.v + ")");
   const wd = normalizeDomain(want.domain);
-  if (!wd || normalizeDomain(r.domain) !== wd) why.push("the receipt is for " + r.domain + ", not " + want.domain);
-  if (String(r.action) !== String(want.action)) why.push("the receipt is for action " + r.action + ", not " + want.action);
-  if (want.operation && canon(r.operation ?? null) !== canon(want.operation)) why.push(r.operation ? "the receipt is for another operation (" + canon(r.operation).slice(0, 120) + ")" : "the receipt is not scoped to an operation, and this request named one");
-  if (want.nonce && r.nonce !== want.nonce) why.push(r.nonce ? "the receipt carries another request's nonce (replayed)" : "the receipt does not carry the nonce this request sent");
+  f.domain_matches = !!wd && normalizeDomain(r.domain) === wd; if (!f.domain_matches) why.push("the receipt is for " + r.domain + ", not " + want.domain);
+  f.action_matches = String(r.action) === String(want.action); if (!f.action_matches) why.push("the receipt is for action " + r.action + ", not " + want.action);
+  if (want.operation) { f.operation_matches = canon(r.operation ?? null) === canon(want.operation); if (!f.operation_matches) why.push(r.operation ? "the receipt is for another operation (" + canon(r.operation).slice(0, 120) + ")" : "the receipt is not scoped to an operation, and this request named one"); }
+  if (want.nonce) { f.nonce_matches = r.nonce === want.nonce; if (!f.nonce_matches) why.push(r.nonce ? "the receipt carries another request's nonce (replayed)" : "the receipt does not carry the nonce this request sent"); }
   const now = want.now ?? Date.now(), skew = Math.min(Math.max(Number(r.clock_skew_s) || 0, 0), MAX_CLOCK_SKEW_S) * 1000;
   const at = Date.parse(r.decided_at), exp = Date.parse(r.expires_at);
   if (!isFinite(at) || !isFinite(exp)) why.push("decided_at or expires_at missing");
   else {
-    if (now > exp + skew) why.push("expired at " + r.expires_at);
-    if (at > now + skew) why.push("decided in the future (" + r.decided_at + "): check the clock");
+    f.times_present = true;
+    f.not_expired = !(now > exp + skew); if (!f.not_expired) why.push("expired at " + r.expires_at);
+    f.not_future = !(at > now + skew); if (!f.not_future) why.push("decided in the future (" + r.decided_at + "): check the clock");
     const max = ACTION_MAX_LIFETIME_S[String(want.action)];
     if (max === undefined) why.push("unknown action " + want.action);
-    else if (exp - at > max * 1000 + 1000) why.push("valid for " + Math.round((exp - at) / 1000) + " s; a " + want.action + " receipt may last at most " + max + " s");
+    else { f.lifetime_ok = !(exp - at > max * 1000 + 1000); if (!f.lifetime_ok) why.push("valid for " + Math.round((exp - at) / 1000) + " s; a " + want.action + " receipt may last at most " + max + " s"); }
   }
-  if (DECISIONS.indexOf(r.decision) < 0) why.push("unknown decision " + r.decision);
-  if (!r.resolve || !/^[0-9a-f]{64}$/.test(String(r.resolve.sha256 || ""))) why.push("the receipt names no resolve answer");
-  return { ok: why.length === 0, why };
+  f.decision_known = DECISIONS.indexOf(r.decision) >= 0; if (!f.decision_known) why.push("unknown decision " + r.decision);
+  f.resolve_bound = !!(r.resolve && /^[0-9a-f]{64}$/.test(String(r.resolve.sha256 || ""))); if (!f.resolve_bound) why.push("the receipt names no resolve answer");
+  return { ok: why.length === 0, why, fields: f };
 }
-export interface GuardResult { proceed: boolean; receipt: DecisionReceipt | null; verification: (DocumentVerification & Trust) | null; header: Record<string, string> | null; why: string[]; split_view?: LogFork[]; /** Set when the domain was refused from the held revocation list, with no network call. */ revoked?: RevokedEntry }
+export interface GuardResult { proceed: boolean; receipt: DecisionReceipt | null; verification: (DocumentVerification & Trust) | null; header: Record<string, string> | null; why: string[]; /** 1.11.0: the separate acceptance questions (integrity, issuer, key policy, freshness, subject, operation, replay, baseline, completeness) and policy_result. Null when no receipt came back. */ acceptance: Acceptance | null; split_view?: LogFork[]; /** Set when the domain was refused from the held revocation list, with no network call. */ revoked?: RevokedEntry }
 export interface GuardedFetchOptions extends GuardOptions { action?: Action; init?: RequestInit; maxHops?: number; fetch?: typeof fetch }
 export interface GuardedHop { url: string; domain: string; proceed: boolean; decision: string | null; why: string[]; status?: number }
 export interface GuardedFetchResult { proceed: boolean; response: Response | null; url: string; hops: GuardedHop[]; why: string[] }
@@ -239,13 +268,15 @@ export interface McpPreflightOptions extends PreflightOptions {
   local?: "allow" | "refuse";
   /** The server URL when the transport does not expose it. */
   serverUrl?: string;
+  /** 1.11.0: tool-interface continuity with lock. mode observe (record only), review (changes go to confirm), enforce (the policy applies). Every check is kept in state.records and passed to onRecord. https://crawlcheck.io/spec/continuity */
+  continuity?: ContinuityOptions & { onRecord?: (record: ContinuityRecord) => unknown };
   onlineKeys?: boolean;
 }
-export interface McpPreflightState { url: string | null; host: string | null; receipt: DecisionReceipt | null; verification: (DocumentVerification & Trust) | null; decidedAt: number; lockCheck: McpLockCheck | null; approved: Set<string> | null }
+export interface McpPreflightState { url: string | null; host: string | null; receipt: DecisionReceipt | null; verification: (DocumentVerification & Trust) | null; decidedAt: number; lockCheck: McpLockCheck | ContinuityRecord | null; approved: Set<string> | null; continuity: ContinuityRecord | null; records: ContinuityRecord[]; pausedTools: Set<string> | null }
 export interface McpPreflightHooks {
   state: McpPreflightState;
   beforeConnect(url: string | null | undefined): Promise<{ local: boolean; host?: string; receipt: DecisionReceipt | null; verification?: DocumentVerification & Trust }>;
-  afterConnect(tools: McpTool[]): Promise<McpLockCheck | null>;
+  afterConnect(tools: McpTool[] | null, meta?: { nextCursor?: string | null } | null): Promise<McpLockCheck | ContinuityRecord | null>;
   beforeToolCall(name: string, annotations?: unknown): Promise<{ receipt: DecisionReceipt | null }>;
 }
 /** Thrown by the hooks when a connect or tools/call is refused; the request was never sent. */
@@ -414,14 +445,15 @@ export class CrawlCheck {
    */
   async guard(domain: string, action: Action = "read", opts: GuardOptions = {}): Promise<GuardResult> {
     const nonce = opts.nonce || randomNonce();
-    const no = (why: string[], receipt: any = null, verification: any = null): GuardResult => ({ proceed: false, receipt, verification, header: null, why });
+    let scope: ReturnType<typeof checkDecision> | null = null;
+    const no = (why: string[], receipt: any = null, verification: any = null): GuardResult => ({ proceed: false, receipt, verification, header: null, why, acceptance: receipt && scope ? acceptanceOf(receipt, verification, scope, { allowWarn: !!opts.allowWarn }) : null });
     const rv = revokedFor(this.revocations, normalizeDomain(domain) || domain, action);   // rvd1: refused offline, before any request
     if (rv) return Object.assign(no([rv.domain + " is on CrawlCheck's signed revocation list for " + action + " (" + (rv.causes.join(", ") || rv.state || "revoked") + (rv.since ? ", since " + rv.since : "") + "; list of " + this.revocations.generated_at + ")"]), { revoked: rv });
     let receipt: any;
     try { receipt = await this.preflight(domain, action, Object.assign({}, opts, { nonce })); }
     catch (e) { return no(["CrawlCheck did not give a decision: " + ((e as any)?.message || e)]); }
     if (this.log.forks.length) return Object.assign(no(["the transparency log has shown this client two histories (split view)"], receipt), { split_view: this.log.forks.slice() });
-    const scope = checkDecision(receipt, { domain, action, nonce, now: opts.now, operation: opts.operation });
+    scope = checkDecision(receipt, { domain, action, nonce, now: opts.now, operation: opts.operation });
     if (!receipt || typeof receipt !== "object") return no(scope.why);
     const online = opts.onlineKeys ?? true;
     if (!online && !opts.keyPolicy && !(Array.isArray(opts.publishedKids) && opts.publishedKids.length)) return no(["onlineKeys is false and no keyPolicy or publishedKids were pinned: the signer cannot be checked"], receipt);
@@ -438,10 +470,11 @@ export class CrawlCheck {
     else if (verification.key_policy_valid === false) why.push("the signing policy rejects this key for a decision receipt: " + ((verification.checks.find((c) => c.id === "key_purpose") || {}) as VerifyCheck).why);
     if (why.length) return no(why, receipt, verification);
     const d = receipt.decision;
-    let proceed = d === "allow" || (d === "warn" && !!opts.allowWarn);
-    if (d === "require_confirmation") { if (opts.confirm) { try { proceed = (await opts.confirm(receipt)) === true; } catch { proceed = false; } } }
+    let proceed = d === "allow" || (d === "warn" && !!opts.allowWarn), confirmed: boolean | null = null;
+    if (d === "require_confirmation") { if (opts.confirm) { try { proceed = confirmed = (await opts.confirm(receipt)) === true; } catch { proceed = confirmed = false; } } }
     if (!proceed) why.push(d === "warn" ? "decision is warn and allowWarn is not set" : d === "require_confirmation" ? (opts.confirm ? "a human did not confirm" : "decision is require_confirmation and no confirm() was given") : "decision is " + d);
-    return { proceed, receipt, verification, header: proceed ? receiptHeader(receipt) : null, why };
+    const acceptance = acceptanceOf(receipt, verification, scope, { allowWarn: !!opts.allowWarn, confirmed });
+    return { proceed: proceed && acceptance.accepted, receipt, verification, header: proceed && acceptance.accepted ? receiptHeader(receipt) : null, why, acceptance };
   }
   /**
    * fetch() with the check where the action runs: guard() before the first request, and again before every redirect hop

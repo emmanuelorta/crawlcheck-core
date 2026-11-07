@@ -17,6 +17,7 @@
 // request is never sent.
 import { normalizeDomain } from "./index.js";
 import { checkLock, toolOperation } from "./index.js";
+import { continuityCheck, continuityFailure, continuityClassOf } from "./continuity.js";
 
 export class McpPreflightRefused extends Error {
   constructor(stage, why, detail) { super("MCP preflight refused " + stage + ": " + why); this.name = "McpPreflightRefused"; this.stage = stage; this.why = why; this.receipt = detail && detail.receipt || null; this.lock = detail && detail.lock || null; this.verification = detail && detail.verification || null; }
@@ -38,7 +39,12 @@ function destructive(ann) { if (!ann || typeof ann !== "object") return false; i
  */
 export function mcpPreflight(cc, opts = {}) {
   const template = opts.template || "safe_mcp_tool";
-  const state = { url: null, host: null, receipt: null, verification: null, decidedAt: 0, lockCheck: null, approved: null };
+  const state = { url: null, host: null, receipt: null, verification: null, decidedAt: 0, lockCheck: null, approved: null, continuity: null, records: [], pausedTools: null };
+  // 1.11.0 continuity: opts.continuity = { mode: observe | review | enforce, policy, exceptions, onRecord(record) }. Every check
+  // (connect decision, tool list, failure) leaves a crawlcheck-continuity-record in state.records and is passed to onRecord.
+  const CO = opts.continuity || null;
+  const keep = async function (rec) { state.continuity = rec; state.records.push(rec); if (state.records.length > 50) state.records.shift(); if (CO && typeof CO.onRecord === "function") { try { await CO.onRecord(rec); } catch (e) { } } return rec; };
+  const coOpts = function (extra) { return Object.assign({ mode: CO.mode, policy: CO.policy, exceptions: CO.exceptions, server: state.url }, extra || {}); };
   const fresh = function () {
     if (!state.receipt) return false;
     const exp = Date.parse(state.receipt.expires_at || "");
@@ -52,6 +58,12 @@ export function mcpPreflight(cc, opts = {}) {
   const decide = async function (host) {
     const g = await cc.guard(host, "connect", { template, policy: opts.policy, agent: opts.agent, confirm: opts.confirm, allowWarn: !!opts.allowWarn, onlineKeys: opts.onlineKeys, mcp: mcpScope() });
     state.receipt = g.receipt; state.verification = g.verification; state.decidedAt = Date.now();
+    if (!g.proceed && CO) {
+      const rec = await keep(await continuityFailure(continuityClassOf(g), coOpts({ detail: (g.why || []).join("; ").slice(0, 300) })));
+      if (rec.outcome === "proceed") return g;   // observe mode: recorded, not enforced
+      if (rec.outcome === "pause" && opts.confirm) { let ok = false; try { ok = (await opts.confirm(Object.assign({}, g.receipt || {}, { continuity: rec }))) === true; } catch (e) { ok = false; } if (ok) return g; }
+      throw new McpPreflightRefused("connect", rec.why.join("; "), { receipt: g.receipt, verification: g.verification, lock: rec });
+    }
     if (!g.proceed) {
       const d = g.receipt && g.receipt.decision;
       const decisionOnly = (g.why || []).every(function (w) { return /^decision is|a human did not confirm|no confirm\(\) was given|allowWarn is not set/.test(w); });
@@ -71,7 +83,18 @@ export function mcpPreflight(cc, opts = {}) {
       return { local: false, host, receipt: g.receipt, verification: g.verification };
     },
     /** After initialize, with the tools the server lists. Refuses (and the wrapper closes the client) when they differ from the approved lockfile. */
-    async afterConnect(tools) {
+    async afterConnect(tools, meta) {
+      if (CO && opts.lock) {   // 1.11.0: classify, apply the operator's policy, keep the record
+        const rec = await keep(await continuityCheck(opts.lock, tools, coOpts({ complete: !(meta && meta.nextCursor) })));
+        state.lockCheck = rec; state.approved = null; state.pausedTools = new Set(rec.paused_tools);
+        if (rec.outcome === "deny") throw new McpPreflightRefused("connect", rec.why.join("; "), { lock: rec, receipt: state.receipt });
+        if (rec.outcome === "pause" || rec.outcome === "refresh") {
+          let ok = false; if (opts.confirm) { try { ok = (await opts.confirm(Object.assign({}, state.receipt || {}, { continuity: rec }))) === true; } catch (e) { ok = false; } }
+          if (!ok) throw new McpPreflightRefused("connect", rec.why.join("; "), { lock: rec, receipt: state.receipt });
+          state.pausedTools = new Set();
+        }
+        return rec;
+      }
       if (!opts.lock) { state.approved = null; return null; }
       const lc = await checkLock(opts.lock, tools || []);
       state.lockCheck = lc; state.approved = new Set((opts.lock.tools || []).map(function (t) { return t.name; }));
@@ -81,6 +104,11 @@ export function mcpPreflight(cc, opts = {}) {
     /** Before tools/call. */
     async beforeToolCall(name, annotations, tool) {
       if (state.host && !fresh()) await decide(state.host);
+      if (state.pausedTools && state.pausedTools.has(name)) {   // 1.11.0: a changed or new tool waits for a person; the others stay usable
+        let ok = false; if (opts.confirm) { try { ok = (await opts.confirm(Object.assign({}, state.receipt || {}, { tool: name, continuity: state.continuity }))) === true; } catch (e) { ok = false; } }
+        if (!ok) throw new McpPreflightRefused("tools/call", "tool " + name + " changed since it was approved (or is new) and no person re-approved it", { lock: state.continuity, receipt: state.receipt });
+        state.pausedTools.delete(name);
+      }
       if (state.approved && !state.approved.has(name)) throw new McpPreflightRefused("tools/call", "tool " + name + " is not in the approved lockfile", { lock: state.lockCheck, receipt: state.receipt });
       if (opts.confirmDestructive && destructive(annotations)) {
         const ok = opts.confirm ? await opts.confirm(Object.assign({}, state.receipt || {}, { tool: name, annotations })) : false;
@@ -113,9 +141,11 @@ export function withPreflight(client, cc, opts = {}) {
     const r = await connect(transport, ...rest);
     if (opts.lock || opts.confirmDestructive || (opts.toolReceipts || "write") !== "none") {
       let list = [];
-      try { const t = typeof client.listTools === "function" ? await client.listTools() : null; list = (t && t.tools) || []; } catch (e) { list = []; }
+      let meta = null, bad = false;
+      try { const t = typeof client.listTools === "function" ? await client.listTools() : null; list = (t && t.tools) || []; meta = t ? { nextCursor: t.nextCursor || null } : null; if (t && !Array.isArray(t.tools)) bad = true; } catch (e) { list = []; bad = true; }
+      if (!Array.isArray(list)) { list = []; bad = true; }
       list.forEach(function (t) { if (t && t.name) tools[t.name] = t; });
-      if (opts.lock || opts.confirmDestructive) try { await pf.afterConnect(list); } catch (e) { try { if (typeof client.close === "function") await client.close(); } catch (e2) { } throw e; }
+      if (opts.lock || opts.confirmDestructive) try { await pf.afterConnect(bad && opts.continuity ? null : list, meta); } catch (e) { try { if (typeof client.close === "function") await client.close(); } catch (e2) { } throw e; }
     }
     return r;
   };

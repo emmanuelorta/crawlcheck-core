@@ -1,6 +1,131 @@
 import type { paths, components } from "./gen/openapi.js";
 import * as S from "./staple.js";
 export type { paths, components };
+export interface Acceptance {
+    integrity_valid: boolean;
+    issuer_trusted: boolean | null;
+    key_policy_valid: boolean | null;
+    freshness_valid: boolean;
+    subject_matches: boolean;
+    operation_matches: boolean | null;
+    replay_safe: boolean | null;
+    baseline_matches: boolean | null;
+    assessment_complete: boolean;
+    decision: string | null;
+    policy_source: string | null;
+    evidence_level: "A" | "B" | "C" | null;
+    policy_result: "proceed" | "pause" | "deny";
+    accepted: boolean;
+    why: string[];
+}
+export type ContinuityEffect = "proceed" | "proceed_recorded" | "refresh" | "pause_tool" | "pause" | "deny";
+export interface ContinuityPolicy {
+    v?: 1;
+    id?: string;
+    max_baseline_age_days?: number;
+    effects?: Partial<Record<string, ContinuityEffect>>;
+    allow_integrity_override?: boolean;
+}
+export interface ContinuityException {
+    tool?: string;
+    class: string;
+    until?: string;
+    by?: string;
+    reason?: string;
+}
+export interface ContinuityEvent {
+    class: string;
+    tool: string | null;
+    why: string;
+    policy_effect: ContinuityEffect;
+    effect: ContinuityEffect;
+    exception?: {
+        by: string | null;
+        reason: string | null;
+        until: string | null;
+    };
+    detail?: string;
+}
+export interface ContinuityRecord {
+    kind: "crawlcheck-continuity-record";
+    v: 1;
+    checked_at: string;
+    mode: "observe" | "review" | "enforce";
+    server: string | null;
+    policy: {
+        id: string;
+        sha256: string;
+        integrity_override: boolean;
+    };
+    claims: string;
+    baseline: {
+        tools_sha256: string | null;
+        approved_at: string | null;
+        age_days: number | null;
+        server: string | null;
+        per_part: boolean;
+    } | null;
+    observed: {
+        tools_sha256: string;
+        count: number;
+        complete: boolean;
+    } | null;
+    events: ContinuityEvent[];
+    would: ContinuityEffect;
+    enforced: boolean;
+    outcome: "proceed" | "refresh" | "pause" | "deny";
+    paused_tools: string[];
+    why: string[];
+    record_sha256: string;
+}
+export interface ContinuityOptions {
+    mode?: "observe" | "review" | "enforce";
+    policy?: ContinuityPolicy;
+    exceptions?: ContinuityException[];
+    complete?: boolean;
+    server?: string;
+    serverIdentity?: string;
+    expectPolicySha256?: string;
+    now?: number;
+    detail?: string;
+}
+export declare const CONTINUITY_DEFAULT_POLICY: {
+    v: 1;
+    id: string;
+    max_baseline_age_days: number;
+    effects: Record<string, ContinuityEffect>;
+};
+export declare const CONTINUITY_CHANGE_CLASSES: string[];
+export declare const CONTINUITY_FAILURE_CLASSES: string[];
+/** Compare offered tools with the approved baseline and apply the operator's policy; returns the record to keep. */
+export declare const continuityCheck: (lock: McpLock, tools: unknown, opts?: ContinuityOptions) => Promise<ContinuityRecord>;
+/** The record for a check that could not compare (server, evidence or service failed). */
+export declare const continuityFailure: (cls: string, opts?: ContinuityOptions) => Promise<ContinuityRecord>;
+/** The policy in force (default + yours) and its sha256. */
+export declare const continuityPolicy: (p?: ContinuityPolicy) => Promise<Required<ContinuityPolicy> & {
+    sha256: string;
+}>;
+/** Per-part hashes (description, schema, annotations) so a change can be named. Store lockParts(tools) as lock.parts. */
+export declare const lockToolParts: (t: McpTool) => Promise<{
+    description_sha256: string;
+    schema_sha256: string;
+    annotations_sha256: string;
+}>;
+export declare const lockParts: (tools: McpTool[]) => Promise<Record<string, {
+    description_sha256: string;
+    schema_sha256: string;
+    annotations_sha256: string;
+}>>;
+/** The separate acceptance questions for one decision receipt. Act on policy_result, never on integrity_valid alone. */
+/** Which continuity failure class a refused guard() result is. */
+export declare const continuityClassOf: (g: GuardResult | null) => string;
+export declare const acceptanceOf: (receipt: unknown, verification: unknown, scope: {
+    fields?: unknown;
+} | null, opts?: {
+    allowWarn?: boolean;
+    confirmed?: boolean | null;
+    lock?: unknown;
+}) => Acceptance;
 /** One verifier check. ok: true passed, false FAILED, null could not run (why says why) - never a pass. */
 export interface VerifyCheck {
     id: string;
@@ -180,7 +305,12 @@ export interface McpLock {
     tools: {
         name: string;
         sha256: string;
-    }[];
+    }[]; /** 1.11.0: per-part hashes (lockParts) so continuityCheck can name what changed. */
+    parts?: Record<string, {
+        description_sha256: string;
+        schema_sha256: string;
+        annotations_sha256: string;
+    }>;
     descriptions?: Record<string, string>;
     server?: {
         url?: string | null;
@@ -303,16 +433,31 @@ export interface DecisionWant {
  * time window, per-action lifetime, known decision, resolve binding); the signature and issuer are checked by
  * verifyDocument. guard() runs both. https://crawlcheck.io/spec/guard
  */
+export interface DecisionScopeFields {
+    kind_ok: boolean;
+    domain_matches: boolean;
+    action_matches: boolean;
+    operation_matches?: boolean;
+    nonce_matches?: boolean;
+    times_present: boolean;
+    not_expired: boolean;
+    not_future: boolean;
+    lifetime_ok: boolean;
+    decision_known: boolean;
+    resolve_bound: boolean;
+}
 export declare function checkDecision(receipt: unknown, want: DecisionWant): {
     ok: boolean;
     why: string[];
+    fields: DecisionScopeFields;
 };
 export interface GuardResult {
     proceed: boolean;
     receipt: DecisionReceipt | null;
     verification: (DocumentVerification & Trust) | null;
     header: Record<string, string> | null;
-    why: string[];
+    why: string[]; /** 1.11.0: the separate acceptance questions (integrity, issuer, key policy, freshness, subject, operation, replay, baseline, completeness) and policy_result. Null when no receipt came back. */
+    acceptance: Acceptance | null;
     split_view?: LogFork[]; /** Set when the domain was refused from the held revocation list, with no network call. */
     revoked?: RevokedEntry;
 }
@@ -528,6 +673,10 @@ export interface McpPreflightOptions extends PreflightOptions {
     local?: "allow" | "refuse";
     /** The server URL when the transport does not expose it. */
     serverUrl?: string;
+    /** 1.11.0: tool-interface continuity with lock. mode observe (record only), review (changes go to confirm), enforce (the policy applies). Every check is kept in state.records and passed to onRecord. https://crawlcheck.io/spec/continuity */
+    continuity?: ContinuityOptions & {
+        onRecord?: (record: ContinuityRecord) => unknown;
+    };
     onlineKeys?: boolean;
 }
 export interface McpPreflightState {
@@ -536,8 +685,11 @@ export interface McpPreflightState {
     receipt: DecisionReceipt | null;
     verification: (DocumentVerification & Trust) | null;
     decidedAt: number;
-    lockCheck: McpLockCheck | null;
+    lockCheck: McpLockCheck | ContinuityRecord | null;
     approved: Set<string> | null;
+    continuity: ContinuityRecord | null;
+    records: ContinuityRecord[];
+    pausedTools: Set<string> | null;
 }
 export interface McpPreflightHooks {
     state: McpPreflightState;
@@ -547,7 +699,9 @@ export interface McpPreflightHooks {
         receipt: DecisionReceipt | null;
         verification?: DocumentVerification & Trust;
     }>;
-    afterConnect(tools: McpTool[]): Promise<McpLockCheck | null>;
+    afterConnect(tools: McpTool[] | null, meta?: {
+        nextCursor?: string | null;
+    } | null): Promise<McpLockCheck | ContinuityRecord | null>;
     beforeToolCall(name: string, annotations?: unknown): Promise<{
         receipt: DecisionReceipt | null;
     }>;

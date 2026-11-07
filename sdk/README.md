@@ -16,6 +16,24 @@ const { proceed, receipt } = await cc.guard("example.com", "read", { agent: "MyA
 // The receipt is a signed crawlcheck-decision; guard() verified it here and checked its key against the published directory.
 ```
 
+Since 1.11.0 `guard()` also returns `acceptance`: the separate questions a single "verified" used to answer at once, so nothing can mistake "signature valid" for "safe to proceed".
+
+| field | the question |
+|---|---|
+| `integrity_valid` | are the bytes unchanged (hashes, signature, proof paths)? |
+| `issuer_trusted` | is the signing key one CrawlCheck publishes? (`null` offline without pinned keys) |
+| `key_policy_valid` | may that key sign this object at its signing time? |
+| `freshness_valid` | inside its validity window, not dated in the future, no longer-lived than the action allows? |
+| `subject_matches` | for this domain, this action, a known decision, bound to a resolve answer? |
+| `operation_matches` / `replay_safe` | for the exact operation and nonce this request sent? (`null` when none was sent) |
+| `baseline_matches` | do the tools match the approved baseline? (`null` when no baseline was given) |
+| `assessment_complete` | did every check run, on a fully measured answer? |
+| `policy_source` | which policy produced the decision (`crawlcheck_default`, `caller_policy`, `template:<name>`, `policy_file:<id>`) |
+| `evidence_level` | `A` record integrity, `B` reproducible decision, `C` corroborated reading (the receipt's `evidence_assurance`) |
+| `policy_result` | `proceed`, `pause` or `deny`; `accepted` is `policy_result === "proceed"` |
+
+`acceptanceOf(receipt, verification, checkDecision(receipt, want))` computes the same split for a receipt you hold. A receipt is evidence and a recommendation: whether your agent acts is decided by your deployment's policy, and every receipt names the policy that produced it (`authority`). `POST https://crawlcheck.io/api/v1/preflight/replay` with a receipt re-runs the decision from the archived answer and the inputs the receipt carries; `GET /api/v1/preflight/rules` serves the rule tables that hash to `engine.rules_sha256`.
+
 Every verification returns `integrity_valid`, `issuer_trusted` and `accepted`. Act on `accepted`: it needs the signing key to be one CrawlCheck publishes, so a document someone signed with their own key is `verified` offline but never `accepted`. The client methods (`verifyDocument`, `verifyOffline`, `verifyReceiptOffline`, `guard`) check the published key directory for you.
 
 Since 1.9.1 a key the rotation record lists as retired still counts for its own signing window when the expected purpose is worked out: after a decision-key rotation, receipts the old decision key signed inside its window verify, and no other key may sign a decision made while that key was live (key-policy suite cases retired-decision-key-*).
@@ -120,7 +138,27 @@ try { await client.connect(new StreamableHTTPClientTransport(new URL(url))); }
 catch (e) { if (e instanceof McpPreflightRefused) console.log(e.stage, e.why, e.receipt.decision); else throw e; }
 ```
 
-`block`, `unsupported`, an unverifiable receipt, or `require_confirmation` with no yes refuse the connect before `initialize`. Other client stacks use the bare hooks: `mcpPreflight(cc, opts)` returns `beforeConnect`, `afterConnect` and `beforeToolCall`. A runnable demo is in `examples/mcp-preflight-demo.mjs`.
+`block`, `unsupported`, an unverifiable receipt, or `require_confirmation` with no yes refuse the connect before `initialize`.
+
+### Tool-interface continuity (1.11.0)
+
+The promise, and only this one: your agent does not silently proceed with a changed tool definition when your policy requires renewed approval ([spec](https://crawlcheck.io/spec/continuity)). Store per-part hashes with the lockfile (`lock.parts = await lockParts(tools)`) so a change is named, then pick a mode:
+
+```js
+const client = withPreflight(new Client(...), new CrawlCheck(), {
+  lock: approvedLock,                 // tools, tools_sha256, parts, server.url, approved_at
+  confirm: async (r) => askTheUser(r),   // r.continuity is the record; r.tool names a paused tool
+  continuity: { mode: "observe", onRecord: (rec) => log.write(rec) },   // then "review", then "enforce"
+});
+```
+
+| mode | what happens |
+|---|---|
+| `observe` | nothing is blocked; every check is recorded with what the policy *would* have done (`would`) |
+| `review` | every change pauses the session for a person; integrity failures still deny |
+| `enforce` | the policy applies: a changed or new tool is paused on its own (`pause_tool`) while the rest stay usable; integrity failures deny |
+
+The default policy (`CONTINUITY_DEFAULT_POLICY`) pauses added, changed-description, changed-schema and changed-annotation tools, refreshes expired evidence, pauses on an unreachable server or service, a truncated or unreadable tool list, a stale baseline or an unexpected policy version, and denies on an invalid signature, an unpublished or retired key, or a different server. Override any effect; the integrity classes stay `deny` unless you set `allow_integrity_override`, and the record says so. Exceptions (`{ tool, class, until, by, reason }`) proceed as `proceed_recorded`, never as an ordinary pass. Every record (`crawlcheck-continuity-record`) names the baseline, what was observed, each event, the policy's sha256, the mode, the outcome and its own `record_sha256`. It states interface continuity at the check point: not code attestation, not a judgement that a tool is harmless, not user authorisation. `continuityCheck(lock, tools, opts)` and `continuityFailure(cls, opts)` run the same logic without a client; the Python SDK reproduces every record byte for byte (shared golden file `test/fixtures/continuity.json`). Other client stacks use the bare hooks: `mcpPreflight(cc, opts)` returns `beforeConnect`, `afterConnect` and `beforeToolCall`. A runnable demo is in `examples/mcp-preflight-demo.mjs`.
 
 ## Do not trust the API: check the evidence yourself
 

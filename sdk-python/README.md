@@ -25,8 +25,6 @@ Command line: `python -m crawlcheck preflight example.com cite GPTBot`, `python 
 Decisions: `allow`, `warn`, `require_confirmation`, `block`, `unsupported`. A policy (`max_age_hours`, `on_warn`, `require_entity`, `human_approval`, `allow`, `deny`) can only make a decision stricter.
 
 
-<a id="langchain-and-llamaindex-1100"></a>
-
 ## LangChain, LlamaIndex, CrewAI and the OpenAI Agents SDK (CrewAI and OpenAI Agents 1.11.0)
 
 ```python
@@ -61,6 +59,8 @@ Since 1.8.0 they also apply the signing policy (https://crawlcheck.io/keys#polic
 
 `accepted` says who signed a document. It is not permission to act: a valid receipt can say `block`, `warn` or `require_confirmation`. `guard()` decides that part.
 
+Since 1.12.0 `guard()` leaves the split in `client.last_guard["acceptance"]`: `integrity_valid`, `issuer_trusted`, `key_policy_valid`, `freshness_valid`, `subject_matches`, `operation_matches`, `replay_safe`, `baseline_matches`, `assessment_complete`, `policy_source` (which policy produced the decision), `evidence_level` (A record integrity, B reproducible decision, C corroborated reading) and `policy_result` (`proceed`, `pause` or `deny`). `acceptance_of(receipt, verification, decision_scope(receipt, domain, action))` computes it for a receipt you hold. It is the same contract as the JS SDK's `acceptanceOf`, pinned by the shared golden file `tests/fixtures/continuity.json`. A receipt is evidence and a recommendation; your deployment's policy decides whether the agent acts. `POST https://crawlcheck.io/api/v1/preflight/replay` re-runs a receipt's decision from the archived answer and the inputs it carries.
+
 ## Give your agent the check as a tool
 
 `agent_tools(cc)` returns three tools: `crawlcheck_check_site` (the signed, verified decision for an action on a site, including the business facts the site publishes and which AI engines get them wrong), `crawlcheck_verify_fact` (one signed verdict on a phone number, address, hours or service area you hold) and `crawlcheck_fetch` (fetches a page only after its domain and every redirect hop are allowed). All fail closed.
@@ -93,6 +93,10 @@ async with streamable_http_client(url) as (read, write):
 
 A refusal raised inside the transport's context arrives in an ExceptionGroup (`except* McpPreflightRefused`); deciding first, as above, keeps it a plain exception.
 Options: `lock=` (an approved lockfile: changed tools refuse, tools outside it refuse), `confirm_destructive=True`, `allow_warn=True`, `local="refuse"` for stdio servers. Other stacks use `McpPreflight(cc).before_connect(url)` / `before_tool_call(name, annotations)`.
+
+### Tool-interface continuity (1.12.0)
+
+The promise, and only this one: your agent does not silently proceed with a changed tool definition when your policy requires renewed approval ([spec](https://crawlcheck.io/spec/continuity)). Keep per-part hashes in the lockfile (`lock["parts"] = lock_parts(tools)`), then `McpPreflight(cc, lock=lock, confirm=ask, continuity={"mode": "observe", "on_record": log.write})`, moving to `"review"` and then `"enforce"`. observe never blocks and records what the policy would do; review sends every change to a person (integrity failures still deny); enforce pauses a changed or new tool on its own while the rest stay usable, and denies on an invalid signature, an unpublished or retired key, or a different server. Every check leaves a `crawlcheck-continuity-record` in `pf.records` with the baseline, what was observed, each event, the policy's sha256, the outcome and its own `record_sha256`. `continuity_check(lock, tools, mode=...)` and `continuity_failure(cls, mode=...)` run the same logic without a session and match the JS SDK byte for byte. A record states interface continuity at the check point: not code attestation, not a judgement that a tool is harmless, not user authorisation.
 
 ## Catch a split view
 

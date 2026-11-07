@@ -1,0 +1,342 @@
+"""Tool-interface continuity (https://crawlcheck.io/spec/continuity), 1.12.0. The same contract as the JS SDK's
+continuity.js, record for record: the shared golden file (tests/fixtures/continuity.json) must reproduce byte for byte,
+record_sha256 included.
+
+The promise, and only this one: an agent does not silently proceed with a changed tool definition when the operator's
+policy requires renewed approval. continuity_check() compares the tools a server offers now with the approved baseline
+(an mcp-lockfile, ideally with lock["parts"]), classifies every difference, applies the operator's policy and returns a
+record of what was compared, which policy decided, and what the runtime was told to do.
+
+It does NOT establish that a tool is harmless, that its publisher is honest, that the code behind an unchanged
+description is unchanged, that a user authorised a call, or that no prompt injection exists.
+
+Modes: observe (record only; outcome is always proceed), review (every change goes to a person; integrity failures still
+deny), enforce (the policy applies). Effects, weakest to strongest: proceed, proceed_recorded, refresh, pause_tool, pause, deny.
+"""
+import hashlib
+import math
+from datetime import datetime, timezone
+
+from .verify import canon
+
+CONTINUITY_EFFECTS = ["proceed", "proceed_recorded", "refresh", "pause_tool", "pause", "deny"]
+CONTINUITY_CHANGE_CLASSES = ["tool_added", "tool_removed", "description_changed", "schema_changed", "annotations_changed", "tool_changed"]
+CONTINUITY_FAILURE_CLASSES = ["evidence_expired", "signature_invalid", "key_unknown", "key_retired", "server_identity_mismatch", "server_unavailable",
+                              "tool_list_truncated", "response_malformed", "baseline_stale", "policy_version_mismatch", "check_timeout", "service_unavailable", "decision_refused"]
+_INTEGRITY = ["signature_invalid", "key_unknown", "key_retired", "server_identity_mismatch"]
+CONTINUITY_DEFAULT_POLICY = {
+    "v": 1, "id": "crawlcheck-continuity-default", "max_baseline_age_days": 90,
+    "effects": {
+        "unchanged": "proceed", "tool_added": "pause_tool", "tool_removed": "proceed", "description_changed": "pause_tool", "schema_changed": "pause_tool",
+        "annotations_changed": "pause_tool", "tool_changed": "pause_tool", "evidence_expired": "refresh", "signature_invalid": "deny", "key_unknown": "deny",
+        "key_retired": "deny", "server_identity_mismatch": "deny", "server_unavailable": "pause", "tool_list_truncated": "pause", "response_malformed": "pause",
+        "baseline_stale": "pause", "policy_version_mismatch": "pause", "check_timeout": "pause", "service_unavailable": "pause", "decision_refused": "deny",
+    },
+}
+_WHY = {
+    "tool_added": "a tool the baseline does not list is offered", "tool_removed": "a tool in the baseline is no longer offered",
+    "description_changed": "the tool's description differs from the approved one", "schema_changed": "the tool's input schema differs from the approved one",
+    "annotations_changed": "the tool's annotations differ from the approved ones", "tool_changed": "the tool differs from the approved one (the baseline has no per-part hashes, so the part is unknown)",
+    "evidence_expired": "the evidence is past its validity window", "signature_invalid": "a signature over the evidence does not verify",
+    "key_unknown": "the evidence is signed by a key that is not published", "key_retired": "the signing policy rejects the key for this object at its signing time",
+    "server_identity_mismatch": "the server answering is not the one the baseline names", "server_unavailable": "the server could not be reached, so nothing was compared",
+    "tool_list_truncated": "the tool list is incomplete (a further page was not read)", "response_malformed": "the tool list could not be parsed",
+    "baseline_stale": "the approved baseline is older than the policy allows", "policy_version_mismatch": "the policy in force is not the version the deployment expects",
+    "check_timeout": "the check did not finish in time", "service_unavailable": "the verification service could not be reached; the local fallback applies",
+    "decision_refused": "CrawlCheck's signed decision for the server's host did not allow the connection",
+}
+_CLAIMS = "interface continuity at this check point: the offered tool definitions were compared with the approved baseline. Not code attestation, not a judgement that any tool is harmless, not user authorisation."
+
+
+def _h(s):
+    return hashlib.sha256(s.encode("utf-8")).hexdigest()
+
+
+def _iso(ms):
+    return datetime.fromtimestamp(ms / 1000.0, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.") + "%03dZ" % (int(ms) % 1000)
+
+
+def _ms(s):
+    if not isinstance(s, str) or not s:
+        return None
+    try:
+        return datetime.fromisoformat(s.replace("Z", "+00:00")).timestamp() * 1000.0
+    except ValueError:
+        return None
+
+
+def _now_ms():
+    return datetime.now(timezone.utc).timestamp() * 1000.0
+
+
+def _schema(t):
+    t = t or {}
+    return t.get("inputSchema") if t.get("inputSchema") is not None else t.get("input_schema")
+
+
+def lock_tool_parts(tool):
+    """Per-part hashes of one tool, so a change can be named (description, schema, annotations)."""
+    t = tool or {}
+    return {"description_sha256": _h(canon(t.get("description"))), "schema_sha256": _h(canon(_schema(t))), "annotations_sha256": _h(canon(t.get("annotations")))}
+
+
+def lock_parts(tools):
+    """parts for a lockfile: {tool name: lock_tool_parts(tool)}. Store it as lock["parts"] next to lock["tools"]."""
+    return {str((t or {}).get("name") or "")[:120]: lock_tool_parts(t) for t in (tools or [])[:300]}
+
+
+def _tool_hash(t):
+    t = t or {}
+    return _h(canon({"name": t.get("name"), "description": t.get("description"), "inputSchema": _schema(t), "annotations": t.get("annotations")}))
+
+
+def continuity_policy(p=None):
+    """The policy in force: the default with the operator's values over it, and its sha256 (what the record names)."""
+    base = CONTINUITY_DEFAULT_POLICY
+    given = p if isinstance(p, dict) else {}
+    effects = dict(base["effects"])
+    for k, v in (given.get("effects") or {}).items():
+        if k not in base["effects"]:
+            raise ValueError("unknown continuity class: " + k)
+        if v not in CONTINUITY_EFFECTS:
+            raise ValueError("unknown effect for %s: %s" % (k, v))
+        effects[k] = v
+    override = given.get("allow_integrity_override") is True
+    for k in _INTEGRITY:
+        if effects[k] != "deny" and not override:
+            raise ValueError(k + " must stay deny (set allow_integrity_override to change it, and the record will say so)")
+    mba = given.get("max_baseline_age_days")
+    ok_num = isinstance(mba, (int, float)) and not isinstance(mba, bool) and math.isfinite(mba)
+    pol = {"v": 1, "id": str(given.get("id") or base["id"]), "max_baseline_age_days": mba if ok_num else base["max_baseline_age_days"], "effects": effects, "allow_integrity_override": override}
+    pol["sha256"] = _h(canon(pol))
+    return pol
+
+
+def _rank(e):
+    return CONTINUITY_EFFECTS.index(e)
+
+
+def _exc_for(exceptions, cls, tool, now):
+    for x in exceptions or []:
+        if not isinstance(x, dict):
+            continue
+        if x.get("class") not in (cls, "*"):
+            continue
+        xt = x.get("tool")
+        if not (xt == tool or (not xt and not tool) or xt == "*"):
+            continue
+        u = x.get("until")
+        if u:
+            um = _ms(u)
+            if um is None or not um > now:
+                continue
+        return x
+    return None
+
+
+def _mode_effect(mode, cls, eff):
+    if mode == "review" and eff not in ("proceed", "proceed_recorded"):
+        return "deny" if cls in _INTEGRITY else "pause"
+    return eff
+
+
+def _finish(rec, mode):
+    would, eff = "proceed", "proceed"
+    for e in rec["events"]:
+        if _rank(e["policy_effect"]) > _rank(would):
+            would = e["policy_effect"]
+        if _rank(e["effect"]) > _rank(eff):
+            eff = e["effect"]
+    rec["would"] = would
+    rec["enforced"] = mode != "observe"
+    rec["outcome"] = "proceed" if mode == "observe" or eff in ("pause_tool", "proceed_recorded") else eff
+    rec["paused_tools"] = [] if mode == "observe" else [e["tool"] for e in rec["events"] if e["effect"] == "pause_tool" and e["tool"]]
+    why = []
+    for e in rec["events"]:
+        if e["class"] == "unchanged":
+            continue
+        s = (e["tool"] + ": " if e["tool"] else "") + e["why"] + " -> " + e["effect"]
+        if e.get("exception"):
+            s += " (exception by " + (e["exception"].get("by") or "?") + ")"
+        why.append(s)
+    rec["why"] = why or ["the offered tools match the approved baseline"]
+    rec["record_sha256"] = _h(canon(rec))
+    return rec
+
+
+def _base(opts, pol, mode):
+    now = opts.get("now")
+    return {"kind": "crawlcheck-continuity-record", "v": 1, "checked_at": _iso(now if now is not None else _now_ms()), "mode": mode, "server": opts.get("server"),
+            "policy": {"id": pol["id"], "sha256": pol["sha256"], "integrity_override": pol["allow_integrity_override"]}, "claims": _CLAIMS, "events": []}
+
+
+def _ev(rec, pol, mode, cls, tool, exceptions, now, detail=None):
+    pe = pol["effects"][cls]
+    eff = _mode_effect(mode, cls, pe)
+    ex = _exc_for(exceptions, cls, tool, now) if cls not in _INTEGRITY else None
+    if ex and eff != "deny":
+        eff = "proceed_recorded"
+    e = {"class": cls, "tool": tool, "why": _WHY.get(cls, cls), "policy_effect": pe, "effect": eff}
+    if ex:
+        e["exception"] = {"by": ex.get("by"), "reason": ex.get("reason"), "until": ex.get("until")}
+    if detail:
+        e["detail"] = detail
+    rec["events"].append(e)
+
+
+def _strip(u):
+    return str(u).rstrip("/")
+
+
+def continuity_check(lock, tools, mode="enforce", policy=None, exceptions=None, complete=True, server=None, server_identity=None, expect_policy_sha256=None, now=None):
+    """Compare the offered tools with the approved baseline and apply the policy. complete=False when tools/list returned a
+    nextCursor you did not follow. server: the URL checked; server_identity: the URL the baseline was approved for."""
+    if mode not in ("observe", "review", "enforce"):
+        raise ValueError("mode must be observe, review or enforce")
+    pol = continuity_policy(policy)
+    now = _now_ms() if now is None else now
+    opts = {"now": now, "server": server}
+    rec = _base(opts, pol, mode)
+    if not isinstance(tools, list):
+        _ev(rec, pol, mode, "response_malformed", None, exceptions, now)
+        return _finish(rec, mode)
+    rows = [{"name": str((t or {}).get("name") or "")[:120], "sha256": _tool_hash(t), "t": t} for t in tools[:300]]
+    cur = {}
+    for r in rows:
+        cur[r["name"]] = r
+    list_hash = _h("\n".join(sorted(r["sha256"] for r in rows)))
+    lock = lock or {}
+    was = {r["name"]: r["sha256"] for r in lock.get("tools") or []}
+    appr = _ms(lock.get("approved_at"))
+    srv = (lock.get("server") or {}).get("url") if isinstance(lock.get("server"), dict) else None
+    rec["baseline"] = {"tools_sha256": lock.get("tools_sha256"), "approved_at": lock.get("approved_at"), "age_days": int(math.floor((now - appr) / 864e5)) if appr is not None else None,
+                       "server": srv, "per_part": bool(lock.get("parts"))}
+    rec["observed"] = {"tools_sha256": list_hash, "count": len(rows), "complete": complete is not False}
+    if expect_policy_sha256 and expect_policy_sha256 != pol["sha256"]:
+        _ev(rec, pol, mode, "policy_version_mismatch", None, exceptions, now, "expected %s, in force %s" % (expect_policy_sha256, pol["sha256"]))
+    want = server_identity if server_identity is not None else srv
+    if want and server and _strip(want) != _strip(server):
+        _ev(rec, pol, mode, "server_identity_mismatch", None, exceptions, now, "baseline approved for %s, checked %s" % (want, server))
+    if rec["baseline"]["age_days"] is not None and rec["baseline"]["age_days"] > pol["max_baseline_age_days"]:
+        _ev(rec, pol, mode, "baseline_stale", None, exceptions, now, "%d days old; the policy allows %s" % (rec["baseline"]["age_days"], pol["max_baseline_age_days"]))
+    if complete is False:
+        _ev(rec, pol, mode, "tool_list_truncated", None, exceptions, now)
+    for n in sorted(n for n in cur if n not in was):
+        _ev(rec, pol, mode, "tool_added", n, exceptions, now)
+    if complete is not False:
+        for n in sorted(n for n in was if n not in cur):
+            _ev(rec, pol, mode, "tool_removed", n, exceptions, now)
+    parts = lock.get("parts") or None
+    for n in sorted(n for n in cur if n in was and was[n] != cur[n]["sha256"]):
+        P = parts.get(n) if parts else None
+        if not P:
+            _ev(rec, pol, mode, "tool_changed", n, exceptions, now)
+            continue
+        q = lock_tool_parts(cur[n]["t"])
+        any_ = False
+        for part, cls in (("description_sha256", "description_changed"), ("schema_sha256", "schema_changed"), ("annotations_sha256", "annotations_changed")):
+            if q[part] != P.get(part):
+                _ev(rec, pol, mode, cls, n, exceptions, now)
+                any_ = True
+        if not any_:
+            _ev(rec, pol, mode, "tool_changed", n, exceptions, now, "the name or a field outside description, schema and annotations changed")
+    if not rec["events"]:
+        rec["events"].append({"class": "unchanged", "tool": None, "why": "the offered tools match the approved baseline", "policy_effect": pol["effects"]["unchanged"],
+                              "effect": _mode_effect(mode, "unchanged", pol["effects"]["unchanged"])})
+    return _finish(rec, mode)
+
+
+def continuity_failure(cls, mode="enforce", policy=None, exceptions=None, server=None, detail=None, now=None):
+    """The record for a check that could not compare anything (server, evidence or service failed)."""
+    if cls not in CONTINUITY_FAILURE_CLASSES:
+        raise ValueError("unknown failure class: " + str(cls))
+    pol = continuity_policy(policy)
+    now = _now_ms() if now is None else now
+    rec = _base({"now": now, "server": server}, pol, mode)
+    rec["baseline"] = None
+    rec["observed"] = None
+    _ev(rec, pol, mode, cls, None, exceptions, now, detail)
+    return _finish(rec, mode)
+
+
+def acceptance_of(receipt, verification, scope, allow_warn=False, confirmed=None, lock=None):
+    """The separate acceptance questions for one decision receipt (same contract as the JS acceptanceOf). scope: the
+    {"fields": ...} from decision_scope(). policy_result: proceed | pause | deny. Never act on integrity_valid alone."""
+    r = receipt if isinstance(receipt, dict) else {}
+    v = verification or {}
+    f = (scope or {}).get("fields") or {}
+    why = []
+    res = r.get("resolve") if isinstance(r.get("resolve"), dict) else None
+    out = {
+        "integrity_valid": v.get("integrity_valid") is True, "issuer_trusted": v.get("issuer_trusted"), "key_policy_valid": v.get("key_policy_valid"),
+        "freshness_valid": all(f.get(k) is True for k in ("times_present", "not_expired", "not_future", "lifetime_ok")),
+        "subject_matches": all(f.get(k) is True for k in ("kind_ok", "domain_matches", "action_matches", "decision_known", "resolve_bound")),
+        "operation_matches": f.get("operation_matches"), "replay_safe": f.get("nonce_matches"), "baseline_matches": None,
+        "assessment_complete": isinstance(v.get("unavailable"), list) and len(v["unavailable"]) == 0 and bool(res) and res.get("status") == "measured",
+        "decision": r.get("decision") if isinstance(r.get("decision"), str) else None,
+        "policy_source": (r.get("authority") or {}).get("policy_source") or None if isinstance(r.get("authority"), dict) else None,
+        "evidence_level": (r.get("evidence_assurance") or {}).get("level") or None if isinstance(r.get("evidence_assurance"), dict) else None,
+        "policy_result": "deny", "accepted": False, "why": why,
+    }
+    if isinstance(lock, dict) and lock.get("kind") == "crawlcheck-continuity-record":
+        out["baseline_matches"] = all(e.get("class") == "unchanged" for e in lock.get("events") or [])
+    elif isinstance(lock, dict) and lock.get("verdict"):
+        out["baseline_matches"] = lock.get("verdict") == "unchanged"
+    elif isinstance(r.get("assessed"), dict) and r["assessed"].get("expected_tools_sha256"):
+        out["baseline_matches"] = r["assessed"].get("matches")
+    if not out["integrity_valid"]:
+        why.append("integrity: a check over the receipt's bytes failed or none ran")
+    if out["issuer_trusted"] is not True:
+        why.append("issuer: not checked (no published key ids)" if out["issuer_trusted"] is None else "issuer: the signing key is not published")
+    if out["key_policy_valid"] is False:
+        why.append("key policy: the key may not sign this object at its signing time")
+    if not out["freshness_valid"]:
+        why.append("freshness: expired, dated in the future, missing times, or longer-lived than the action allows")
+    if not out["subject_matches"]:
+        why.append("subject: the receipt is for another domain, action or answer, or its decision is unknown")
+    if out["operation_matches"] is False:
+        why.append("operation: the receipt is scoped to another operation")
+    if out["replay_safe"] is False:
+        why.append("replay: the receipt does not carry this request's nonce")
+    d = out["decision"]
+    if why:
+        out["policy_result"] = "deny"
+    elif out["baseline_matches"] is False:
+        out["policy_result"] = "pause"
+        why.append("baseline: the tools differ from the approved baseline; re-approve before proceeding")
+    elif d == "allow":
+        out["policy_result"] = "proceed"
+    elif d == "warn":
+        out["policy_result"] = "proceed" if allow_warn else "pause"
+        if not allow_warn:
+            why.append("decision is warn and warn is not allowed")
+    elif d == "require_confirmation":
+        out["policy_result"] = "proceed" if confirmed is True else "pause"
+        if confirmed is not True:
+            why.append("a person must confirm")
+    else:
+        out["policy_result"] = "deny"
+        why.append("decision is %s" % d)
+    out["accepted"] = out["policy_result"] == "proceed"
+    return out
+
+
+def continuity_class_of(proceed, receipt, acceptance, why):
+    """Which failure class a refused guard is (for continuity_failure)."""
+    w = "; ".join(why or [])
+    if not isinstance(receipt, dict):
+        import re
+        return "check_timeout" if re.search(r"timed? ?out|abort", w, re.I) else "service_unavailable"
+    A = acceptance
+    if A:
+        if not A.get("integrity_valid"):
+            return "signature_invalid"
+        if A.get("issuer_trusted") is not True:
+            return "key_unknown"
+        if A.get("key_policy_valid") is False:
+            return "key_retired"
+        if not A.get("freshness_valid"):
+            return "evidence_expired"
+        if not A.get("subject_matches") or A.get("operation_matches") is False or A.get("replay_safe") is False:
+            return "server_identity_mismatch"
+    return "decision_refused"

@@ -8,12 +8,13 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from .continuity import acceptance_of
 from .verify import verify_document, key_id, canon, key_policy_from, apply_key_policy
 from . import log as _log
 from .staple import staple_check, staple_from_headers
 from .revocations import new_revocation_store, apply_revocations, revoked_for
 
-VERSION = "1.11.0"
+VERSION = "1.12.0"
 ACTIONS = ("read", "cite", "connect", "transact", "administer")
 
 
@@ -40,25 +41,35 @@ def _iso_ms(v):
     return t
 
 
-def check_decision(receipt, domain, action, nonce=None, now=None, operation=None):
-    """Is this receipt about the operation you are about to perform? Returns (ok, why[]). Checks the scope only: kind,
-    domain, action, nonce, time window, per-action lifetime, known decision, resolve binding. The signature and issuer
-    are checked by verify_document; guard() runs both. now: ms since epoch (testing clock)."""
+def decision_scope(receipt, domain, action, nonce=None, now=None, operation=None):
+    """check_decision with the answer to each scope question kept separately (fields), for acceptance_of. 1.12.0."""
     why = []
     r = receipt
+    f = {"kind_ok": False, "domain_matches": False, "action_matches": False, "times_present": False, "not_expired": False, "not_future": False, "lifetime_ok": False, "decision_known": False, "resolve_bound": False}
+    if operation:
+        f["operation_matches"] = False
+    if nonce:
+        f["nonce_matches"] = False
     if not isinstance(r, dict):
-        return False, ["no receipt: CrawlCheck sent %s" % ("nothing" if r is None else type(r).__name__)]
-    if r.get("kind") != "crawlcheck-decision" or r.get("v") != 1:
+        return {"ok": False, "why": ["no receipt: CrawlCheck sent %s" % ("nothing" if r is None else type(r).__name__)], "fields": f}
+    f["kind_ok"] = r.get("kind") == "crawlcheck-decision" and r.get("v") == 1
+    if not f["kind_ok"]:
         why.append("not a v1 decision receipt (kind %s, v %s)" % (r.get("kind"), r.get("v")))
     wd = normalize_domain(domain)
-    if not wd or normalize_domain(r.get("domain")) != wd:
+    f["domain_matches"] = bool(wd) and normalize_domain(r.get("domain")) == wd
+    if not f["domain_matches"]:
         why.append("the receipt is for %s, not %s" % (r.get("domain"), domain))
-    if str(r.get("action")) != str(action):
+    f["action_matches"] = str(r.get("action")) == str(action)
+    if not f["action_matches"]:
         why.append("the receipt is for action %s, not %s" % (r.get("action"), action))
-    if operation and canon(r.get("operation")) != canon(operation):
-        why.append("the receipt is for another operation (%s)" % canon(r.get("operation"))[:120] if r.get("operation") else "the receipt is not scoped to an operation, and this request named one")
-    if nonce and r.get("nonce") != nonce:
-        why.append("the receipt carries another request's nonce (replayed)" if r.get("nonce") else "the receipt does not carry the nonce this request sent")
+    if operation:
+        f["operation_matches"] = canon(r.get("operation")) == canon(operation)
+        if not f["operation_matches"]:
+            why.append("the receipt is for another operation (%s)" % canon(r.get("operation"))[:120] if r.get("operation") else "the receipt is not scoped to an operation, and this request named one")
+    if nonce:
+        f["nonce_matches"] = r.get("nonce") == nonce
+        if not f["nonce_matches"]:
+            why.append("the receipt carries another request's nonce (replayed)" if r.get("nonce") else "the receipt does not carry the nonce this request sent")
     now = time.time() * 1000 if now is None else now
     try:
         sk = float(r.get("clock_skew_s") or 0)
@@ -69,21 +80,37 @@ def check_decision(receipt, domain, action, nonce=None, now=None, operation=None
     if at is None or exp is None:
         why.append("decided_at or expires_at missing")
     else:
-        if now > exp + skew:
+        f["times_present"] = True
+        f["not_expired"] = not (now > exp + skew)
+        if not f["not_expired"]:
             why.append("expired at %s" % r.get("expires_at"))
-        if at > now + skew:
+        f["not_future"] = not (at > now + skew)
+        if not f["not_future"]:
             why.append("decided in the future (%s): check the clock" % r.get("decided_at"))
         mx = ACTION_MAX_LIFETIME_S.get(str(action))
         if mx is None:
             why.append("unknown action %s" % action)
-        elif exp - at > mx * 1000 + 1000:
-            why.append("valid for %d s; a %s receipt may last at most %d s" % (round((exp - at) / 1000), action, mx))
-    if r.get("decision") not in _DECISIONS:
+        else:
+            f["lifetime_ok"] = not (exp - at > mx * 1000 + 1000)
+            if not f["lifetime_ok"]:
+                why.append("valid for %d s; a %s receipt may last at most %d s" % (round((exp - at) / 1000), action, mx))
+    f["decision_known"] = r.get("decision") in _DECISIONS
+    if not f["decision_known"]:
         why.append("unknown decision %s" % r.get("decision"))
     rs = r.get("resolve") if isinstance(r.get("resolve"), dict) else {}
-    if not re.fullmatch(r"[0-9a-f]{64}", str(rs.get("sha256") or "")):
+    f["resolve_bound"] = bool(re.fullmatch(r"[0-9a-f]{64}", str(rs.get("sha256") or "")))
+    if not f["resolve_bound"]:
         why.append("the receipt names no resolve answer")
-    return (not why), why
+    return {"ok": not why, "why": why, "fields": f}
+
+
+def check_decision(receipt, domain, action, nonce=None, now=None, operation=None):
+    """Is this receipt about the operation you are about to perform? Returns (ok, why[]). Checks the scope only: kind,
+    domain, action, nonce, time window, per-action lifetime, known decision, resolve binding. The signature and issuer
+    are checked by verify_document; guard() runs both. now: ms since epoch (testing clock). decision_scope() returns the
+    same checks one by one."""
+    sc = decision_scope(receipt, domain, action, nonce=nonce, now=now, operation=operation)
+    return sc["ok"], sc["why"]
 
 
 def normalize_domain(v):
@@ -319,8 +346,11 @@ class CrawlCheck:
         Passes the acceptance suite at https://crawlcheck.io/spec/guard"""
         nonce = nonce or secrets.token_hex(16)
 
-        def no(why, rc=None):
-            self.last_guard = {"proceed": False, "why": why, "domain": domain, "action": action}
+        scope = {}
+
+        def no(why, rc=None, v=None):
+            self.last_guard = {"proceed": False, "why": why, "domain": domain, "action": action,
+                               "acceptance": acceptance_of(rc, v, scope, allow_warn=allow_warn) if isinstance(rc, dict) and scope else None}
             return False, rc
         rv = revoked_for(self.revocations, normalize_domain(domain) or domain, action)   # rvd1: refused offline, before any request
         if rv:
@@ -337,7 +367,8 @@ class CrawlCheck:
             return no(["CrawlCheck did not give a decision: %s" % e])
         if self.log.get("forks"):   # the log has shown this client two contradicting histories (see client.log["forks"])
             return no(["the transparency log has shown this client two histories (split view)"], rc)
-        ok, why = check_decision(rc, domain, action, nonce=nonce, now=now, operation=operation)
+        scope = decision_scope(rc, domain, action, nonce=nonce, now=now, operation=operation)
+        ok, why = scope["ok"], list(scope["why"])
         if not isinstance(rc, dict):
             return no(why)
         try:
@@ -351,18 +382,21 @@ class CrawlCheck:
             why.append("signed by a key that is not in CrawlCheck's published key directory" if v.get("issuer_trusted") is not True else
                        "the signing policy rejects this key for a decision receipt: " + next((c["why"] for c in v["checks"] if c["id"] == "key_purpose"), ""))
         if why:
-            return no(why, rc)
+            return no(why, rc, v)
         d = rc.get("decision")
         proceed = d == "allow" or (d == "warn" and bool(allow_warn))
+        confirmed = None
         if d == "require_confirmation" and confirm is not None:
             try:
-                proceed = confirm(rc) is True
+                proceed = confirmed = confirm(rc) is True
             except Exception:  # noqa: BLE001
-                proceed = False
+                proceed = confirmed = False
         if not proceed:
             why.append("decision is warn and allow_warn is not set" if d == "warn" else
                        ("a human did not confirm" if confirm is not None else "decision is require_confirmation and no confirm was given") if d == "require_confirmation" else "decision is %s" % d)
-        self.last_guard = {"proceed": proceed, "why": why, "domain": domain, "action": action, "verified": bool(v.get("accepted"))}   # 1.11.0: same field the JS tool returns
+        acc = acceptance_of(rc, v, scope, allow_warn=allow_warn, confirmed=confirmed)   # 1.12.0: the split, same contract as the JS SDK
+        proceed = proceed and acc["accepted"]
+        self.last_guard = {"proceed": proceed, "why": why, "domain": domain, "action": action, "verified": bool(v.get("accepted")), "acceptance": acc}   # 1.11.0: same field the JS tool returns
         return proceed, rc
 
     def guarded_fetch(self, url, action="read", method="GET", headers=None, data=None, allow_warn=False, confirm=None, max_hops=10, transport=None, now=None, nonce=None, timeout=None):
