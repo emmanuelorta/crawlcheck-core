@@ -18,7 +18,7 @@
     "src"
   ],
   "scripts": {
-    "test": "node --test"
+    "test": "node scripts/test-core.mjs"
   },
   "repository": {
     "type": "git",
