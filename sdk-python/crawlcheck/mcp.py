@@ -133,6 +133,16 @@ class McpPreflight:
         return True
 
     async def _decide(self, host):
+        url = self.url
+        self.receipt = None
+        receipt = await self._check_connect(host)
+        if self.url != url:
+            raise McpPreflightRefused("connect", "the server URL changed during preflight")
+        # A refusal may include a valid-looking receipt. Only a completed gate can cache it.
+        self.receipt, self.decided_at = receipt, time.time()
+        return receipt
+
+    async def _check_connect(self, host):
         # tscope1: name the server and, with a lockfile, its approved tools_sha256, so the signed receipt covers that tool state
         scope = None
         if self.url and str(self.url).lower().startswith("https:"):
@@ -146,7 +156,6 @@ class McpPreflight:
                 rc = self.cc.preflight(host, "connect", agent=self.agent, template=self.template, policy=self.policy)
         else:
             rc = self.cc.preflight(host, "connect", agent=self.agent, template=self.template, policy=self.policy)
-        self.receipt, self.decided_at = rc, time.time()
         if not self.co:
             return await self._judge(rc, host, "connect")
         try:
@@ -199,12 +208,12 @@ class McpPreflight:
         if not url:
             if self.local == "refuse":
                 raise McpPreflightRefused("connect", "a local (stdio) server cannot be resolved and local='refuse'")
-            self.url = self.host = None
+            self.url = self.host = self.receipt = None
             return None
         host = _host(url)
         if not host:
             raise McpPreflightRefused("connect", "not a server URL: %s" % url)
-        if self.host == host and self._fresh():   # already decided (before the transport was opened): not asked twice
+        if self.url == url and self._fresh():   # already decided (before the transport was opened): not asked twice
             return self.receipt
         self.url, self.host = url, host
         return await self._decide(host)

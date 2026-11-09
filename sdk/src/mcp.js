@@ -74,9 +74,8 @@ export function mcpPreflight(cc, opts = {}) {
   // tscope1: send the server URL and, with a lockfile, its approved tools_sha256, so CrawlCheck reads the live tools from its own
   // vantage and the signed receipt names the endpoint and tool state it covered (a changed list comes back as block).
   const mcpScope = function () { if (!state.url || !/^https:/i.test(state.url)) return undefined; const h = opts.lock && typeof opts.lock.tools_sha256 === "string" ? opts.lock.tools_sha256 : null; return h ? { url: state.url, tools_sha256: h } : { url: state.url }; };
-  const decide = async function (host) {
+  const checkConnect = async function (host) {
     const g = await cc.guard(host, "connect", { template, policy: opts.policy, agent: opts.agent, confirm: opts.confirm, allowWarn: !!opts.allowWarn, onlineKeys: opts.onlineKeys, mcp: mcpScope() });
-    state.receipt = g.receipt; state.verification = g.verification; state.decidedAt = Date.now();
     if (!g.proceed && CO) {
       const rec = await keep(await continuityFailure(continuityClassOf(g), coOpts({ detail: (g.why || []).join("; ").slice(0, 300) })));
       if (rec.outcome === "proceed") return g;   // observe mode: recorded, not enforced
@@ -90,6 +89,18 @@ export function mcpPreflight(cc, opts = {}) {
       throw new McpPreflightRefused("connect", why, { receipt: g.receipt, verification: g.verification });
     }
     return g;
+  };
+  const decide = async function (host) {
+    const url = state.url;
+    state.receipt = null;
+    state.verification = null;
+    const result = await checkConnect(host);
+    if (state.url !== url) throw new McpPreflightRefused("connect", "the server URL changed during preflight");
+    // A refusal may include a valid-looking receipt. Only a completed gate can cache it.
+    state.receipt = result.receipt;
+    state.verification = result.verification;
+    state.decidedAt = Date.now();
+    return result;
   };
   return {
     state,

@@ -106,3 +106,16 @@ test("1.4.0: a refused tool receipt stops tools/call; toolReceipts none skips it
   await c2.connect(T("https://good.example/mcp")); await c2.callTool({ name: "delete_repo" });
   assert.equal(k2.calls.filter((x) => x.tool).length, 0);
 });
+
+test("a denied refresh cannot authorize a subsequent tool call", async () => {
+  const policies = { "good.example": "allow" };
+  const k = cc(policies);
+  const client = withPreflight(mcpClient(TOOLS), k, { toolReceipts: "none" });
+  await client.connect(T("https://good.example/mcp"));
+  client.preflight.state.receipt.expires_at = new Date(0).toISOString();
+  policies["good.example"] = "block";
+  await assert.rejects(() => client.callTool({ name: "search" }), McpPreflightRefused);
+  await assert.rejects(() => client.callTool({ name: "search" }), McpPreflightRefused);
+  assert.deepEqual(client.sent, ["initialize https://good.example/mcp"]);
+  assert.equal(k.calls.length, 3);
+});
