@@ -14,7 +14,7 @@ from . import log as _log
 from .staple import staple_check, staple_from_headers
 from .revocations import new_revocation_store, apply_revocations, revoked_for
 
-VERSION = "1.14.0"
+VERSION = "1.14.1"
 ACTIONS = ("read", "cite", "connect", "transact", "administer")
 
 
