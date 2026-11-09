@@ -79,6 +79,27 @@ class T(unittest.TestCase):
         h = McpPreflight(cc({"good.example": "allow"}))
         self.assertEqual(run(h.before_connect("https://good.example/mcp"))["decision"], "allow")
         self.assertEqual(run(h.before_tool_call("search"))["decision"], "allow")
+    def test_denied_refresh_cannot_authorize_tool_or_reconnect(self):
+        policies = {"good.example": "allow"}
+        k = cc(policies)
+        s = Session(TOOLS)
+        w = with_preflight(s, k, server_url="https://good.example/mcp", tool_receipts="none")
+        run(w.initialize())
+        w.preflight.receipt["expires_at"] = "2000-01-01T00:00:00Z"
+        policies["good.example"] = "block"
+        for attempt in (lambda: w.call_tool("search"), lambda: w.call_tool("search"), w.initialize):
+            with self.assertRaises(McpPreflightRefused):
+                run(attempt())
+        self.assertEqual(s.sent, ["initialize"])
+        self.assertEqual(len(k.calls), 4)
+
+    def test_connect_receipt_does_not_follow_same_host_to_another_path(self):
+        k = cc({"good.example": "allow"})
+        gate = McpPreflight(k)
+        run(gate.before_connect("https://good.example/mcp"))
+        run(gate.before_connect("https://good.example/other"))
+        self.assertEqual([s["url"] for s in k.scopes], ["https://good.example/mcp", "https://good.example/other"])
+
     def test_decide_first_not_twice(self):
         k = cc({"good.example": "allow"}); pf = McpPreflight(k)
         run(pf.before_connect("https://good.example/mcp"))
