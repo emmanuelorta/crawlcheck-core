@@ -17,6 +17,8 @@
 // request is never sent.
 import { normalizeDomain } from "./index.js";
 import { checkLock, toolOperation } from "./index.js";
+/** The most tools/list pages read before the list is called incomplete (tool_list_truncated). */
+const MAX_TOOL_PAGES = 1000;
 import { continuityCheck, continuityFailure, continuityClassOf, verifyLockBaseline, baselineRefusal } from "./continuity.js";
 export class McpPreflightRefused extends Error {
     constructor(stage, why, detail) { super("MCP preflight refused " + stage + ": " + why); this.name = "McpPreflightRefused"; this.stage = stage; this.why = why; this.receipt = detail && detail.receipt || null; this.lock = detail && detail.lock || null; this.verification = detail && detail.verification || null; }
@@ -134,16 +136,17 @@ export function mcpPreflight(cc, opts = {}) {
         return g;
     };
     const decide = async function (host) {
-      const url = state.url;
-      state.receipt = null;
-      state.verification = null;
-      const result = await checkConnect(host);
-      if (state.url !== url) throw new McpPreflightRefused("connect", "the server URL changed during preflight");
-      // A refusal may include a valid-looking receipt. Only a completed gate can cache it.
-      state.receipt = result.receipt;
-      state.verification = result.verification;
-      state.decidedAt = Date.now();
-      return result;
+        const url = state.url;
+        state.receipt = null;
+        state.verification = null;
+        const result = await checkConnect(host);
+        if (state.url !== url)
+            throw new McpPreflightRefused("connect", "the server URL changed during preflight");
+        // A refusal may include a valid-looking receipt. Only a completed gate can cache it.
+        state.receipt = result.receipt;
+        state.verification = result.verification;
+        state.decidedAt = Date.now();
+        return result;
     };
     return {
         state,
@@ -195,6 +198,8 @@ export function mcpPreflight(cc, opts = {}) {
                 state.approved = null;
                 return null;
             }
+            if (meta && meta.nextCursor)
+                throw new McpPreflightRefused("connect", "the server's tool list could not be read in full (a further page was not read); nothing is approved on part of a list", { receipt: state.receipt });
             const lc = await checkLock(baseLock, tools || []);
             state.lockCheck = lc;
             state.approved = new Set((opts.lock.tools || []).map(function (t) { return t.name; }));
@@ -256,12 +261,27 @@ export function withPreflight(client, cc, opts = {}) {
         if (opts.lock || opts.confirmDestructive || (opts.toolReceipts || "write") !== "none") {
             let list = [];
             let meta = null, bad = false;
-            try {
-                const t = typeof client.listTools === "function" ? await client.listTools() : null;
-                list = (t && t.tools) || [];
-                meta = t ? { nextCursor: t.nextCursor || null } : null;
-                if (t && !Array.isArray(t.tools))
-                    bad = true;
+            try { // 1.14.0: every page (nextCursor followed); a list whose pages could not all be read is marked incomplete
+                if (typeof client.listTools === "function") {
+                    let cursor = null;
+                    const seen = new Set();
+                    for (;;) {
+                        const t = await client.listTools(cursor ? { cursor } : undefined);
+                        if (!t)
+                            break;
+                        if (!Array.isArray(t.tools)) {
+                            bad = true;
+                            break;
+                        }
+                        list = list.concat(t.tools);
+                        const next = t.nextCursor || null;
+                        meta = { nextCursor: next };
+                        if (!next || seen.has(next) || seen.size >= MAX_TOOL_PAGES - 1)
+                            break;
+                        seen.add(next);
+                        cursor = next;
+                    }
+                }
             }
             catch (e) {
                 list = [];

@@ -149,6 +149,19 @@ gate = ContinuityGate(signed, mode="enforce", operator_keys=[key["public_key"]])
 
 `verify_lock_baseline(lock, ...)` runs the same check on its own. The signature is Ed25519 over `"crawlcheck-lock-operator-v1\n" + sha256(canonical JSON of the lockfile without operator_signature)`, the same bytes the JS SDK signs; signing is pure Python and not constant-time, so sign on a machine you control.
 
+### Compare on jcs-v1 (1.15.0)
+
+Every lockfile from `GET /api/v1/mcp/lock` since 2026-11-07 carries `jcs_v1`: RFC 8785 digests of each tool's contract (`name`, `description`, `inputSchema`, `outputSchema`) and of everything else it carries (`title`, `annotations`, `icons`, `_meta`, vendor members). The package now computes the same digests offline, byte for byte with the JS SDK and the endpoint:
+
+```python
+from crawlcheck import jcs_v1
+d = jcs_v1(tools)   # {"tools_sha256": "sha256-...", "extras_sha256": "sha256-...", "count": ..., "tools": [{"name", "contract", "extras"}]}
+```
+
+When the approved lockfile carries `jcs_v1`, `continuity_check` and every gate compare on it, over every tool: a moved contract is named `description_changed` or `schema_changed` (from `parts`), a moved extras digest `annotations_changed`, and any other change (a new `title`, `outputSchema`, `_meta`) `tool_changed` with a `detail`. Records say `baseline["alg"] == "jcs-v1"`. Pass `digest="lk-v1"` to compare on the v1 hashes instead. A missing `description` and `""` are the same contract under jcs-v1.
+
+Nothing is cut silently. `with_preflight` follows `nextCursor` to the last page; a list whose pages could not all be read is `tool_list_truncated` (and a v1 lockfile refuses it). A v1 lockfile hashes at most `LOCK_V1_MAX_TOOLS` (300) tools: past that, `lock_from_tools` returns `complete: False` with `offered`, `check_lock` answers `verdict "incomplete"`, `decision "block"`, and a v1 continuity check raises `tool_list_truncated`. jcs-v1 has no cap.
+
 ## Catch a split view
 
 Every Resolve answer carries its place in CrawlCheck's transparency log. The client keeps every signed tree head it sees in `client.log` (plain JSON; persist it and pass it back as `log_store=`) and treats two heads for one batch, or a head that does not chain to the one before, as a fork with both signed heads as proof. `guard()` returns `False` while the client holds one.

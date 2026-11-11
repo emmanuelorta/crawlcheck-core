@@ -36,8 +36,11 @@ export declare function lockToolParts(t: any): Promise<{
     schema_sha256: string;
     annotations_sha256: string;
 }>;
-/** parts for a lockfile: { [tool name]: lockToolParts(tool) }. Store it as lock.parts next to lock.tools. */
+/** parts for a lockfile: { [tool name]: lockToolParts(tool) }, for every tool given. Store it as lock.parts next to lock.tools. */
 export declare function lockParts(tools: any): Promise<{}>;
+/** The most tools a v1 (lk) lockfile hashes; CrawlCheck's lockfile endpoint hashes the same. A longer list is compared on
+ * its first LOCK_V1_MAX_TOOLS tools and the read is marked incomplete (tool_list_truncated), never cut silently. */
+export declare const LOCK_V1_MAX_TOOLS = 300;
 /** The policy in force: the default with the operator's values over it, and its sha256 (what the record names). */
 export declare function continuityPolicy(p: any): Promise<{
     v: number;
@@ -74,7 +77,9 @@ export declare function continuityPolicy(p: any): Promise<{
  * Compare the offered tools with the approved baseline (an mcp-lockfile, ideally with lock.parts) and apply the policy.
  * opts: mode ("observe" | "review" | "enforce", default "enforce"), policy, exceptions [{tool, class, until, by, reason}],
  * complete (false when tools/list returned a nextCursor you did not follow), server (the URL checked), serverIdentity
- * (the URL the baseline was approved for; differs -> server_identity_mismatch), expectPolicySha256, now (ms).
+ * (the URL the baseline was approved for; differs -> server_identity_mismatch), expectPolicySha256, now (ms), digest
+ * ("lk-v1" to compare on the v1 hashes even when the lockfile carries jcs_v1; by default a lockfile with jcs_v1 is
+ * compared on jcs-v1, over every tool). A v1 comparison of more than LOCK_V1_MAX_TOOLS tools is marked incomplete.
  */
 export declare function continuityCheck(lock: any, tools: any, opts?: {}): Promise<any>;
 /** A record for a check that could not compare anything (the server, the evidence or the service failed). cls: one of CONTINUITY_FAILURE_CLASSES. */

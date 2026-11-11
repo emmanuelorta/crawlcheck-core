@@ -32,6 +32,8 @@ from .client import normalize_domain
 from .lock import check_lock
 from .continuity import continuity_check, continuity_failure, continuity_class_of, verify_lock_baseline, baseline_refusal
 
+_MAX_TOOL_PAGES = 1000   # the most tools/list pages read before the list is called incomplete (tool_list_truncated)
+
 
 class McpPreflightRefused(Exception):
     def __init__(self, stage, why, receipt=None, lock=None):
@@ -235,6 +237,8 @@ class McpPreflight:
         if not self.lock:
             self.approved = None
             return None
+        if next_cursor:
+            raise McpPreflightRefused("connect", "the server's tool list could not be read in full (a further page was not read); nothing is approved on part of a list", self.receipt)
         lc = check_lock(self._base, tools or [])
         self.lock_check = lc
         self.approved = set(t.get("name") for t in self.lock.get("tools", []))
@@ -304,13 +308,23 @@ class with_preflight:
         r = await self._s.initialize(*a, **k)
         if self.preflight.lock or self.preflight.confirm_destructive or self.preflight.tool_receipts != "none":
             tools, bad, cursor = [], False, None
-            try:
-                lt = await self._s.list_tools()
-                raw = getattr(lt, "tools", None) if not isinstance(lt, dict) else lt.get("tools")
-                cursor = getattr(lt, "nextCursor", None) if not isinstance(lt, dict) else lt.get("nextCursor")
-                if not isinstance(raw, list):
-                    bad = True
-                tools = [_tool_dict(t) for t in (raw or [])]
+            try:   # 1.15.0: every page (nextCursor followed); a list whose pages could not all be read is marked incomplete
+                seen = set()
+                while True:
+                    try:
+                        lt = await (self._s.list_tools(cursor=cursor) if cursor else self._s.list_tools())
+                    except TypeError:
+                        if cursor:   # this session cannot ask for a further page: the list stays incomplete
+                            break
+                        raise
+                    raw = getattr(lt, "tools", None) if not isinstance(lt, dict) else lt.get("tools")
+                    cursor = getattr(lt, "nextCursor", None) if not isinstance(lt, dict) else lt.get("nextCursor")
+                    if not isinstance(raw, list):
+                        bad = True
+                    tools.extend(_tool_dict(t) for t in (raw or []))
+                    if bad or not cursor or cursor in seen or len(seen) >= _MAX_TOOL_PAGES - 1:
+                        break
+                    seen.add(cursor)
             except Exception:
                 tools, bad = [], True
             self._tools = {t.get("name"): t for t in tools}

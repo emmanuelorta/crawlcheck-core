@@ -13,7 +13,7 @@ G = json.load(open(os.path.join(os.path.dirname(__file__), "fixtures", "continui
 
 def _kw(o):
     m = {"mode": "mode", "policy": "policy", "exceptions": "exceptions", "complete": "complete", "server": "server",
-         "serverIdentity": "server_identity", "expectPolicySha256": "expect_policy_sha256", "now": "now", "baselineTrust": "baseline_trust"}
+         "serverIdentity": "server_identity", "expectPolicySha256": "expect_policy_sha256", "now": "now", "baselineTrust": "baseline_trust", "digest": "digest"}
     return {m[k]: v for k, v in o.items() if k in m}
 
 

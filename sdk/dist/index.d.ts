@@ -59,6 +59,8 @@ export interface ContinuityRecord {
     };
     claims: string;
     baseline: {
+        alg?: "jcs-v1";
+        extras_sha256?: string | null;
         tools_sha256: string | null;
         approved_at: string | null;
         age_days: number | null;
@@ -67,9 +69,12 @@ export interface ContinuityRecord {
         trust: BaselineTrust["trust"] | null;
     } | null;
     observed: {
-        tools_sha256: string;
+        alg?: "jcs-v1";
+        extras_sha256?: string | null;
+        tools_sha256: string | null;
         count: number;
-        complete: boolean;
+        complete: boolean; /** 1.14.0: the number of tools offered, when more than a v1 lockfile hashes (the read is then incomplete). */
+        offered?: number;
     } | null;
     events: ContinuityEvent[];
     would: ContinuityEffect;
@@ -89,7 +94,8 @@ export interface ContinuityOptions {
     expectPolicySha256?: string;
     now?: number;
     detail?: string; /** 1.13.0: the result of verifyLockBaseline, named in record.baseline.trust. */
-    baselineTrust?: BaselineTrust["trust"];
+    baselineTrust?: BaselineTrust["trust"]; /** 1.14.0: "lk-v1" compares on the v1 hashes even when the lockfile carries jcs_v1 (default: jcs-v1 when present). */
+    digest?: "lk-v1" | "jcs-v1";
 }
 export declare const CONTINUITY_DEFAULT_POLICY: {
     v: 1;
@@ -113,6 +119,34 @@ export declare const lockToolParts: (t: McpTool) => Promise<{
     schema_sha256: string;
     annotations_sha256: string;
 }>;
+export interface JcsV1 {
+    alg: "jcs-v1";
+    spec: string;
+    count?: number;
+    tools_sha256: string | null;
+    extras_sha256?: string;
+    tools?: {
+        name: string;
+        contract: string;
+        extras: string;
+    }[];
+    reason?: string;
+}
+/** jcs-v1 contract and extras digests of a tools/list result (every page; no cap). Equals lock.jcs_v1 from /api/v1/mcp/lock. */
+export declare const jcsV1: (tools: McpTool[], opts?: {
+    partial?: boolean;
+}) => Promise<JcsV1>;
+/** RFC 8785 canonical JSON. */
+export declare const jcsCanon: (v: unknown) => string;
+export declare const jcsContract: (t: McpTool) => {
+    name: string;
+    description: string;
+    inputSchema: unknown;
+    outputSchema?: unknown;
+};
+export declare const jcsExtras: (t: McpTool) => Record<string, unknown>;
+/** The most tools a v1 lockfile hashes; a longer list is compared on that many and marked incomplete. */
+export declare const LOCK_V1_MAX_TOOLS: number;
 export declare const lockParts: (tools: McpTool[]) => Promise<Record<string, {
     description_sha256: string;
     schema_sha256: string;
@@ -437,16 +471,26 @@ export interface McpLock {
     [k: string]: unknown;
 }
 export interface McpLockCheck {
-    verdict: "unchanged" | "changed";
+    verdict: "unchanged" | "changed" | "incomplete";
     decision: "connect" | "block";
     approved_tools_sha256: string;
     current_tools_sha256: string;
     added: string[];
     removed: string[];
-    modified: string[];
+    modified: string[]; /** 1.14.0: the jcs-v1 comparison, when the lockfile carries jcs_v1. */
+    jcs_v1?: {
+        alg: "jcs-v1";
+        current_tools_sha256: string | null;
+        current_extras_sha256: string | null;
+        approved_tools_sha256?: string;
+        contract_unchanged?: boolean;
+        extras_unchanged?: boolean;
+    } | null; /** 1.14.0: more tools than a v1 lockfile hashes were offered. */
+    offered?: number;
 }
 export declare function lockToolHash(t: McpTool): Promise<string>;
 /** Hash a tools/list result the way a lockfile does: per tool, and the sorted per-tool hashes joined by \n. No network, no key. */
+/** 1.14.0: also jcs_v1 (the jcs-v1 digests over every tool), and complete: false with offered when the list is longer than a v1 lockfile hashes (LOCK_V1_MAX_TOOLS). */
 export declare function lockFromTools(tools: McpTool[]): Promise<{
     tools: {
         name: string;
@@ -454,6 +498,9 @@ export declare function lockFromTools(tools: McpTool[]): Promise<{
     }[];
     tools_sha256: string;
     count: number;
+    complete: boolean;
+    offered?: number;
+    jcs_v1: JcsV1;
 }>;
 /** Compare a lockfile with the tools a server lists now. Anything added, removed or changed means "block" until a person re-approves. Offline. */
 export declare function checkLock(lock: McpLock, tools: McpTool[]): Promise<McpLockCheck>;

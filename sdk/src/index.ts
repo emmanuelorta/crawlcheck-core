@@ -10,6 +10,7 @@ import * as M from "./mcp.js";
 import * as R from "./revocations.js";
 import * as C from "./continuity.js";
 import * as F from "./frameworks.js";
+import * as J from "./jcs.js";
 
 export type { paths, components };
 // ── acceptance, split, and tool-interface continuity (1.11.0, https://crawlcheck.io/spec/continuity) ──
@@ -18,8 +19,8 @@ export type ContinuityEffect = "proceed" | "proceed_recorded" | "refresh" | "pau
 export interface ContinuityPolicy { v?: 1; id?: string; max_baseline_age_days?: number; effects?: Partial<Record<string, ContinuityEffect>>; allow_integrity_override?: boolean }
 export interface ContinuityException { tool?: string; class: string; until?: string; by?: string; reason?: string }
 export interface ContinuityEvent { class: string; tool: string | null; why: string; policy_effect: ContinuityEffect; effect: ContinuityEffect; exception?: { by: string | null; reason: string | null; until: string | null }; detail?: string }
-export interface ContinuityRecord { kind: "crawlcheck-continuity-record"; v: 1; checked_at: string; mode: "observe" | "review" | "enforce"; server: string | null; policy: { id: string; sha256: string; integrity_override: boolean }; claims: string; baseline: { tools_sha256: string | null; approved_at: string | null; age_days: number | null; server: string | null; per_part: boolean; /** 1.13.0: verified | operator_signed | unsigned | invalid (null when the caller did not check). */ trust: BaselineTrust["trust"] | null } | null; observed: { tools_sha256: string; count: number; complete: boolean } | null; events: ContinuityEvent[]; would: ContinuityEffect; enforced: boolean; outcome: "proceed" | "refresh" | "pause" | "deny"; paused_tools: string[]; why: string[]; record_sha256: string }
-export interface ContinuityOptions { mode?: "observe" | "review" | "enforce"; policy?: ContinuityPolicy; exceptions?: ContinuityException[]; complete?: boolean; server?: string; serverIdentity?: string; expectPolicySha256?: string; now?: number; detail?: string; /** 1.13.0: the result of verifyLockBaseline, named in record.baseline.trust. */ baselineTrust?: BaselineTrust["trust"] }
+export interface ContinuityRecord { kind: "crawlcheck-continuity-record"; v: 1; checked_at: string; mode: "observe" | "review" | "enforce"; server: string | null; policy: { id: string; sha256: string; integrity_override: boolean }; claims: string; baseline: { /** 1.14.0: "jcs-v1" when the lockfile carried jcs_v1 and the comparison used it (tools_sha256 is then the jcs-v1 contract digest). */ alg?: "jcs-v1"; extras_sha256?: string | null; tools_sha256: string | null; approved_at: string | null; age_days: number | null; server: string | null; per_part: boolean; /** 1.13.0: verified | operator_signed | unsigned | invalid (null when the caller did not check). */ trust: BaselineTrust["trust"] | null } | null; observed: { /** 1.14.0 */ alg?: "jcs-v1"; extras_sha256?: string | null; tools_sha256: string | null; count: number; complete: boolean; /** 1.14.0: the number of tools offered, when more than a v1 lockfile hashes (the read is then incomplete). */ offered?: number } | null; events: ContinuityEvent[]; would: ContinuityEffect; enforced: boolean; outcome: "proceed" | "refresh" | "pause" | "deny"; paused_tools: string[]; why: string[]; record_sha256: string }
+export interface ContinuityOptions { mode?: "observe" | "review" | "enforce"; policy?: ContinuityPolicy; exceptions?: ContinuityException[]; complete?: boolean; server?: string; serverIdentity?: string; expectPolicySha256?: string; now?: number; detail?: string; /** 1.13.0: the result of verifyLockBaseline, named in record.baseline.trust. */ baselineTrust?: BaselineTrust["trust"]; /** 1.14.0: "lk-v1" compares on the v1 hashes even when the lockfile carries jcs_v1 (default: jcs-v1 when present). */ digest?: "lk-v1" | "jcs-v1" }
 export const CONTINUITY_DEFAULT_POLICY = C.CONTINUITY_DEFAULT_POLICY as { v: 1; id: string; max_baseline_age_days: number; effects: Record<string, ContinuityEffect> };
 export const CONTINUITY_CHANGE_CLASSES = C.CONTINUITY_CHANGE_CLASSES as string[];
 export const CONTINUITY_FAILURE_CLASSES = C.CONTINUITY_FAILURE_CLASSES as string[];
@@ -31,6 +32,16 @@ export const continuityFailure = C.continuityFailure as (cls: string, opts?: Con
 export const continuityPolicy = C.continuityPolicy as (p?: ContinuityPolicy) => Promise<Required<ContinuityPolicy> & { sha256: string }>;
 /** Per-part hashes (description, schema, annotations) so a change can be named. Store lockParts(tools) as lock.parts. */
 export const lockToolParts = C.lockToolParts as (t: McpTool) => Promise<{ description_sha256: string; schema_sha256: string; annotations_sha256: string }>;
+// ── jcs-v1 digests (1.14.0, https://crawlcheck.io/spec/mcp-lockfile#jcs-v1): the lockfile's jcs_v1 block, computed offline ──
+export interface JcsV1 { alg: "jcs-v1"; spec: string; count?: number; tools_sha256: string | null; extras_sha256?: string; tools?: { name: string; contract: string; extras: string }[]; reason?: string }
+/** jcs-v1 contract and extras digests of a tools/list result (every page; no cap). Equals lock.jcs_v1 from /api/v1/mcp/lock. */
+export const jcsV1 = J.jcsV1 as (tools: McpTool[], opts?: { partial?: boolean }) => Promise<JcsV1>;
+/** RFC 8785 canonical JSON. */
+export const jcsCanon = J.jcsCanon as (v: unknown) => string;
+export const jcsContract = J.jcsContract as (t: McpTool) => { name: string; description: string; inputSchema: unknown; outputSchema?: unknown };
+export const jcsExtras = J.jcsExtras as (t: McpTool) => Record<string, unknown>;
+/** The most tools a v1 lockfile hashes; a longer list is compared on that many and marked incomplete. */
+export const LOCK_V1_MAX_TOOLS = C.LOCK_V1_MAX_TOOLS as number;
 export const lockParts = C.lockParts as (tools: McpTool[]) => Promise<Record<string, { description_sha256: string; schema_sha256: string; annotations_sha256: string }>>;
 /** The separate acceptance questions for one decision receipt. Act on policy_result, never on integrity_valid alone. */
 /** Which continuity failure class a refused guard() result is. */
@@ -162,16 +173,19 @@ async function sha256Hex(s: string): Promise<string> {
 /** MCP tool lockfile (https://crawlcheck.io/spec/mcp-lockfile). A tool's hash is sha256 of the canonical JSON of {name, description, inputSchema, annotations}. */
 export interface McpTool { name?: string; description?: string; inputSchema?: unknown; input_schema?: unknown; annotations?: unknown; [k: string]: unknown }
 export interface McpLock { tools_sha256: string; tools: { name: string; sha256: string }[]; /** 1.11.0: per-part hashes (lockParts) so continuityCheck can name what changed. */ parts?: Record<string, { description_sha256: string; schema_sha256: string; annotations_sha256: string }>; descriptions?: Record<string, string>; server?: { url?: string | null } | null; approved_at?: string; [k: string]: unknown }
-export interface McpLockCheck { verdict: "unchanged" | "changed"; decision: "connect" | "block"; approved_tools_sha256: string; current_tools_sha256: string; added: string[]; removed: string[]; modified: string[] }
+export interface McpLockCheck { verdict: "unchanged" | "changed" | "incomplete"; decision: "connect" | "block"; approved_tools_sha256: string; current_tools_sha256: string; added: string[]; removed: string[]; modified: string[]; /** 1.14.0: the jcs-v1 comparison, when the lockfile carries jcs_v1. */ jcs_v1?: { alg: "jcs-v1"; current_tools_sha256: string | null; current_extras_sha256: string | null; approved_tools_sha256?: string; contract_unchanged?: boolean; extras_unchanged?: boolean } | null; /** 1.14.0: more tools than a v1 lockfile hashes were offered. */ offered?: number }
 export async function lockToolHash(t: McpTool): Promise<string> {
   return sha256Hex(V.canon({ name: t?.name ?? null, description: t?.description ?? null, inputSchema: t?.inputSchema ?? t?.input_schema ?? null, annotations: t?.annotations ?? null }));
 }
 /** Hash a tools/list result the way a lockfile does: per tool, and the sorted per-tool hashes joined by \n. No network, no key. */
-export async function lockFromTools(tools: McpTool[]): Promise<{ tools: { name: string; sha256: string }[]; tools_sha256: string; count: number }> {
-  const rows: { name: string; sha256: string }[] = [];
-  for (const t of (tools ?? []).slice(0, 300)) rows.push({ name: String(t?.name ?? "").slice(0, 120), sha256: await lockToolHash(t) });
+/** 1.14.0: also jcs_v1 (the jcs-v1 digests over every tool), and complete: false with offered when the list is longer than a v1 lockfile hashes (LOCK_V1_MAX_TOOLS). */
+export async function lockFromTools(tools: McpTool[]): Promise<{ tools: { name: string; sha256: string }[]; tools_sha256: string; count: number; complete: boolean; offered?: number; jcs_v1: JcsV1 }> {
+  const rows: { name: string; sha256: string }[] = [], all = tools ?? [];
+  for (const t of all.slice(0, LOCK_V1_MAX_TOOLS)) rows.push({ name: String(t?.name ?? "").slice(0, 120), sha256: await lockToolHash(t) });
   rows.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : a.sha256 < b.sha256 ? -1 : 1));
-  return { tools: rows, tools_sha256: await sha256Hex(rows.map((r) => r.sha256).sort().join("\n")), count: rows.length };
+  const out: { tools: { name: string; sha256: string }[]; tools_sha256: string; count: number; complete: boolean; offered?: number; jcs_v1: JcsV1 } = { tools: rows, tools_sha256: await sha256Hex(rows.map((r) => r.sha256).sort().join("\n")), count: rows.length, complete: all.length <= LOCK_V1_MAX_TOOLS, jcs_v1: await jcsV1(all) };
+  if (!out.complete) out.offered = all.length;
+  return out;
 }
 /** Compare a lockfile with the tools a server lists now. Anything added, removed or changed means "block" until a person re-approves. Offline. */
 export async function checkLock(lock: McpLock, tools: McpTool[]): Promise<McpLockCheck> {
@@ -180,7 +194,11 @@ export async function checkLock(lock: McpLock, tools: McpTool[]): Promise<McpLoc
   const cur: Record<string, string> = {}; now.tools.forEach((r) => { cur[r.name] = r.sha256; });
   const added = Object.keys(cur).filter((n) => !(n in was)), removed = Object.keys(was).filter((n) => !(n in cur)), modified = Object.keys(cur).filter((n) => n in was && was[n] !== cur[n]);
   const same = lock?.tools_sha256 === now.tools_sha256 && !added.length && !removed.length && !modified.length;
-  return { verdict: same ? "unchanged" : "changed", decision: same ? "connect" : "block", approved_tools_sha256: lock?.tools_sha256 ?? "", current_tools_sha256: now.tools_sha256, added, removed, modified };
+  const a = (lock as any)?.jcs_v1, b = now.jcs_v1;
+  const jc: McpLockCheck["jcs_v1"] = { alg: "jcs-v1", current_tools_sha256: b.tools_sha256 ?? null, current_extras_sha256: b.tools_sha256 === null ? null : b.extras_sha256 ?? null };
+  if (a && typeof a.tools_sha256 === "string" && a.tools_sha256) { jc.approved_tools_sha256 = a.tools_sha256; jc.contract_unchanged = !!b.tools_sha256 && a.tools_sha256 === b.tools_sha256; jc.extras_unchanged = (a.extras_sha256 || null) === (b.extras_sha256 || null); }
+  if (!now.complete) return { verdict: "incomplete", decision: "block", approved_tools_sha256: lock?.tools_sha256 ?? "", current_tools_sha256: now.tools_sha256, added, removed: [], modified, jcs_v1: jc, offered: now.offered };   // never connect on part of a list
+  return { verdict: same ? "unchanged" : "changed", decision: same ? "connect" : "block", approved_tools_sha256: lock?.tools_sha256 ?? "", current_tools_sha256: now.tools_sha256, added, removed, modified, jcs_v1: jc };
 }
 export interface PrivateLookup { found: boolean; ready: boolean; in_bucket: number | null; answer: JsonObject | null; verification: (DocumentVerification & Trust) | null; accepted: boolean; why?: string }
 export interface ReceiptCheck { accept: boolean; why: string; check: JsonObject | null; verification: (DocumentVerification & Trust) | null }

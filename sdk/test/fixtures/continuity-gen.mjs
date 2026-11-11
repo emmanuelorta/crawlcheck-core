@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import * as C from "../../dist/continuity.js";
 import { canon } from "../../dist/verify.js";
+import { jcsV1 } from "../../dist/jcs.js";
 import { lockFromTools, keyPolicyFrom } from "../../dist/index.js";
 const rd = (f) => JSON.parse(fs.readFileSync(new URL("./" + f, import.meta.url), "utf8"));
 const NOW = Date.parse("2026-11-07T16:00:00Z");
@@ -21,7 +22,7 @@ const annChanged = clone(v1); annChanged[2].annotations = { readOnlyHint: true }
 const added = clone(v1).concat([{ name: "export", description: "Export all records.", inputSchema: { type: "object" } }]);
 const removed = clone(v1).slice(0, 2);
 const S = "https://mcp.example.com/mcp";
-const cases = [
+let cases = [
   ["unchanged", lock, v1, {}],
   ["legitimate_update_description", lock, descChanged, {}],
   ["schema_changed", lock, schemaChanged, {}],
@@ -40,7 +41,45 @@ const cases = [
   ["expired_exception", lock, descChanged, { exceptions: [{ tool: "search", class: "description_changed", by: "ops@example.com", reason: "old", until: "2026-11-01T00:00:00Z" }] }],
   ["operator_policy_blocks_additions", lock, added, { policy: { id: "acme-strict", effects: { tool_added: "deny" } } }],
   ["baseline_trust_named", lock, v1, { baselineTrust: "operator_signed" }]
-].map(([name, L, tools, o]) => ({ name, lock: L, tools, opts: Object.assign({ now: NOW, server: S }, o) }));
+];
+// 1.14.0: a lockfile that carries jcs_v1 is compared on jcs-v1, over every tool; a v1 comparison past 300 tools is marked incomplete.
+const jcsLock = Object.assign(clone(lock), { jcs_v1: await jcsV1(v1) }), jcsNoParts = clone(jcsLock); delete jcsNoParts.parts;
+const noDesc = clone(v1); delete noDesc[2].description;
+const emptyDesc = clone(noDesc); emptyDesc[2].description = "";
+const lockNoDesc = Object.assign(clone(lock), { jcs_v1: await jcsV1(noDesc) });
+{ const lk2 = await lockFromTools(noDesc); lockNoDesc.tools_sha256 = lk2.tools_sha256; lockNoDesc.tools = lk2.tools; lockNoDesc.parts = await C.lockParts(noDesc); }
+const titled = clone(v1); titled[0].title = "Search everything";
+const outSchema = clone(v1); outSchema[2].outputSchema = { type: "object", properties: { state: { type: "string" } } };
+const metaChanged = clone(v1); metaChanged[1]._meta = { "io.example/rev": 2 };
+const unnamed = clone(v1).concat([{ description: "no name" }]);
+const dup = clone(v1).concat([clone(v1[0])]); dup[3].description = "Search the catalogue (copy).";
+const many = Array.from({ length: 301 }, (_, i) => ({ name: "t" + String(i).padStart(3, "0"), description: "Tool " + i + ".", inputSchema: { type: "object" } }));
+const lkMany = await lockFromTools(many);
+const lockMany = { kind: "crawlcheck-mcp-lock", v: 1, server: { url: S }, approved_at: "2026-10-20T00:00:00Z", tools_sha256: lkMany.tools_sha256, tools: lkMany.tools };
+const lockManyJcs = Object.assign(clone(lockMany), { jcs_v1: await jcsV1(many) });
+const many2 = clone(many); many2[300].description = "Tool 300, rewritten.";
+cases.push(
+  ["jcs_unchanged", jcsLock, v1, {}],
+  ["jcs_description_changed", jcsLock, descChanged, {}],
+  ["jcs_schema_changed", jcsLock, schemaChanged, {}],
+  ["jcs_annotations_changed", jcsLock, annChanged, {}],
+  ["jcs_title_changed", jcsLock, titled, {}],
+  ["jcs_meta_changed_no_parts", jcsNoParts, metaChanged, {}],
+  ["jcs_output_schema_added", jcsLock, outSchema, {}],
+  ["jcs_contract_changed_no_parts", jcsNoParts, descChanged, {}],
+  ["jcs_tool_added", jcsLock, added, {}],
+  ["jcs_tool_removed", jcsLock, removed, {}],
+  ["jcs_truncated", jcsLock, v1.slice(0, 2), { complete: false }],
+  ["jcs_unnamed_tool", jcsLock, unnamed, {}],
+  ["jcs_duplicate_names", jcsLock, dup, {}],
+  ["jcs_empty_description_is_absent", lockNoDesc, emptyDesc, {}],
+  ["lk_v1_forced_empty_description", lockNoDesc, emptyDesc, { digest: "lk-v1" }],
+  ["lk_v1_over_300_tools", lockMany, many, {}],
+  ["jcs_over_300_tools", lockManyJcs, many, {}],
+  ["jcs_over_300_tools_change_past_300", lockManyJcs, many2, {}],
+  ["lk_v1_over_300_tools_change_past_300", lockMany, many2, {}]
+);
+cases = cases.map(([name, L, tools, o]) => ({ name, lock: L, tools, opts: Object.assign({ now: NOW, server: S }, o) }));
 for (const c of cases) c.expect = await C.continuityCheck(c.lock, c.tools, c.opts);
 const failures = [];
 for (const cls of C.CONTINUITY_FAILURE_CLASSES) for (const mode of ["observe", "review", "enforce"]) { const o = { now: NOW, server: S, mode }; failures.push({ cls, opts: o, expect: await C.continuityFailure(cls, o) }); }

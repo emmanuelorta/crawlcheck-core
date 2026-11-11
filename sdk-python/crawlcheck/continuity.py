@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 
 from . import _ed25519
 from .verify import canon, key_policy_check, _b64u, _b64u_decode
+from .jcs import jcs_v1
 
 CONTINUITY_EFFECTS = ["proceed", "proceed_recorded", "refresh", "pause_tool", "pause", "deny"]
 CONTINUITY_CHANGE_CLASSES = ["tool_added", "tool_removed", "description_changed", "schema_changed", "annotations_changed", "tool_changed"]
@@ -86,8 +87,22 @@ def lock_tool_parts(tool):
 
 
 def lock_parts(tools):
-    """parts for a lockfile: {tool name: lock_tool_parts(tool)}. Store it as lock["parts"] next to lock["tools"]."""
-    return {str((t or {}).get("name") or "")[:120]: lock_tool_parts(t) for t in (tools or [])[:300]}
+    """parts for a lockfile: {tool name: lock_tool_parts(tool)}, for every tool given. Store it as lock["parts"] next to lock["tools"]."""
+    return {str((t or {}).get("name") or "")[:120]: lock_tool_parts(t) for t in (tools or [])}
+
+
+# The most tools a v1 (lk) lockfile hashes; CrawlCheck's lockfile endpoint hashes the same. A longer list is compared on its
+# first LOCK_V1_MAX_TOOLS tools and the read is marked incomplete (tool_list_truncated), never cut silently.
+LOCK_V1_MAX_TOOLS = 300
+
+
+def _jcs_baseline(lock):
+    """The lockfile's jcs-v1 block when it can be compared on (a digest, and a per-tool row for every tool it counted)."""
+    J = (lock or {}).get("jcs_v1") if isinstance(lock, dict) else None
+    if isinstance(J, dict) and J.get("alg") == "jcs-v1" and isinstance(J.get("tools_sha256"), str) and J["tools_sha256"] \
+            and isinstance(J.get("tools"), list) and not isinstance(J.get("count"), bool) and len(J["tools"]) == J.get("count"):
+        return J
+    return None
 
 
 def _tool_hash(t):
@@ -193,9 +208,11 @@ def _strip(u):
     return str(u).rstrip("/")
 
 
-def continuity_check(lock, tools, mode="enforce", policy=None, exceptions=None, complete=True, server=None, server_identity=None, expect_policy_sha256=None, now=None, baseline_trust=None):
+def continuity_check(lock, tools, mode="enforce", policy=None, exceptions=None, complete=True, server=None, server_identity=None, expect_policy_sha256=None, now=None, baseline_trust=None, digest=None):
     """Compare the offered tools with the approved baseline and apply the policy. complete=False when tools/list returned a
-    nextCursor you did not follow. server: the URL checked; server_identity: the URL the baseline was approved for."""
+    nextCursor you did not follow. server: the URL checked; server_identity: the URL the baseline was approved for.
+    digest: "lk-v1" to compare on the v1 hashes even when the lockfile carries jcs_v1; by default a lockfile with jcs_v1
+    is compared on jcs-v1, over every tool. A v1 comparison of more than LOCK_V1_MAX_TOOLS tools is marked incomplete."""
     if mode not in ("observe", "review", "enforce"):
         raise ValueError("mode must be observe, review or enforce")
     pol = continuity_policy(policy)
@@ -205,7 +222,12 @@ def continuity_check(lock, tools, mode="enforce", policy=None, exceptions=None, 
     if not isinstance(tools, list):
         _ev(rec, pol, mode, "response_malformed", None, exceptions, now)
         return _finish(rec, mode)
-    rows = [{"name": str((t or {}).get("name") or "")[:120], "sha256": _tool_hash(t), "t": t} for t in tools[:300]]
+    J = None if digest == "lk-v1" else _jcs_baseline(lock)
+    if J:
+        return _jcs_check(rec, pol, mode, lock, J, tools, complete is not False, server, server_identity, expect_policy_sha256, exceptions, now, baseline_trust)
+    capped = len(tools) > LOCK_V1_MAX_TOOLS
+    complete = complete is not False and not capped
+    rows = [{"name": str((t or {}).get("name") or "")[:120], "sha256": _tool_hash(t), "t": t} for t in tools[:LOCK_V1_MAX_TOOLS]]
     cur = {}
     for r in rows:
         cur[r["name"]] = r
@@ -216,7 +238,9 @@ def continuity_check(lock, tools, mode="enforce", policy=None, exceptions=None, 
     srv = (lock.get("server") or {}).get("url") if isinstance(lock.get("server"), dict) else None
     rec["baseline"] = {"tools_sha256": lock.get("tools_sha256"), "approved_at": lock.get("approved_at"), "age_days": int(math.floor((now - appr) / 864e5)) if appr is not None else None,
                        "server": srv, "per_part": bool(lock.get("parts")), "trust": baseline_trust}
-    rec["observed"] = {"tools_sha256": list_hash, "count": len(rows), "complete": complete is not False}
+    rec["observed"] = {"tools_sha256": list_hash, "count": len(rows), "complete": complete}
+    if capped:
+        rec["observed"]["offered"] = len(tools)
     if expect_policy_sha256 and expect_policy_sha256 != pol["sha256"]:
         _ev(rec, pol, mode, "policy_version_mismatch", None, exceptions, now, "expected %s, in force %s" % (expect_policy_sha256, pol["sha256"]))
     want = server_identity if server_identity is not None else srv
@@ -224,11 +248,11 @@ def continuity_check(lock, tools, mode="enforce", policy=None, exceptions=None, 
         _ev(rec, pol, mode, "server_identity_mismatch", None, exceptions, now, "baseline approved for %s, checked %s" % (want, server))
     if rec["baseline"]["age_days"] is not None and rec["baseline"]["age_days"] > pol["max_baseline_age_days"]:
         _ev(rec, pol, mode, "baseline_stale", None, exceptions, now, "%d days old; the policy allows %s" % (rec["baseline"]["age_days"], pol["max_baseline_age_days"]))
-    if complete is False:
-        _ev(rec, pol, mode, "tool_list_truncated", None, exceptions, now)
+    if not complete:
+        _ev(rec, pol, mode, "tool_list_truncated", None, exceptions, now, "the server offers %d tools; a v1 lockfile hashes the first %d" % (len(tools), LOCK_V1_MAX_TOOLS) if capped else None)
     for n in sorted(n for n in cur if n not in was):
         _ev(rec, pol, mode, "tool_added", n, exceptions, now)
-    if complete is not False:
+    if complete:
         for n in sorted(n for n in was if n not in cur):
             _ev(rec, pol, mode, "tool_removed", n, exceptions, now)
     parts = lock.get("parts") or None
@@ -245,6 +269,83 @@ def continuity_check(lock, tools, mode="enforce", policy=None, exceptions=None, 
                 any_ = True
         if not any_:
             _ev(rec, pol, mode, "tool_changed", n, exceptions, now, "the name or a field outside description, schema and annotations changed")
+    if not rec["events"]:
+        rec["events"].append({"class": "unchanged", "tool": None, "why": "the offered tools match the approved baseline", "policy_effect": pol["effects"]["unchanged"],
+                              "effect": _mode_effect(mode, "unchanged", pol["effects"]["unchanged"])})
+    return _finish(rec, mode)
+
+
+def _u16key(s):
+    return s.encode("utf-16-be", "surrogatepass")
+
+
+def _jcs_check(rec, pol, mode, lock, J, tools, complete, server, server_identity, expect_policy_sha256, exceptions, now, baseline_trust):
+    """1.15.0: the comparison on jcs-v1 (https://crawlcheck.io/spec/mcp-lockfile#jcs-v1), used when the lockfile carries a
+    jcs_v1 block (every CrawlCheck lockfile since 2026-11-07). Every tool is digested (no cap). A moved contract digest is
+    named description_changed / schema_changed from lock["parts"] when it has them; a moved extras digest is
+    annotations_changed when the annotations moved, otherwise tool_changed (title, icons, _meta or another member)."""
+    cj = jcs_v1(tools)
+    appr = _ms(lock.get("approved_at"))
+    srv = (lock.get("server") or {}).get("url") if isinstance(lock.get("server"), dict) else None
+    rec["baseline"] = {"alg": "jcs-v1", "tools_sha256": J["tools_sha256"], "extras_sha256": J.get("extras_sha256"), "approved_at": lock.get("approved_at"),
+                       "age_days": int(math.floor((now - appr) / 864e5)) if appr is not None else None, "server": srv, "per_part": bool(lock.get("parts")), "trust": baseline_trust}
+    rec["observed"] = {"alg": "jcs-v1", "tools_sha256": cj["tools_sha256"], "extras_sha256": None if cj["tools_sha256"] is None else cj["extras_sha256"], "count": len(tools), "complete": complete}
+    if expect_policy_sha256 and expect_policy_sha256 != pol["sha256"]:
+        _ev(rec, pol, mode, "policy_version_mismatch", None, exceptions, now, "expected %s, in force %s" % (expect_policy_sha256, pol["sha256"]))
+    want = server_identity if server_identity is not None else srv
+    if want and server and _strip(want) != _strip(server):
+        _ev(rec, pol, mode, "server_identity_mismatch", None, exceptions, now, "baseline approved for %s, checked %s" % (want, server))
+    if rec["baseline"]["age_days"] is not None and rec["baseline"]["age_days"] > pol["max_baseline_age_days"]:
+        _ev(rec, pol, mode, "baseline_stale", None, exceptions, now, "%d days old; the policy allows %s" % (rec["baseline"]["age_days"], pol["max_baseline_age_days"]))
+    if cj["tools_sha256"] is None:
+        _ev(rec, pol, mode, "response_malformed", None, exceptions, now, "the tool list has no jcs-v1 digest: " + cj["reason"])
+        return _finish(rec, mode)
+    names = [r["name"] for r in cj["tools"]]
+    dups = []
+    for i in range(1, len(names)):
+        if names[i - 1] == names[i] and names[i] not in dups:
+            dups.append(names[i])
+    if dups:
+        _ev(rec, pol, mode, "response_malformed", None, exceptions, now, "the tool list names a tool more than once: " + ", ".join(dups[:10]))
+        return _finish(rec, mode)
+    if not complete:
+        _ev(rec, pol, mode, "tool_list_truncated", None, exceptions, now)
+    was = {r["name"]: r for r in J["tools"] if isinstance(r, dict) and isinstance(r.get("name"), str)}
+    cur = {r["name"]: r for r in cj["tools"]}
+    raw = {t["name"]: t for t in tools}
+    n0 = len(rec["events"])
+    for n in sorted((n for n in cur if n not in was), key=_u16key):
+        _ev(rec, pol, mode, "tool_added", n, exceptions, now)
+    if complete:
+        for n in sorted((n for n in was if n not in cur), key=_u16key):
+            _ev(rec, pol, mode, "tool_removed", n, exceptions, now)
+    parts = lock.get("parts") or None
+    for n in sorted((n for n in cur if n in was), key=_u16key):
+        a, b = was[n], cur[n]
+        dc, dx = a.get("contract") != b["contract"], a.get("extras") != b["extras"]
+        if not dc and not dx:
+            continue
+        P = parts.get(n) if isinstance(parts, dict) else None
+        q = lock_tool_parts(raw[n]) if P else None
+        moved = []
+        if dc and P and q["description_sha256"] != P.get("description_sha256"):
+            _ev(rec, pol, mode, "description_changed", n, exceptions, now)
+            moved.append("d")
+        if dc and P and q["schema_sha256"] != P.get("schema_sha256"):
+            _ev(rec, pol, mode, "schema_changed", n, exceptions, now)
+            moved.append("s")
+        if dx and P and q["annotations_sha256"] != P.get("annotations_sha256"):
+            _ev(rec, pol, mode, "annotations_changed", n, exceptions, now)
+            moved.append("a")
+        rest = []
+        if dc and "d" not in moved and "s" not in moved:
+            rest.append("the contract changed outside description and inputSchema (outputSchema)" if P else "the contract (description, inputSchema or outputSchema) changed")
+        if dx and "a" not in moved:
+            rest.append("a member outside the contract changed (title, icons, _meta or another; not annotations)" if P else "a member outside the contract changed (title, annotations, icons, _meta or another)")
+        if rest:
+            _ev(rec, pol, mode, "tool_changed", n, exceptions, now, "; ".join(rest))
+    if complete and len(rec["events"]) == n0 and (cj["tools_sha256"] != J["tools_sha256"] or (cj["extras_sha256"] or "") != (J.get("extras_sha256") or "")):
+        _ev(rec, pol, mode, "response_malformed", None, exceptions, now, "the tool set's jcs-v1 digest differs from the approved one, but no single tool's does")
     if not rec["events"]:
         rec["events"].append({"class": "unchanged", "tool": None, "why": "the offered tools match the approved baseline", "policy_effect": pol["effects"]["unchanged"],
                               "effect": _mode_effect(mode, "unchanged", pol["effects"]["unchanged"])})

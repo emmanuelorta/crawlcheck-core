@@ -5,6 +5,7 @@ import * as M from "./mcp.js";
 import * as R from "./revocations.js";
 import * as C from "./continuity.js";
 import * as F from "./frameworks.js";
+import * as J from "./jcs.js";
 export const CONTINUITY_DEFAULT_POLICY = C.CONTINUITY_DEFAULT_POLICY;
 export const CONTINUITY_CHANGE_CLASSES = C.CONTINUITY_CHANGE_CLASSES;
 export const CONTINUITY_FAILURE_CLASSES = C.CONTINUITY_FAILURE_CLASSES;
@@ -16,6 +17,14 @@ export const continuityFailure = C.continuityFailure;
 export const continuityPolicy = C.continuityPolicy;
 /** Per-part hashes (description, schema, annotations) so a change can be named. Store lockParts(tools) as lock.parts. */
 export const lockToolParts = C.lockToolParts;
+/** jcs-v1 contract and extras digests of a tools/list result (every page; no cap). Equals lock.jcs_v1 from /api/v1/mcp/lock. */
+export const jcsV1 = J.jcsV1;
+/** RFC 8785 canonical JSON. */
+export const jcsCanon = J.jcsCanon;
+export const jcsContract = J.jcsContract;
+export const jcsExtras = J.jcsExtras;
+/** The most tools a v1 lockfile hashes; a longer list is compared on that many and marked incomplete. */
+export const LOCK_V1_MAX_TOOLS = C.LOCK_V1_MAX_TOOLS;
 export const lockParts = C.lockParts;
 /** The separate acceptance questions for one decision receipt. Act on policy_result, never on integrity_valid alone. */
 /** Which continuity failure class a refused guard() result is. */
@@ -93,12 +102,16 @@ export async function lockToolHash(t) {
     return sha256Hex(V.canon({ name: t?.name ?? null, description: t?.description ?? null, inputSchema: t?.inputSchema ?? t?.input_schema ?? null, annotations: t?.annotations ?? null }));
 }
 /** Hash a tools/list result the way a lockfile does: per tool, and the sorted per-tool hashes joined by \n. No network, no key. */
+/** 1.14.0: also jcs_v1 (the jcs-v1 digests over every tool), and complete: false with offered when the list is longer than a v1 lockfile hashes (LOCK_V1_MAX_TOOLS). */
 export async function lockFromTools(tools) {
-    const rows = [];
-    for (const t of (tools ?? []).slice(0, 300))
+    const rows = [], all = tools ?? [];
+    for (const t of all.slice(0, LOCK_V1_MAX_TOOLS))
         rows.push({ name: String(t?.name ?? "").slice(0, 120), sha256: await lockToolHash(t) });
     rows.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : a.sha256 < b.sha256 ? -1 : 1));
-    return { tools: rows, tools_sha256: await sha256Hex(rows.map((r) => r.sha256).sort().join("\n")), count: rows.length };
+    const out = { tools: rows, tools_sha256: await sha256Hex(rows.map((r) => r.sha256).sort().join("\n")), count: rows.length, complete: all.length <= LOCK_V1_MAX_TOOLS, jcs_v1: await jcsV1(all) };
+    if (!out.complete)
+        out.offered = all.length;
+    return out;
 }
 /** Compare a lockfile with the tools a server lists now. Anything added, removed or changed means "block" until a person re-approves. Offline. */
 export async function checkLock(lock, tools) {
@@ -109,7 +122,16 @@ export async function checkLock(lock, tools) {
     now.tools.forEach((r) => { cur[r.name] = r.sha256; });
     const added = Object.keys(cur).filter((n) => !(n in was)), removed = Object.keys(was).filter((n) => !(n in cur)), modified = Object.keys(cur).filter((n) => n in was && was[n] !== cur[n]);
     const same = lock?.tools_sha256 === now.tools_sha256 && !added.length && !removed.length && !modified.length;
-    return { verdict: same ? "unchanged" : "changed", decision: same ? "connect" : "block", approved_tools_sha256: lock?.tools_sha256 ?? "", current_tools_sha256: now.tools_sha256, added, removed, modified };
+    const a = lock?.jcs_v1, b = now.jcs_v1;
+    const jc = { alg: "jcs-v1", current_tools_sha256: b.tools_sha256 ?? null, current_extras_sha256: b.tools_sha256 === null ? null : b.extras_sha256 ?? null };
+    if (a && typeof a.tools_sha256 === "string" && a.tools_sha256) {
+        jc.approved_tools_sha256 = a.tools_sha256;
+        jc.contract_unchanged = !!b.tools_sha256 && a.tools_sha256 === b.tools_sha256;
+        jc.extras_unchanged = (a.extras_sha256 || null) === (b.extras_sha256 || null);
+    }
+    if (!now.complete)
+        return { verdict: "incomplete", decision: "block", approved_tools_sha256: lock?.tools_sha256 ?? "", current_tools_sha256: now.tools_sha256, added, removed: [], modified, jcs_v1: jc, offered: now.offered }; // never connect on part of a list
+    return { verdict: same ? "unchanged" : "changed", decision: same ? "connect" : "block", approved_tools_sha256: lock?.tools_sha256 ?? "", current_tools_sha256: now.tools_sha256, added, removed, modified, jcs_v1: jc };
 }
 /** The operation for calling an MCP tool: its name, the sha256 of its definition (as in the lockfile) and the scopes you will use. */
 export async function toolOperation(tool, scopes) { const o = { tool: String(tool?.name ?? ""), tool_schema_sha256: await lockToolHash(tool) }; if (scopes && scopes.length)

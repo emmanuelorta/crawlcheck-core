@@ -17,6 +17,8 @@
 // request is never sent.
 import { normalizeDomain } from "./index.js";
 import { checkLock, toolOperation } from "./index.js";
+/** The most tools/list pages read before the list is called incomplete (tool_list_truncated). */
+const MAX_TOOL_PAGES = 1000;
 import { continuityCheck, continuityFailure, continuityClassOf, verifyLockBaseline, baselineRefusal } from "./continuity.js";
 
 export class McpPreflightRefused extends Error {
@@ -128,6 +130,7 @@ export function mcpPreflight(cc, opts = {}) {
         return rec;
       }
       if (!opts.lock) { state.approved = null; return null; }
+      if (meta && meta.nextCursor) throw new McpPreflightRefused("connect", "the server's tool list could not be read in full (a further page was not read); nothing is approved on part of a list", { receipt: state.receipt });
       const lc = await checkLock(baseLock, tools || []);
       state.lockCheck = lc; state.approved = new Set((opts.lock.tools || []).map(function (t) { return t.name; }));
       if (lc.decision !== "connect") throw new McpPreflightRefused("connect", "the server's tools differ from the approved lockfile (added " + lc.added.length + ", removed " + lc.removed.length + ", modified " + lc.modified.length + ")", { lock: lc });
@@ -175,7 +178,20 @@ export function withPreflight(client, cc, opts = {}) {
     if (opts.lock || opts.confirmDestructive || (opts.toolReceipts || "write") !== "none") {
       let list = [];
       let meta = null, bad = false;
-      try { const t = typeof client.listTools === "function" ? await client.listTools() : null; list = (t && t.tools) || []; meta = t ? { nextCursor: t.nextCursor || null } : null; if (t && !Array.isArray(t.tools)) bad = true; } catch (e) { list = []; bad = true; }
+      try {   // 1.14.0: every page (nextCursor followed); a list whose pages could not all be read is marked incomplete
+        if (typeof client.listTools === "function") {
+          let cursor = null; const seen = new Set();
+          for (;;) {
+            const t = await client.listTools(cursor ? { cursor } : undefined);
+            if (!t) break;
+            if (!Array.isArray(t.tools)) { bad = true; break; }
+            list = list.concat(t.tools);
+            const next = t.nextCursor || null; meta = { nextCursor: next };
+            if (!next || seen.has(next) || seen.size >= MAX_TOOL_PAGES - 1) break;
+            seen.add(next); cursor = next;
+          }
+        }
+      } catch (e) { list = []; bad = true; }
       if (!Array.isArray(list)) { list = []; bad = true; }
       list.forEach(function (t) { if (t && t.name) tools[t.name] = t; });
       if (opts.lock || opts.confirmDestructive) try { await pf.afterConnect(bad && opts.continuity ? null : list, meta); } catch (e) { try { if (typeof client.close === "function") await client.close(); } catch (e2) { } throw e; }

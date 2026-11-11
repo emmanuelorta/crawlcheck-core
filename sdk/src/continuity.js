@@ -16,6 +16,7 @@
 // Effects, weakest to strongest: proceed, proceed_recorded (an approved exception), refresh, pause_tool, pause, deny.
 // A failed exact comparison is never overridden by an interpretive assessment: nothing here reads descriptions for intent.
 import { canon, keyPolicyCheck } from "./verify.js";
+import { jcsV1 } from "./jcs.js";
 
 const subtle = globalThis.crypto && globalThis.crypto.subtle;
 const enc = new TextEncoder();
@@ -58,8 +59,16 @@ export async function lockToolParts(t) {
   const schema = t?.inputSchema ?? t?.input_schema ?? null;
   return { description_sha256: await sha256Hex(canon(t?.description ?? null)), schema_sha256: await sha256Hex(canon(schema)), annotations_sha256: await sha256Hex(canon(t?.annotations ?? null)) };
 }
-/** parts for a lockfile: { [tool name]: lockToolParts(tool) }. Store it as lock.parts next to lock.tools. */
-export async function lockParts(tools) { const o = {}; for (const t of (tools ?? []).slice(0, 300)) o[String(t?.name ?? "").slice(0, 120)] = await lockToolParts(t); return o; }
+/** parts for a lockfile: { [tool name]: lockToolParts(tool) }, for every tool given. Store it as lock.parts next to lock.tools. */
+export async function lockParts(tools) { const o = {}; for (const t of (tools ?? [])) o[String(t?.name ?? "").slice(0, 120)] = await lockToolParts(t); return o; }
+/** The most tools a v1 (lk) lockfile hashes; CrawlCheck's lockfile endpoint hashes the same. A longer list is compared on
+ * its first LOCK_V1_MAX_TOOLS tools and the read is marked incomplete (tool_list_truncated), never cut silently. */
+export const LOCK_V1_MAX_TOOLS = 300;
+/** The lockfile's jcs-v1 block when it can be compared on (a digest, and a per-tool row for every tool it counted). */
+function jcsBaseline(lock) {
+  const J = lock && lock.jcs_v1;
+  return J && typeof J === "object" && J.alg === "jcs-v1" && typeof J.tools_sha256 === "string" && J.tools_sha256 && Array.isArray(J.tools) && J.tools.length === J.count ? J : null;
+}
 async function toolHash(t) { return sha256Hex(canon({ name: t?.name ?? null, description: t?.description ?? null, inputSchema: t?.inputSchema ?? t?.input_schema ?? null, annotations: t?.annotations ?? null })); }
 
 /** The policy in force: the default with the operator's values over it, and its sha256 (what the record names). */
@@ -110,27 +119,33 @@ function ev(rec, pol, mode, cls, tool, exceptions, now, detail) {
  * Compare the offered tools with the approved baseline (an mcp-lockfile, ideally with lock.parts) and apply the policy.
  * opts: mode ("observe" | "review" | "enforce", default "enforce"), policy, exceptions [{tool, class, until, by, reason}],
  * complete (false when tools/list returned a nextCursor you did not follow), server (the URL checked), serverIdentity
- * (the URL the baseline was approved for; differs -> server_identity_mismatch), expectPolicySha256, now (ms).
+ * (the URL the baseline was approved for; differs -> server_identity_mismatch), expectPolicySha256, now (ms), digest
+ * ("lk-v1" to compare on the v1 hashes even when the lockfile carries jcs_v1; by default a lockfile with jcs_v1 is
+ * compared on jcs-v1, over every tool). A v1 comparison of more than LOCK_V1_MAX_TOOLS tools is marked incomplete.
  */
 export async function continuityCheck(lock, tools, opts = {}) {
   const mode = opts.mode || "enforce"; if (["observe", "review", "enforce"].indexOf(mode) < 0) throw new Error("mode must be observe, review or enforce");
   const pol = await continuityPolicy(opts.policy), now = opts.now ?? Date.now(), X = opts.exceptions;
   const rec = base(opts, pol, mode);
   if (!Array.isArray(tools)) { ev(rec, pol, mode, "response_malformed", null, X, now); return finish(rec, mode); }
-  const rows = []; for (const t of tools.slice(0, 300)) rows.push({ name: String(t?.name ?? "").slice(0, 120), sha256: await toolHash(t), t });
+  const J = opts.digest === "lk-v1" ? null : jcsBaseline(lock);
+  if (J) return jcsCheck(rec, pol, mode, lock, J, tools, opts, X, now);
+  const capped = tools.length > LOCK_V1_MAX_TOOLS, complete = opts.complete !== false && !capped;
+  const rows = []; for (const t of tools.slice(0, LOCK_V1_MAX_TOOLS)) rows.push({ name: String(t?.name ?? "").slice(0, 120), sha256: await toolHash(t), t });
   const cur = {}; rows.forEach((r) => { cur[r.name] = r; });
   const listHash = await sha256Hex(rows.map((r) => r.sha256).sort().join("\n"));
   const was = {}; (lock?.tools ?? []).forEach((r) => { was[r.name] = r.sha256; });
   const approvedAt = Date.parse(lock?.approved_at ?? "");
   rec.baseline = { tools_sha256: lock?.tools_sha256 ?? null, approved_at: lock?.approved_at ?? null, age_days: isFinite(approvedAt) ? Math.floor((now - approvedAt) / 864e5) : null, server: lock?.server?.url ?? null, per_part: !!(lock && lock.parts), trust: opts.baselineTrust ?? null };
-  rec.observed = { tools_sha256: listHash, count: rows.length, complete: opts.complete !== false };
+  rec.observed = { tools_sha256: listHash, count: rows.length, complete };
+  if (capped) rec.observed.offered = tools.length;
   if (opts.expectPolicySha256 && opts.expectPolicySha256 !== pol.sha256) ev(rec, pol, mode, "policy_version_mismatch", null, X, now, "expected " + opts.expectPolicySha256 + ", in force " + pol.sha256);
   const want = opts.serverIdentity ?? lock?.server?.url ?? null;
   if (want && opts.server && String(want).replace(/\/+$/, "") !== String(opts.server).replace(/\/+$/, "")) ev(rec, pol, mode, "server_identity_mismatch", null, X, now, "baseline approved for " + want + ", checked " + opts.server);
   if (rec.baseline.age_days !== null && rec.baseline.age_days > pol.max_baseline_age_days) ev(rec, pol, mode, "baseline_stale", null, X, now, rec.baseline.age_days + " days old; the policy allows " + pol.max_baseline_age_days);
-  if (opts.complete === false) ev(rec, pol, mode, "tool_list_truncated", null, X, now);
+  if (!complete) ev(rec, pol, mode, "tool_list_truncated", null, X, now, capped ? "the server offers " + tools.length + " tools; a v1 lockfile hashes the first " + LOCK_V1_MAX_TOOLS : undefined);
   for (const n of Object.keys(cur).filter((n) => !(n in was)).sort()) ev(rec, pol, mode, "tool_added", n, X, now);
-  if (opts.complete !== false) for (const n of Object.keys(was).filter((n) => !(n in cur)).sort()) ev(rec, pol, mode, "tool_removed", n, X, now);
+  if (complete) for (const n of Object.keys(was).filter((n) => !(n in cur)).sort()) ev(rec, pol, mode, "tool_removed", n, X, now);
   for (const n of Object.keys(cur).filter((n) => n in was && was[n] !== cur[n].sha256).sort()) {
     const P = lock && lock.parts && lock.parts[n];
     if (!P) { ev(rec, pol, mode, "tool_changed", n, X, now); continue; }
@@ -140,6 +155,47 @@ export async function continuityCheck(lock, tools, opts = {}) {
     if (q.annotations_sha256 !== P.annotations_sha256) { ev(rec, pol, mode, "annotations_changed", n, X, now); any = true; }
     if (!any) ev(rec, pol, mode, "tool_changed", n, X, now, "the name or a field outside description, schema and annotations changed");
   }
+  if (!rec.events.length) rec.events.push({ class: "unchanged", tool: null, why: "the offered tools match the approved baseline", policy_effect: pol.effects.unchanged, effect: modeEffect(mode, "unchanged", pol.effects.unchanged) });
+  return finish(rec, mode);
+}
+
+// 1.14.0: the comparison on jcs-v1 (https://crawlcheck.io/spec/mcp-lockfile#jcs-v1), used when the lockfile carries a
+// jcs_v1 block (every CrawlCheck lockfile since 2026-11-07). Every tool is digested (no cap). A moved contract digest is
+// named description_changed / schema_changed from lock.parts when it has them; a moved extras digest is
+// annotations_changed when the annotations moved, otherwise tool_changed (title, icons, _meta or another member).
+async function jcsCheck(rec, pol, mode, lock, J, tools, opts, X, now) {
+  const complete = opts.complete !== false, cj = await jcsV1(tools, { partial: false });
+  const approvedAt = Date.parse(lock?.approved_at ?? "");
+  rec.baseline = { alg: "jcs-v1", tools_sha256: J.tools_sha256, extras_sha256: J.extras_sha256 ?? null, approved_at: lock?.approved_at ?? null, age_days: isFinite(approvedAt) ? Math.floor((now - approvedAt) / 864e5) : null, server: lock?.server?.url ?? null, per_part: !!(lock && lock.parts), trust: opts.baselineTrust ?? null };
+  rec.observed = { alg: "jcs-v1", tools_sha256: cj.tools_sha256, extras_sha256: cj.tools_sha256 === null ? null : cj.extras_sha256, count: Array.isArray(tools) ? tools.length : 0, complete };
+  if (opts.expectPolicySha256 && opts.expectPolicySha256 !== pol.sha256) ev(rec, pol, mode, "policy_version_mismatch", null, X, now, "expected " + opts.expectPolicySha256 + ", in force " + pol.sha256);
+  const want = opts.serverIdentity ?? lock?.server?.url ?? null;
+  if (want && opts.server && String(want).replace(/\/+$/, "") !== String(opts.server).replace(/\/+$/, "")) ev(rec, pol, mode, "server_identity_mismatch", null, X, now, "baseline approved for " + want + ", checked " + opts.server);
+  if (rec.baseline.age_days !== null && rec.baseline.age_days > pol.max_baseline_age_days) ev(rec, pol, mode, "baseline_stale", null, X, now, rec.baseline.age_days + " days old; the policy allows " + pol.max_baseline_age_days);
+  if (cj.tools_sha256 === null) { ev(rec, pol, mode, "response_malformed", null, X, now, "the tool list has no jcs-v1 digest: " + cj.reason); return finish(rec, mode); }
+  const names = cj.tools.map((r) => r.name), dups = names.filter((n, i) => i > 0 && names[i - 1] === n).filter((n, i, a) => a.indexOf(n) === i);
+  if (dups.length) { ev(rec, pol, mode, "response_malformed", null, X, now, "the tool list names a tool more than once: " + dups.slice(0, 10).join(", ")); return finish(rec, mode); }
+  if (!complete) ev(rec, pol, mode, "tool_list_truncated", null, X, now);
+  const was = {}, cur = {}, raw = {};
+  J.tools.forEach((r) => { if (r && typeof r.name === "string") was[r.name] = r; });
+  cj.tools.forEach((r) => { cur[r.name] = r; });
+  tools.forEach((t) => { raw[t.name] = t; });
+  const n0 = rec.events.length;
+  for (const n of Object.keys(cur).filter((n) => !(n in was)).sort()) ev(rec, pol, mode, "tool_added", n, X, now);
+  if (complete) for (const n of Object.keys(was).filter((n) => !(n in cur)).sort()) ev(rec, pol, mode, "tool_removed", n, X, now);
+  for (const n of Object.keys(cur).filter((n) => n in was).sort()) {
+    const a = was[n], b = cur[n], dc = a.contract !== b.contract, dx = a.extras !== b.extras;
+    if (!dc && !dx) continue;
+    const P = lock && lock.parts && lock.parts[n], q = P ? await lockToolParts(raw[n]) : null, moved = [];
+    if (dc && P && q.description_sha256 !== P.description_sha256) { ev(rec, pol, mode, "description_changed", n, X, now); moved.push("d"); }
+    if (dc && P && q.schema_sha256 !== P.schema_sha256) { ev(rec, pol, mode, "schema_changed", n, X, now); moved.push("s"); }
+    if (dx && P && q.annotations_sha256 !== P.annotations_sha256) { ev(rec, pol, mode, "annotations_changed", n, X, now); moved.push("a"); }
+    const rest = [];
+    if (dc && !moved.some((m) => m === "d" || m === "s")) rest.push(P ? "the contract changed outside description and inputSchema (outputSchema)" : "the contract (description, inputSchema or outputSchema) changed");
+    if (dx && moved.indexOf("a") < 0) rest.push(P ? "a member outside the contract changed (title, icons, _meta or another; not annotations)" : "a member outside the contract changed (title, annotations, icons, _meta or another)");
+    if (rest.length) ev(rec, pol, mode, "tool_changed", n, X, now, rest.join("; "));
+  }
+  if (complete && rec.events.length === n0 && (cj.tools_sha256 !== J.tools_sha256 || (cj.extras_sha256 || "") !== (J.extras_sha256 || ""))) ev(rec, pol, mode, "response_malformed", null, X, now, "the tool set's jcs-v1 digest differs from the approved one, but no single tool's does");
   if (!rec.events.length) rec.events.push({ class: "unchanged", tool: null, why: "the offered tools match the approved baseline", policy_effect: pol.effects.unchanged, effect: modeEffect(mode, "unchanged", pol.effects.unchanged) });
   return finish(rec, mode);
 }

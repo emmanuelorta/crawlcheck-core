@@ -1,0 +1,1603 @@
+{
+ "v": 1,
+ "about": "jcs-v1 golden values (https://crawlcheck.io/spec/mcp-lockfile#jcs-v1). Every expect is the jcs_v1 block CrawlCheck's lockfile endpoint returned on 2026-11-11 for POST /api/v1/mcp/lock {tools: <tools_json>}; live is GET /api/v1/mcp/lock?url=https://crawlcheck.io/mcp with the tools/list read the same minute. Parse tools_json with the language's own JSON parser (tools_json_deflate_b64: zlib, then UTF-8) and digest it: both SDKs must reproduce expect exactly.",
+ "spec_vectors": {
+  "empty_list_tools_sha256": "sha256-T1PNoYwrqgwDVLtfmj7L5e0Sq02OEbqHPC8RFhICuUU=",
+  "read_file": {
+   "canonical_contract": "{\"description\":\"Read a file from disk.\",\"inputSchema\":{\"properties\":{\"path\":{\"type\":\"string\"}},\"required\":[\"path\"],\"type\":\"object\"},\"name\":\"read_file\"}",
+   "contract": "73a730ee6b28fe0524038cd5082e673a108617d258153d44daafb2aa8eeef1f6",
+   "extras": "b08036e71687b7855244656f049eec719c13c214eb9575731f118331e565cb3c",
+   "tools_sha256": "sha256-pUO5TdOtj4yR/mh2VDcu4y6axwVix4xgwST6cFkdd3g=",
+   "extras_sha256": "sha256-Kmdz0r/Y+YnXALUVpJTXG8TUbKQhoFKQ7CeEpIw+1Oc="
+  }
+ },
+ "cases": [
+  {
+   "name": "empty_list",
+   "tools_json": "[]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 0,
+    "tools_sha256": "sha256-T1PNoYwrqgwDVLtfmj7L5e0Sq02OEbqHPC8RFhICuUU=",
+    "extras_sha256": "",
+    "tools": []
+   }
+  },
+  {
+   "name": "spec_read_file",
+   "tools_json": "[{\"name\": \"read_file\", \"title\": \"Read file\", \"description\": \"Read a file from disk.\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}}, \"required\": [\"path\"]}, \"annotations\": {\"readOnlyHint\": true}}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-pUO5TdOtj4yR/mh2VDcu4y6axwVix4xgwST6cFkdd3g=",
+    "extras_sha256": "sha256-Kmdz0r/Y+YnXALUVpJTXG8TUbKQhoFKQ7CeEpIw+1Oc=",
+    "tools": [
+     {
+      "name": "read_file",
+      "contract": "73a730ee6b28fe0524038cd5082e673a108617d258153d44daafb2aa8eeef1f6",
+      "extras": "b08036e71687b7855244656f049eec719c13c214eb9575731f118331e565cb3c"
+     }
+    ]
+   }
+  },
+  {
+   "name": "description_absent",
+   "tools_json": "[{\"name\":\"a\",\"inputSchema\":{\"type\":\"object\"}}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-MwrOWqVSQqdB8YxqwJMCRbBEekhg64pOkvEzT667iNc=",
+    "extras_sha256": "",
+    "tools": [
+     {
+      "name": "a",
+      "contract": "2316f1beb50ff5c032263e97ec1ba9b9d1025ae03dd4fad15ef75b7a87e51bce",
+      "extras": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+     }
+    ]
+   }
+  },
+  {
+   "name": "description_empty",
+   "tools_json": "[{\"name\":\"a\",\"description\":\"\",\"inputSchema\":{\"type\":\"object\"}}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-MwrOWqVSQqdB8YxqwJMCRbBEekhg64pOkvEzT667iNc=",
+    "extras_sha256": "",
+    "tools": [
+     {
+      "name": "a",
+      "contract": "2316f1beb50ff5c032263e97ec1ba9b9d1025ae03dd4fad15ef75b7a87e51bce",
+      "extras": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+     }
+    ]
+   }
+  },
+  {
+   "name": "description_null",
+   "tools_json": "[{\"name\":\"a\",\"description\":null,\"inputSchema\":{\"type\":\"object\"}}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-MwrOWqVSQqdB8YxqwJMCRbBEekhg64pOkvEzT667iNc=",
+    "extras_sha256": "",
+    "tools": [
+     {
+      "name": "a",
+      "contract": "2316f1beb50ff5c032263e97ec1ba9b9d1025ae03dd4fad15ef75b7a87e51bce",
+      "extras": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+     }
+    ]
+   }
+  },
+  {
+   "name": "description_number",
+   "tools_json": "[{\"name\":\"a\",\"description\":5,\"inputSchema\":{\"type\":\"object\"}}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-MwrOWqVSQqdB8YxqwJMCRbBEekhg64pOkvEzT667iNc=",
+    "extras_sha256": "",
+    "tools": [
+     {
+      "name": "a",
+      "contract": "2316f1beb50ff5c032263e97ec1ba9b9d1025ae03dd4fad15ef75b7a87e51bce",
+      "extras": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+     }
+    ]
+   }
+  },
+  {
+   "name": "inputschema_absent",
+   "tools_json": "[{\"name\":\"a\",\"description\":\"\"}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-mJLo0lgIeJfnpcEC1nxqVm59cRh0urbq1nAY+yhtLLQ=",
+    "extras_sha256": "",
+    "tools": [
+     {
+      "name": "a",
+      "contract": "5c0e719c895bd85feef73ba33890b3739689ae8db3b14a8067674a760376702b",
+      "extras": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+     }
+    ]
+   }
+  },
+  {
+   "name": "inputschema_empty",
+   "tools_json": "[{\"name\":\"a\",\"description\":\"\",\"inputSchema\":{}}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-mJLo0lgIeJfnpcEC1nxqVm59cRh0urbq1nAY+yhtLLQ=",
+    "extras_sha256": "",
+    "tools": [
+     {
+      "name": "a",
+      "contract": "5c0e719c895bd85feef73ba33890b3739689ae8db3b14a8067674a760376702b",
+      "extras": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+     }
+    ]
+   }
+  },
+  {
+   "name": "inputschema_null",
+   "tools_json": "[{\"name\":\"a\",\"description\":\"\",\"inputSchema\":null}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-mJLo0lgIeJfnpcEC1nxqVm59cRh0urbq1nAY+yhtLLQ=",
+    "extras_sha256": "",
+    "tools": [
+     {
+      "name": "a",
+      "contract": "5c0e719c895bd85feef73ba33890b3739689ae8db3b14a8067674a760376702b",
+      "extras": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+     }
+    ]
+   }
+  },
+  {
+   "name": "inputschema_array",
+   "tools_json": "[{\"name\":\"a\",\"description\":\"\",\"inputSchema\":[]}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-mJLo0lgIeJfnpcEC1nxqVm59cRh0urbq1nAY+yhtLLQ=",
+    "extras_sha256": "",
+    "tools": [
+     {
+      "name": "a",
+      "contract": "5c0e719c895bd85feef73ba33890b3739689ae8db3b14a8067674a760376702b",
+      "extras": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+     }
+    ]
+   }
+  },
+  {
+   "name": "outputschema_empty",
+   "tools_json": "[{\"name\":\"a\",\"description\":\"\",\"inputSchema\":{},\"outputSchema\":{}}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-xHIlcEQTM+McmtPz7vQxgWIseDLYbuwqvvrakKRlTlE=",
+    "extras_sha256": "",
+    "tools": [
+     {
+      "name": "a",
+      "contract": "95e6af5fe119cce6cd8e4e6045847f1f7be40fd6a0b3a4bf46fa6e2094129f6d",
+      "extras": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+     }
+    ]
+   }
+  },
+  {
+   "name": "outputschema_string",
+   "tools_json": "[{\"name\":\"a\",\"description\":\"\",\"inputSchema\":{},\"outputSchema\":\"x\"}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-mJLo0lgIeJfnpcEC1nxqVm59cRh0urbq1nAY+yhtLLQ=",
+    "extras_sha256": "",
+    "tools": [
+     {
+      "name": "a",
+      "contract": "5c0e719c895bd85feef73ba33890b3739689ae8db3b14a8067674a760376702b",
+      "extras": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+     }
+    ]
+   }
+  },
+  {
+   "name": "annotations_empty",
+   "tools_json": "[{\"name\":\"a\",\"description\":\"\",\"inputSchema\":{},\"annotations\":{}}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-mJLo0lgIeJfnpcEC1nxqVm59cRh0urbq1nAY+yhtLLQ=",
+    "extras_sha256": "sha256-Dgn5htTFvnKcaPiYmUoXI4j/ONTLKWqAnxohjIrjYcA=",
+    "tools": [
+     {
+      "name": "a",
+      "contract": "5c0e719c895bd85feef73ba33890b3739689ae8db3b14a8067674a760376702b",
+      "extras": "477c6c8d2feb4a982a232be8ca3dc31e9fcb0bdded48b2ac55f59760601122d6"
+     }
+    ]
+   }
+  },
+  {
+   "name": "annotations_null",
+   "tools_json": "[{\"name\":\"a\",\"description\":\"\",\"inputSchema\":{},\"annotations\":null}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-mJLo0lgIeJfnpcEC1nxqVm59cRh0urbq1nAY+yhtLLQ=",
+    "extras_sha256": "sha256-SNP+dsmRsQ3mm6dYK4VRqY+R4cQmJTKKU9FkhFqlN40=",
+    "tools": [
+     {
+      "name": "a",
+      "contract": "5c0e719c895bd85feef73ba33890b3739689ae8db3b14a8067674a760376702b",
+      "extras": "3943b000d6835632bd8fab94e1f0963a428131cbf066c8dc9ff74d693969a675"
+     }
+    ]
+   }
+  },
+  {
+   "name": "title_empty",
+   "tools_json": "[{\"name\":\"a\",\"description\":\"\",\"inputSchema\":{},\"title\":\"\"}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-mJLo0lgIeJfnpcEC1nxqVm59cRh0urbq1nAY+yhtLLQ=",
+    "extras_sha256": "sha256-ONKGVh1/ofI1OF3rCduuFsiCOjoPqDGz5jHbf0PjG3M=",
+    "tools": [
+     {
+      "name": "a",
+      "contract": "5c0e719c895bd85feef73ba33890b3739689ae8db3b14a8067674a760376702b",
+      "extras": "593a2b6dea67475c9c49f525bfa98a8b4161a10dfd0833fa9b3856f80a75d7ee"
+     }
+    ]
+   }
+  },
+  {
+   "name": "numbers",
+   "tools_json": "[{\"name\":\"n\",\"inputSchema\":{\"a\":1.0,\"b\":1e21,\"c\":1e-7,\"d\":0.1,\"e\":-0,\"f\":-0.0,\"g\":123456789012345678901,\"h\":5e-324,\"i\":1.5e300,\"j\":9007199254740993,\"k\":100,\"l\":1E2,\"m\":0.000001,\"n\":123e-20,\"o\":-1.25e-8}}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-9OrEi0IeHM7gB+X16yIeOrgE7yhXtroS8S6zH2HpIO0=",
+    "extras_sha256": "",
+    "tools": [
+     {
+      "name": "n",
+      "contract": "81c6abc6d40c09a673c0d4cb65f0489af1cc123ee68286982a1bfc32818202cd",
+      "extras": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+     }
+    ]
+   }
+  },
+  {
+   "name": "key_order_utf16",
+   "tools_json": "[{\"name\":\"k\",\"inputSchema\":{\"\\ue000\":1,\"\\ud83d\\ude00\":2,\"a\":3,\"\\u00e9\":4,\"B\":5,\"_\":6,\"1\":7,\"10\":8,\"2\":9}}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-LfWcZT/SiLRwsmVMzAlEz5a+BCzv/Ar4tizbiHh6cv8=",
+    "extras_sha256": "",
+    "tools": [
+     {
+      "name": "k",
+      "contract": "995fe25fe0fa6213ab64a4afa1e721f15737fcbb94ef3c33723bc6c4179b5f33",
+      "extras": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+     }
+    ]
+   }
+  },
+  {
+   "name": "name_order_utf16",
+   "tools_json": "[{\"name\":\"\\ue000\"},{\"name\":\"\\ud83d\\ude00\"},{\"name\":\"b\"},{\"name\":\"B\"},{\"name\":\"\\u00e9\"},{\"name\":\"a b\"}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 6,
+    "tools_sha256": "sha256-En++1YBmEBzC0+RWBsmq+TEo4rISigh1JqowxNbDMOo=",
+    "extras_sha256": "",
+    "tools": [
+     {
+      "name": "B",
+      "contract": "ebf8167a01a7f39b09e9ffb737fb87c8f4b4ecdf81ef2a26eb45b3ed9c2fc296",
+      "extras": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+     },
+     {
+      "name": "a b",
+      "contract": "5cafd847bcfb08b7dabe0aea8e18991e82808e89a7dca795d700179cb25c3e90",
+      "extras": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+     },
+     {
+      "name": "b",
+      "contract": "cee789f784162e05f9aa8dbfc9b34474566baf35b1db8e997caf608de03dbcaf",
+      "extras": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+     },
+     {
+      "name": "\u00e9",
+      "contract": "843c82144f5c1e19f06e706fdd6384d8eb459ed804723603d0fa252acf6a5f62",
+      "extras": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+     },
+     {
+      "name": "\ud83d\ude00",
+      "contract": "2f812f2d48aaa0a3dedcd86d0c1a3e14e3e44e6be639d6a65ebdb54ce6db1740",
+      "extras": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+     },
+     {
+      "name": "\ue000",
+      "contract": "38bf0c2b2bfe3e8726140407e4a916532c7455c473affce8757e6750db5eca0e",
+      "extras": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+     }
+    ]
+   }
+  },
+  {
+   "name": "extras_name_order",
+   "tools_json": "[{\"name\":\"\\ue000\",\"title\":\"p\"},{\"name\":\"\\ud83d\\ude00\",\"title\":\"q\"},{\"name\":\"b\",\"title\":\"r\"}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 3,
+    "tools_sha256": "sha256-sFbyT9jVmNJq0xfazozh/Y/QvJiQy4PqLe+ABSYOF8g=",
+    "extras_sha256": "sha256-pRp0Np+YmJPNNINRZd+RsBATFfS9r8oYpQG4uorVp9o=",
+    "tools": [
+     {
+      "name": "b",
+      "contract": "cee789f784162e05f9aa8dbfc9b34474566baf35b1db8e997caf608de03dbcaf",
+      "extras": "8fb959439a071039b37ede06eecb35484604ec852fca72c7c810b29f5f51d156"
+     },
+     {
+      "name": "\ud83d\ude00",
+      "contract": "2f812f2d48aaa0a3dedcd86d0c1a3e14e3e44e6be639d6a65ebdb54ce6db1740",
+      "extras": "89490607da4a980fe162b7ef9706dd3fcb5bf7ca8c0aa4bb95c11b872d233fdc"
+     },
+     {
+      "name": "\ue000",
+      "contract": "38bf0c2b2bfe3e8726140407e4a916532c7455c473affce8757e6750db5eca0e",
+      "extras": "534e46d662646d2484a86b86059706bd4ea6bcb4343fe7637d74bc80e0bb41e8"
+     }
+    ]
+   }
+  },
+  {
+   "name": "strings_escapes",
+   "tools_json": "[{\"name\":\"s\",\"description\":\"q\\\"b\\\\s/\\u0001\\u001f\\u007f\\u2028\\u2029\\b\\f\\n\\r\\t\\u0000end\",\"title\":\"t\\u0000x\"}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-DF6QpgcsiYiN4CBbJsU+JfBJEVQ7VgRtbN4S/ORwqLE=",
+    "extras_sha256": "sha256-zTYXq1Js/FAZ/zYvkL1RSIi+hZ0XZ8Vm2q4hmAbGdPQ=",
+    "tools": [
+     {
+      "name": "s",
+      "contract": "1d62a42bb30d291478814929d471a15d5b9b77505b8d2fd51380e8a61629c040",
+      "extras": "5ccdd9d8845eb553c0f67cbacb60582f93950d76302a181a1d22489adb89cce3"
+     }
+    ]
+   }
+  },
+  {
+   "name": "lone_surrogates",
+   "tools_json": "[{\"name\":\"l\",\"description\":\"hi\\ud800lo\\udc00x\\udbff\",\"title\":\"t\\ud800\\udc00\\udfff\",\"annotations\":{\"k\\ud800\":\"v\"}}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-mu2zYgHXhVXweyfM3+VGy8r+RO1k7hrHKbyKHdun1sw=",
+    "extras_sha256": "sha256-8YjmrDbTLsieq8LuYxvbZgrRVCqPIWszx48xzhLFwVM=",
+    "tools": [
+     {
+      "name": "l",
+      "contract": "955cf8907a5748c45009c8baf54427323333b1b550288a2f2849796267f74b68",
+      "extras": "a8779fa015a7de3fa31c0ab7253653965f52707752bc21647b21e6a610d6012e"
+     }
+    ]
+   }
+  },
+  {
+   "name": "deep_extras",
+   "tools_json": "[{\"name\":\"d\",\"_meta\":{\"k13\":{\"k12\":{\"k11\":{\"k10\":{\"k9\":{\"k8\":{\"k7\":{\"k6\":{\"k5\":{\"k4\":{\"k3\":{\"k2\":{\"k1\":{\"k0\":1}}}}}}}}}}}}}},\"z\":[[[[[[[[[[[[[[1]]]]]]]]]]]]]]}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-IIoQC5F4dKB1pHP1Pt9RkGm7XJMsnBzYp8CDCFeeZSk=",
+    "extras_sha256": "sha256-J5zz/a9FGosAluTwij0EFsWigw5Thz3RIb52YlquwlY=",
+    "tools": [
+     {
+      "name": "d",
+      "contract": "80d18208af165a96107711951b69e34051aeb941deca8672930ff774a2150558",
+      "extras": "63019a08159fadbb0b588777aabd2f517a391e046d40ea157221782f117d0a6e"
+     }
+    ]
+   }
+  },
+  {
+   "name": "deep_contract",
+   "tools_json": "[{\"name\":\"d\",\"inputSchema\":{\"k15\":{\"k14\":{\"k13\":{\"k12\":{\"k11\":{\"k10\":{\"k9\":{\"k8\":{\"k7\":{\"k6\":{\"k5\":{\"k4\":{\"k3\":{\"k2\":{\"k1\":{\"k0\":1}}}}}}}}}}}}}}}}}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-dlA1jf54LxKzj39tK6A8SBAXdPZBUbuv3gInT/qJwow=",
+    "extras_sha256": "",
+    "tools": [
+     {
+      "name": "d",
+      "contract": "619f93d4535aec1be437f5f3a35ab7d557c21d2ef028d04f641bc7c4236f9dd9",
+      "extras": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+     }
+    ]
+   }
+  },
+  {
+   "name": "duplicate_names",
+   "tools_json": "[{\"name\":\"x\",\"description\":\"two\"},{\"name\":\"x\",\"description\":\"one\",\"title\":\"first\"},{\"name\":\"x\",\"description\":\"one\",\"title\":\"second\"}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 3,
+    "tools_sha256": "sha256-moUenmvJZ+xiytwVZsTBgMDLBOXvYxdDD6S4uEZPUKw=",
+    "extras_sha256": "sha256-5zP4jtKnLV8sm+Zc4APZzE5/lq69oqgJh8psFgYGe2o=",
+    "tools": [
+     {
+      "name": "x",
+      "contract": "3dd91e878401ed3f2641b81e1db37606ee3a147e47432147702935a3795287a5",
+      "extras": "c9454257e4b548449a8a655c5e655b6d421cb860e8428ddc07d81ed7bf067eb5"
+     },
+     {
+      "name": "x",
+      "contract": "3dd91e878401ed3f2641b81e1db37606ee3a147e47432147702935a3795287a5",
+      "extras": "c530a075cb2aebe07fe96db26af4e025730db99dcf29fc23f5edec3e3cfb47a4"
+     },
+     {
+      "name": "x",
+      "contract": "4841b68f954639f27ae49ebb5ea6b74fb86b141387eb539c2e40c843ee01600c",
+      "extras": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+     }
+    ]
+   }
+  },
+  {
+   "name": "oversized_extras",
+   "tools_json_deflate_b64": "eNrt3LEJgDAUQMFdfp0JXEUsIogEEhstBMnuYiPu4F33lnjjFVtuSwwxlzVSHOWoT50AAAAAAAAAAAAAAAAAAAAA/EL09B4o9pZr/Two9ujTDRxqNAo=",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 2,
+    "tools_sha256": "sha256-2pZQjdmGI2GNyF9Uo5/+yp4vUm8SUeb2DBl3ouEtNBQ=",
+    "extras_sha256": "sha256-M3WK0Z5qDkZkV1o1Ej26lms7xHGxlKZhGU6JzgtZC7k=",
+    "tools": [
+     {
+      "name": "big",
+      "contract": "7528165d96a197ea9b0ab71ba073204dec9ffa3624ccbe4cb19e25eafc98e725",
+      "extras": "121f020772ae108263fff5bca2a5c55034d87b04a1867b7d789c00ca1f6c6296"
+     },
+     {
+      "name": "small",
+      "contract": "0d455f3e0be6cd18b9910a66d271103c2f51d3034c812120d90ff39ec6042965",
+      "extras": "18eae990439f5d884e855f94dd8e15364c8553f45f9eeadaa23c5a9c455a0937"
+     }
+    ]
+   }
+  },
+  {
+   "name": "omitted_extras",
+   "tools_json_deflate_b64": "eNrt2y1uAmEARdG9fBoxw/A33UqDQFQ0ARTmpeneCa6y5Nlz3F3E/fwZ98vta3yM2zSNzXh8P66vCgAAAAAAAAAAAAAAAAAA/MP43fw5VmfHKgAAAAAAAAAAAAAAAAAAaY7VrWMVAAAAAAAAAAAAAAAAAIA0x+riWAUAAAAAAAAAAAAAAAAAIM2xunOsAgAAAAAAAAAAAAAAAACQ5ljdO1YBAAAAAAAAAAAAAAAAAEhzrB4cqwAAAAAAAAAAAAAAAAAApDlWj45VAAAAAAAAAAAAAAAAAADSHKsnxyoAAAAAAAAAAAAAAAAAAGmO1dWxCgAAAAAAAAAAAAAAAABAimN1nhyrAAAAAAAAAAAAAAAAAACkOVZnxyoAAAAAAAAAAAAAAAAAAGmO1a1jFQAAAAAAAAAAAAAAAACANMfq4lgFAAAAAAAAAAAAAAAAACDNsbpzrAIAAAAAAAAAAAAAAAAAkOZY3TtWAQAAAAAAAAAAAAAAAABIc6weHKsAAAAAAAAAAAAAAAAAAKQ5Vo+OVQAAAAAAAAAAAAAAAAAA0hyrJ8cqAAAAAAAAAAAAAAAAAABpjtXVsQoAAAAAAAAAAAAAAAAAQN49Vs9PWrGaFw==",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 20,
+    "tools_sha256": "sha256-dFTUewwW6PbSS6mhq9n1pTOVqR1HP4XxhqEzExEYcyk=",
+    "extras_sha256": "sha256-cNZxKZtlp/iWoiTpL07lfL15+ijReUNVzNOCa6/WnXU=",
+    "tools": [
+     {
+      "name": "m00",
+      "contract": "2ae1e58e8bd49119e06d30fe20c7d6eac47f2d055ef65902bcc2c2a127c185c8",
+      "extras": "d2d324427fb18cd7cac1b90eb9dc3081c24b7804e9ec967c2d35671ecf131af6"
+     },
+     {
+      "name": "m01",
+      "contract": "d5c5576081dc09ab924d52d60927167737f1f1e06ff31abf8b6e59359ebda264",
+      "extras": "d2d324427fb18cd7cac1b90eb9dc3081c24b7804e9ec967c2d35671ecf131af6"
+     },
+     {
+      "name": "m02",
+      "contract": "f4df7a0590cbce68ad9a1f90b8bd6e52eb3df312b607fd6c13529c9f68573fb0",
+      "extras": "d2d324427fb18cd7cac1b90eb9dc3081c24b7804e9ec967c2d35671ecf131af6"
+     },
+     {
+      "name": "m03",
+      "contract": "cf69efb1cda92f93787acb63c974768273198178b60e7282b48b0844d0f27079",
+      "extras": "d2d324427fb18cd7cac1b90eb9dc3081c24b7804e9ec967c2d35671ecf131af6"
+     },
+     {
+      "name": "m04",
+      "contract": "ddd71977113d75036aa351cb47a5dd649444af47d6444a2942c997adf7644d03",
+      "extras": "d2d324427fb18cd7cac1b90eb9dc3081c24b7804e9ec967c2d35671ecf131af6"
+     },
+     {
+      "name": "m05",
+      "contract": "d1faccabde1f971617fc01b695c6f805148845eeca253d97865d51d6ab8274d4",
+      "extras": "d2d324427fb18cd7cac1b90eb9dc3081c24b7804e9ec967c2d35671ecf131af6"
+     },
+     {
+      "name": "m06",
+      "contract": "97541c35241979365a1224df3dc46dc06fd3a5c2b9ab3890cd39e17bbf9898cb",
+      "extras": "d2d324427fb18cd7cac1b90eb9dc3081c24b7804e9ec967c2d35671ecf131af6"
+     },
+     {
+      "name": "m07",
+      "contract": "83d5fbeb9442747229d5218401093ef6ba1e7cbd68f8ce589972ee8b36a338b7",
+      "extras": "d2d324427fb18cd7cac1b90eb9dc3081c24b7804e9ec967c2d35671ecf131af6"
+     },
+     {
+      "name": "m08",
+      "contract": "47c5564e409e095e77ecb8efc6e095587354f7a8335881588befc6b2aa19c431",
+      "extras": "d2d324427fb18cd7cac1b90eb9dc3081c24b7804e9ec967c2d35671ecf131af6"
+     },
+     {
+      "name": "m09",
+      "contract": "45c4a58f73889afebc70f88411d82f7c1b39421434a5a263d257544d69b3d095",
+      "extras": "d2d324427fb18cd7cac1b90eb9dc3081c24b7804e9ec967c2d35671ecf131af6"
+     },
+     {
+      "name": "m10",
+      "contract": "7a0355cf0fea7c7f46cd9f01638b852c561e9cb98d14bb13ee6f89629e96e004",
+      "extras": "d2d324427fb18cd7cac1b90eb9dc3081c24b7804e9ec967c2d35671ecf131af6"
+     },
+     {
+      "name": "m11",
+      "contract": "94c29f1745090785400f6983776a940252a3ea171557187ab637186608ecc36a",
+      "extras": "d2d324427fb18cd7cac1b90eb9dc3081c24b7804e9ec967c2d35671ecf131af6"
+     },
+     {
+      "name": "m12",
+      "contract": "e1886f573c2a80594872fdaa1504c2b9a0f4cf2e347122e58e70f76e869c542b",
+      "extras": "d2d324427fb18cd7cac1b90eb9dc3081c24b7804e9ec967c2d35671ecf131af6"
+     },
+     {
+      "name": "m13",
+      "contract": "5799e8c058d0d04eb5eeef635376ee888a6c3ce4de74d0d94d396ca9fa84a0e5",
+      "extras": "d2d324427fb18cd7cac1b90eb9dc3081c24b7804e9ec967c2d35671ecf131af6"
+     },
+     {
+      "name": "m14",
+      "contract": "136fbd3d2a42b436a4e030879819e2997cc80ce8aaa4f7026379e2bfc49bc93d",
+      "extras": "d2d324427fb18cd7cac1b90eb9dc3081c24b7804e9ec967c2d35671ecf131af6"
+     },
+     {
+      "name": "m15",
+      "contract": "7f278dd28c5c49b429252b95e704650314d4cb3a58206c973b4be5b8a41926cc",
+      "extras": "d2d324427fb18cd7cac1b90eb9dc3081c24b7804e9ec967c2d35671ecf131af6"
+     },
+     {
+      "name": "m16",
+      "contract": "bf1749a2ed75077d433cd787f98e9ab95ef22b550d0ab2ecd3964749b9ee83a6",
+      "extras": "d2d324427fb18cd7cac1b90eb9dc3081c24b7804e9ec967c2d35671ecf131af6"
+     },
+     {
+      "name": "m17",
+      "contract": "4651d17b3c1dd5cc43fd057b7b94b0819632e66dd247fe1406712844f9f61d03",
+      "extras": "d2d324427fb18cd7cac1b90eb9dc3081c24b7804e9ec967c2d35671ecf131af6"
+     },
+     {
+      "name": "m18",
+      "contract": "cb485194bd1d6890c79d9b7dba0dff6659d785dcace3894b024a140297c842aa",
+      "extras": "d2d324427fb18cd7cac1b90eb9dc3081c24b7804e9ec967c2d35671ecf131af6"
+     },
+     {
+      "name": "m19",
+      "contract": "be479c8d4d5059abe0076381a0fbf44f42874e8cd6da00f713e8f394e3f6b66c",
+      "extras": "d2d324427fb18cd7cac1b90eb9dc3081c24b7804e9ec967c2d35671ecf131af6"
+     }
+    ]
+   }
+  },
+  {
+   "name": "no_name",
+   "tools_json": "[{\"name\":\"ok\"},{\"description\":\"no name\"}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "tools_sha256": null,
+    "reason": "a tool has no name"
+   }
+  },
+  {
+   "name": "empty_name",
+   "tools_json": "[{\"name\":\"\"}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "tools_sha256": null,
+    "reason": "a tool has no name"
+   }
+  },
+  {
+   "name": "name_number",
+   "tools_json": "[{\"name\":5}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "tools_sha256": null,
+    "reason": "a tool has no name"
+   }
+  },
+  {
+   "name": "number_overflow",
+   "tools_json": "[{\"name\":\"o\",\"inputSchema\":{\"x\":1e400}}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "tools_sha256": null,
+    "reason": "a number with no IEEE 754 double"
+   }
+  },
+  {
+   "name": "extras_number_overflow",
+   "tools_json": "[{\"name\":\"o\",\"_meta\":{\"x\":1e400}}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "tools_sha256": null,
+    "reason": "a number with no IEEE 754 double"
+   }
+  },
+  {
+   "name": "vendor_and_icons",
+   "tools_json": "[{\"name\":\"v\",\"icons\":[{\"src\":\"https://e.example/i.png\",\"sizes\":[\"48x48\"]}],\"execution\":{\"taskSupport\":\"optional\"},\"x-vendor\":true,\"_meta\":{\"io.example/k\":[1,2.50,\"3\"]}}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-Wqq5LF4Ojcql7mDZ5GYe570zWpMJlzQ2TbR8U7FsJcQ=",
+    "extras_sha256": "sha256-K6Zyca4ikDx8iMJJ1QHNWTtVufiCDN8JyTeqgaONv5Q=",
+    "tools": [
+     {
+      "name": "v",
+      "contract": "c8b23990ed57b482f8e00fa1810bef6f47899cd6d6894f56af0f70d1ff6627e5",
+      "extras": "6c0749ffe45981b58bc8dffce684f4270164db1233a1f673d0f565e5335ad0cc"
+     }
+    ]
+   }
+  },
+  {
+   "name": "input_schema_snake",
+   "tools_json": "[{\"name\":\"s\",\"input_schema\":{\"type\":\"object\"}}]",
+   "expect": {
+    "alg": "jcs-v1",
+    "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+    "count": 1,
+    "tools_sha256": "sha256-3uCMHQsblA9/+s/Cmnfbhp/cdlwKi6xtg1CdECAoeBo=",
+    "extras_sha256": "sha256-dnHRdLaexKecJgNWVp3BnGLkC83Bz75LlMJEQSMyEvU=",
+    "tools": [
+     {
+      "name": "s",
+      "contract": "678cd0716f717b8aabb8acdbaffe4d19c21028aae0ff7577b28dfdeebd444058",
+      "extras": "914a0c87ea349dc307ebdbca94b4587a19e19b52125df2e4c0d905ee7bfb3988"
+     }
+    ]
+   }
+  }
+ ],
+ "live": {
+  "server": "https://crawlcheck.io/mcp",
+  "read_at": "2026-11-11T16:45:29.309Z",
+  "tools": [
+   {
+    "name": "preflight",
+    "description": "Call BEFORE reading, citing, connecting to or transacting with a domain. Returns a signed decision: allow, warn, require_confirmation, block or unsupported, with every step that led there and the resolve answer it was made from. Pass your crawler token as agent so robots.txt is checked for you. A policy can only make the decision stricter. A block decision means the action is not permitted; require_confirmation means a human must confirm before it proceeds.",
+    "inputSchema": {
+     "type": "object",
+     "required": [
+      "domain"
+     ],
+     "properties": {
+      "domain": {
+       "type": "string",
+       "description": "Bare domain, e.g. example.com"
+      },
+      "action": {
+       "type": "string",
+       "enum": [
+        "read",
+        "cite",
+        "connect",
+        "transact",
+        "administer"
+       ],
+       "description": "What you are about to do (default read)"
+      },
+      "agent": {
+       "type": "string",
+       "description": "Your crawler user-agent token, e.g. GPTBot"
+      },
+      "template": {
+       "type": "string",
+       "description": "safe_citation, safe_data_retrieval, safe_api_connect, safe_mcp_tool, safe_commerce, safe_oauth or support_escalation"
+      },
+      "policy": {
+       "type": "object",
+       "description": "max_age_hours, on_warn (warn|require_confirmation|block), require_entity, human_approval[], allow[], deny[]"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": true,
+     "title": "Preflight: ask before acting on a domain"
+    },
+    "title": "Preflight: ask before acting on a domain"
+   },
+   {
+    "name": "best_source",
+    "description": "Call when choosing WHICH business or site to cite, recommend or call. Give domains (2-10 candidate sites you found) or trade and city for a measured market. Returns the candidates ranked by what CrawlCheck verified (preflight decision for cite, security and threat listing, domain age, uptime, published facts that directories agree with, FTC phone complaints) with reasons for and against each; sites that share one phone number or near-identical homepage text are collapsed into one network so a copycat cannot outrank the business it copies. Signed.",
+    "inputSchema": {
+     "type": "object",
+     "properties": {
+      "domains": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "Candidate sites, bare domains, up to 10"
+      },
+      "trade": {
+       "type": "string",
+       "description": "e.g. tree service"
+      },
+      "city": {
+       "type": "string",
+       "description": "e.g. Denver"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": true,
+     "title": "Best source for a claim"
+    },
+    "title": "Best source for a claim"
+   },
+   {
+    "name": "resolve_domain",
+    "description": "Call before fetching from, citing, connecting to or transacting with a domain. Returns one signed answer: what the domain claims, what it actually serves each crawler identity, who controls it, what CrawlCheck's published rules decide for each action (a decision for read, cite, connect and transact, with its doubts and maximum age), what changed, and the evidence behind each part, marked declared, observed or not_measured with its time. There is no overall score. A domain never measured gets a just-in-time partial answer, read live within about 2 seconds, that names every part not read in time; nothing is guessed. CrawlCheck completes unmeasured parts later on its own crawl schedule.",
+    "inputSchema": {
+     "type": "object",
+     "required": [
+      "domain"
+     ],
+     "properties": {
+      "domain": {
+       "type": "string",
+       "description": "Bare domain, e.g. example.com"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": true,
+     "title": "Resolve a domain (signed record)"
+    },
+    "title": "Resolve a domain (signed record)"
+   },
+   {
+    "name": "field_check",
+    "description": "Call before using a phone number, address, opening hours or service area you hold for a business. One signed verdict per business field. field=phone|address|hours|service_area and value= the value you hold. phone: matches, former_value (with dates), not_this_business (the site never published it and another publisher is named with the page that prints it), or not_published. address: matches, same_street_other_city, former_value, not_this_business, not_published or nothing_declared. hours: a week (Mo-Fr 08:00-17:00) gives matches or differs per day; a moment (Sa 10:00) gives open or closed. service_area: declared, not_declared or nothing_declared. Built from the business's own site (and its Business Profile for the licence holder), its dated fact history, CrawlCheck's scans of other sites, and for an unknown number a web search whose cited pages are read plus a YellowPages reverse lookup.",
+    "inputSchema": {
+     "type": "object",
+     "required": [
+      "domain",
+      "field",
+      "value"
+     ],
+     "properties": {
+      "domain": {
+       "type": "string",
+       "description": "Bare domain of the business, e.g. example.com"
+      },
+      "field": {
+       "type": "string",
+       "enum": [
+        "phone",
+        "address",
+        "hours",
+        "service_area"
+       ]
+      },
+      "value": {
+       "type": "string",
+       "description": "The value you hold: a 10-digit number, a street address, a week (Mo-Fr 08:00-17:00) or a moment (Sa 10:00), or a place name"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": true,
+     "title": "Check a business fact (phone, hours, address)"
+    },
+    "title": "Check a business fact (phone, hours, address)"
+   },
+   {
+    "name": "scan_domain",
+    "description": "Scan a public domain as several crawler identities and return the graded record: grade, AI-visibility score, per-section scores, findings with evidence, and whether the origin refused CrawlCheck. One scan takes 5-15 seconds.",
+    "inputSchema": {
+     "type": "object",
+     "required": [
+      "domain"
+     ],
+     "properties": {
+      "domain": {
+       "type": "string",
+       "description": "A bare domain such as example.com, or a full URL"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": false,
+     "destructiveHint": false,
+     "idempotentHint": false,
+     "openWorldHint": true,
+     "title": "Scan a site for AI and crawler readiness"
+    },
+    "title": "Scan a site for AI and crawler readiness"
+   },
+   {
+    "name": "list_verified_capabilities",
+    "description": "What a domain declares agents can do (OpenAPI operations, MCP tools, A2A skills, API catalog entries), each classed by safety (read_only_public up to financial), and which ones CrawlCheck actually called and confirmed - plus every mismatch between declaration and behaviour. Only read-only public actions are ever called; everything else says why it was not. From the latest scan on file.",
+    "inputSchema": {
+     "type": "object",
+     "required": [
+      "domain"
+     ],
+     "properties": {
+      "domain": {
+       "type": "string"
+      },
+      "verified_only": {
+       "type": "boolean",
+       "description": "Return only the capabilities that were confirmed"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": false,
+     "title": "Verified capabilities of a site"
+    },
+    "title": "Verified capabilities of a site"
+   },
+   {
+    "name": "mcp_servers",
+    "description": "Which remote MCP servers the official MCP Registry lists on a domain, and what each endpoint actually answered when CrawlCheck sent the MCP handshake (initialized, auth_required, unreachable, tool count, tool-list drift). Use before selecting an MCP tool from that domain.",
+    "inputSchema": {
+     "type": "object",
+     "required": [
+      "domain"
+     ],
+     "properties": {
+      "domain": {
+       "type": "string",
+       "description": "Bare domain or host, e.g. example.com"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": false,
+     "title": "MCP server reliability and identity"
+    },
+    "title": "MCP server reliability and identity"
+   },
+   {
+    "name": "verify_crawler_log",
+    "description": "Given raw web-server access-log lines, decide for each line that names a crawler (GPTBot, ClaudeBot, Googlebot, PerplexityBot...) whether the source IP falls inside that operator's published ranges. Returns verified, spoofed, or unverifiable when the operator publishes no ranges.",
+    "inputSchema": {
+     "type": "object",
+     "required": [
+      "lines"
+     ],
+     "properties": {
+      "lines": {
+       "type": "string",
+       "description": "Up to 200 raw log lines, newline separated"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": true,
+     "title": "Verify a crawler log (real vs forged bots)"
+    },
+    "title": "Verify a crawler log (real vs forged bots)"
+   },
+   {
+    "name": "corpus_state",
+    "description": "Coverage of CrawlCheck's public dataset: how many distinct domains have been measured and how they split by platform, rendering, size, language and kind, with the strata that are still under-sampled.",
+    "inputSchema": {
+     "type": "object",
+     "properties": {}
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": false,
+     "title": "Corpus state and counts"
+    },
+    "title": "Corpus state and counts"
+   },
+   {
+    "name": "resolve_robots",
+    "description": "Resolve every named answer engine, search index and training crawler against a domain's robots.txt the way a crawler does: most-specific group only, longest match, allow wins a tie. Shows when a Disallow under * does not apply to an agent with its own group.",
+    "inputSchema": {
+     "type": "object",
+     "required": [
+      "domain"
+     ],
+     "properties": {
+      "domain": {
+       "type": "string"
+      },
+      "path": {
+       "type": "string",
+       "description": "Path to test, default /"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": true,
+     "title": "Read a site's robots.txt rules per crawler"
+    },
+    "title": "Read a site's robots.txt rules per crawler"
+   },
+   {
+    "name": "resolve_rights",
+    "description": "What a site declares AI may do with a page, one answer per use (train, ground, summarize, cite, transact), merged from robots.txt read per agent, Content-Signal, ai.txt, TDM-Rep, robots meta, X-Robots-Tag and the terms page, with the signal that decided each answer and every conflict between signals. Signed. Not legal advice.",
+    "inputSchema": {
+     "type": "object",
+     "required": [
+      "domain"
+     ],
+     "properties": {
+      "domain": {
+       "type": "string"
+      },
+      "path": {
+       "type": "string",
+       "description": "Path to answer for, default /"
+      },
+      "agent": {
+       "type": "string",
+       "description": "One crawler product token (e.g. GPTBot) to answer for that agent alone"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": true,
+     "title": "Read a site's content rights and AI policy"
+    },
+    "title": "Read a site's content rights and AI policy"
+   },
+   {
+    "name": "check_site_safety",
+    "description": "Before an agent reads, cites, links to or pays a site: whether it is listed as malware or phishing (Google Safe Browsing, the Cloudflare security resolver, PhishTank), which list says so, where to check it and where its owner requests a review, plus HSTS preload and the hacked-site signatures from its latest CrawlCheck scan. An unread list is reported as unread, never as clean. Free.",
+    "inputSchema": {
+     "type": "object",
+     "required": [
+      "domain"
+     ],
+     "properties": {
+      "domain": {
+       "type": "string"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": true,
+     "title": "Site safety check"
+    },
+    "title": "Site safety check"
+   },
+   {
+    "name": "draft_llms",
+    "description": "Draft an llms.txt from the domain's own homepage and up to 25 declared pages, using their titles and descriptions. A draft for the owner to cut down, not a publication.",
+    "inputSchema": {
+     "type": "object",
+     "required": [
+      "domain"
+     ],
+     "properties": {
+      "domain": {
+       "type": "string"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": true,
+     "title": "Draft an llms.txt for a site"
+    },
+    "title": "Draft an llms.txt for a site"
+   },
+   {
+    "name": "fix_robots",
+    "description": "The domain's served robots.txt, corrected: * group rules copied into named groups that lacked them (shadowing), a Sitemap line added when missing, a minimal replacement when the served file was HTML. Every change is listed at the top; nothing else is touched.",
+    "inputSchema": {
+     "type": "object",
+     "required": [
+      "domain"
+     ],
+     "properties": {
+      "domain": {
+       "type": "string"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": true,
+     "title": "Fix a robots.txt"
+    },
+    "title": "Fix a robots.txt"
+   },
+   {
+    "name": "fix_entitymap",
+    "description": "A starter entitymap.json built from the domain's latest scan record: name, phone, coordinates and declared service areas as entities with SERVES relations. Fields the page never stated are marked TODO, never guessed. Needs a prior scan.",
+    "inputSchema": {
+     "type": "object",
+     "required": [
+      "domain"
+     ],
+     "properties": {
+      "domain": {
+       "type": "string"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": true,
+     "title": "Fix an entity map"
+    },
+    "title": "Fix an entity map"
+   },
+   {
+    "name": "video_check",
+    "description": "One YouTube video against the video anchor model: metadata, chapters, captions and storyboard where observed, twelve checks each naming what it reads.",
+    "inputSchema": {
+     "type": "object",
+     "required": [
+      "v"
+     ],
+     "properties": {
+      "v": {
+       "type": "string",
+       "description": "Video id or URL"
+      },
+      "fresh": {
+       "type": "boolean",
+       "description": "Bypass the six-hour cache"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": true,
+     "title": "Check a video's SEO"
+    },
+    "title": "Check a video's SEO"
+   },
+   {
+    "name": "video_channel",
+    "description": "Every upload on a YouTube channel, read 50 at a time, sorted by views. The upload list is free; the per-check tally needs a Watch licence and is not offered here.",
+    "inputSchema": {
+     "type": "object",
+     "properties": {
+      "handle": {
+       "type": "string",
+       "description": "@channel handle"
+      },
+      "id": {
+       "type": "string",
+       "description": "Channel id, if no handle"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": true,
+     "title": "Check a video channel"
+    },
+    "title": "Check a video channel"
+   },
+   {
+    "name": "video_site",
+    "description": "The site half of video: homepage plus up to 60 sitemap pages read for YouTube embeds, facades and page-builder widgets, VideoObject nodes and their required properties, and - with a handle - how many of the channel's videos the site carries.",
+    "inputSchema": {
+     "type": "object",
+     "required": [
+      "domain"
+     ],
+     "properties": {
+      "domain": {
+       "type": "string"
+      },
+      "handle": {
+       "type": "string"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": true,
+     "title": "Check a site's video pages"
+    },
+    "title": "Check a site's video pages"
+   },
+   {
+    "name": "registry_lookup",
+    "description": "Whether a domain is in CrawlCheck's registry and what it serves: llms.txt, agents.md, a media kit at /.well-known/media-kit.json, a reciprocity-tested entity graph, an AI access policy that names crawlers, and agent-callable surfaces. With no domain, returns the shelf counts across every measured site. A row exists because a fetch produced it; nothing here is self-reported and no payment moves a shelf.",
+    "inputSchema": {
+     "type": "object",
+     "properties": {
+      "domain": {
+       "type": "string",
+       "description": "A bare domain. Omit for the corpus-wide shelf counts."
+      },
+      "shelf": {
+       "type": "string",
+       "description": "Filter the list to one shelf: llms, agents, mediakit, entity, aipolicy, agentapi"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": false,
+     "title": "Registry lookup"
+    },
+    "title": "Registry lookup"
+   },
+   {
+    "name": "crawler_path",
+    "description": "Where each crawler's path into a domain dies, as an observed data flow: edge decision, robots.txt as a file, robots.txt rules, then the page, JSON-LD, sitemap, llms.txt and entitymap.json it reached. Give agent (e.g. ClaudeBot, GPTBot, googlebot) for one identity's path and a one-line answer; omit it for every identity plus the stores and breaks. Uses the latest record on file, or scans first when there is none (fresh=true forces a scan). The answer-engine output is drawn but never measured.",
+    "inputSchema": {
+     "type": "object",
+     "required": [
+      "domain"
+     ],
+     "properties": {
+      "domain": {
+       "type": "string"
+      },
+      "agent": {
+       "type": "string",
+       "description": "Identity id or label, e.g. claudebot, GPTBot, Googlebot"
+      },
+      "fresh": {
+       "type": "boolean",
+       "description": "Scan now instead of using the record on file"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": false,
+     "destructiveHint": false,
+     "idempotentHint": false,
+     "openWorldHint": true,
+     "title": "Observed crawler path on a site"
+    },
+    "title": "Observed crawler path on a site"
+   },
+   {
+    "name": "public_counts",
+    "description": "The figures CrawlCheck quotes about itself, read from the source: sites_measured, domains_in_corpus, crawler_visits (a rolling window), sections, sections_scored, findings_published, guides_published, with an at timestamp.",
+    "inputSchema": {
+     "type": "object",
+     "properties": {}
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": false,
+     "title": "Public counts"
+    },
+    "title": "Public counts"
+   },
+   {
+    "name": "telemetry",
+    "description": "Verified-crawler traffic observed at crawlcheck.io itself: which named agents arrived, how many claims were confirmed against operator ranges, how many were forged.",
+    "inputSchema": {
+     "type": "object",
+     "properties": {}
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": false,
+     "title": "Crawler telemetry on crawlcheck.io"
+    },
+    "title": "Crawler telemetry on crawlcheck.io"
+   },
+   {
+    "name": "fix_mostly_code",
+    "description": "A fix plan for PAGE_IS_MOSTLY_CODE: the homepage's measured bytes by category, the largest blocks with what to do with each, ordered steps with the text ratio after each, and the step at which the detector would stop firing - or, when moving code cannot clear it, how much markup to cut or text to add. Give domain (fetched now) or id (a stored scan).",
+    "inputSchema": {
+     "type": "object",
+     "properties": {
+      "domain": {
+       "type": "string"
+      },
+      "id": {
+       "type": "string",
+       "description": "Report id: plan from the stored scan instead of fetching"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": true,
+     "title": "Fix a page that is mostly code"
+    },
+    "title": "Fix a page that is mostly code"
+   },
+   {
+    "name": "fix_stale_cache",
+    "description": "A fix plan for STALE_CACHE_SERVED: the homepage fetched now, its Age, the cache layers that name themselves in the headers in purge order (innermost first), the HTML lifetime each response declares, a fresh-read comparison, and whether a purge clears the finding and keeps it cleared.",
+    "inputSchema": {
+     "type": "object",
+     "properties": {
+      "domain": {
+       "type": "string"
+      },
+      "id": {
+       "type": "string",
+       "description": "Report id; the page is still fetched now, because cache state is live"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": true,
+     "title": "Fix stale cache serving"
+    },
+    "title": "Fix stale cache serving"
+   },
+   {
+    "name": "fix_machine_chain",
+    "description": "A fix plan for MACHINE_CHAIN_HEAVY: the files a crawler reads before the page and the 404s absent agent files return, then measured reductions (llms.txt to an index, a sitemap index, robots.txt comments and duplicate groups, minified JSON, short 404s) with the chain size after each and the step at which the detector stops firing.",
+    "inputSchema": {
+     "type": "object",
+     "properties": {
+      "domain": {
+       "type": "string",
+       "description": "Uses the latest scan on file"
+      },
+      "id": {
+       "type": "string",
+       "description": "Report id"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": true,
+     "title": "Fix a heavy machine-file chain"
+    },
+    "title": "Fix a heavy machine-file chain"
+   },
+   {
+    "name": "explain_finding",
+    "description": "Why CrawlCheck decided a finding: the rule and its revision, the exact fetches it compared (identity, status, bytes, sha256), when the condition held on the site, and a Merkle proof that the decision is inside the signed manifest. Give id (a d1: decision or f1: finding id from a report) or domain for its top finding. Other findings, and lookups by code, need a licence for that domain (send it in x-crawlcheck-key).",
+    "inputSchema": {
+     "type": "object",
+     "properties": {
+      "id": {
+       "type": "string",
+       "description": "d1: decision id, f1: finding id, or report id"
+      },
+      "domain": {
+       "type": "string",
+       "description": "Bare domain; alone it explains the top finding"
+      },
+      "code": {
+       "type": "string",
+       "description": "Finding code (licence only)"
+      },
+      "path": {
+       "type": "string"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": false,
+     "title": "Explain a finding"
+    },
+    "title": "Explain a finding"
+   },
+   {
+    "name": "machine_record",
+    "description": "The unified machine record for one observation: subject, grade, findings (the top one in full without a licence), capabilities with verification, and the evidence roots, manifest and verifier links that let anyone check it offline. Give id (report, d1:, f1: or manifest sha256) or domain for the latest.",
+    "inputSchema": {
+     "type": "object",
+     "properties": {
+      "id": {
+       "type": "string"
+      },
+      "domain": {
+       "type": "string"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": false,
+     "title": "Machine record for a report"
+    },
+    "title": "Machine record for a report"
+   },
+   {
+    "name": "mcp_precheck",
+    "description": "For MCP server publishers, before releasing a new version. Give the server name (as listed in the MCP Registry) or its endpoint, the new tools/list result and the new serverInfo.version; with no tools the endpoint is read as it serves now. Returns, against CrawlCheck's last read of that server, what public change logs will record: tools added and removed, descriptions rewritten, input schemas widened, annotations changed (read-only to write and non-destructive to destructive flagged as escalations), whether the version moved, and verdicts such as version_bump_needed or looks_like_rug_pull_risk. Signed. No tool on the checked server is called.",
+    "inputSchema": {
+     "type": "object",
+     "properties": {
+      "server_name": {
+       "type": "string",
+       "description": "Name in the MCP Registry, e.g. io.github.owner/server"
+      },
+      "endpoint": {
+       "type": "string",
+       "description": "Remote MCP endpoint URL, e.g. https://mcp.example.com/mcp"
+      },
+      "version": {
+       "type": "string",
+       "description": "The new serverInfo.version"
+      },
+      "tools": {
+       "type": "array",
+       "items": {
+        "type": "object"
+       },
+       "description": "The new tools/list tools array; omit to read the endpoint live"
+      }
+     }
+    },
+    "annotations": {
+     "readOnlyHint": true,
+     "destructiveHint": false,
+     "idempotentHint": true,
+     "openWorldHint": true,
+     "title": "Pre-release check for an MCP server"
+    },
+    "title": "Pre-release check for an MCP server"
+   }
+  ],
+  "lock_jcs_v1": {
+   "alg": "jcs-v1",
+   "spec": "https://crawlcheck.io/spec/mcp-lockfile#jcs-v1",
+   "count": 28,
+   "tools_sha256": "sha256-EwUq39WrL5Cw5tfGmD33O/9CPnSdqwC8gIZO5q81SLs=",
+   "extras_sha256": "sha256-G44DGgW7+rp9YjMAaEG80Tm5RFoke8eYkrE6nGk69y8=",
+   "tools": [
+    {
+     "name": "best_source",
+     "contract": "4df170218552bf50538c36830591cf5ceb92920f94fcacba8286331b91775a5e",
+     "extras": "8f105895984d9f5bd09a4bcbc02a780de0b816091a8b5c42720a8a2ebb9b5181"
+    },
+    {
+     "name": "check_site_safety",
+     "contract": "e3603687f65db9d621b27733aac2c80b3b0a35c9ebd14f0858131c40db225eb5",
+     "extras": "cb67e2955fb3b10363e77a7b0c404383e80dee1a027d4668b6fdf12321894ba8"
+    },
+    {
+     "name": "corpus_state",
+     "contract": "801ebb62448f1b16e9602e7906f4a42df3d9bd3a2aefee86ed0ae048bc6e208e",
+     "extras": "15f91efa927c497e7b5f0f3c5c5a556f04e8c26ca9aee8579f8ca06ae0021848"
+    },
+    {
+     "name": "crawler_path",
+     "contract": "7ffbf29407aab817af82ca46879d20663ca9e471f19413c1ba5651483dbe23db",
+     "extras": "2503e3c84e431c6849adf0242ccd7e843c5f57448b0f7dec4d327af2a2bf954d"
+    },
+    {
+     "name": "draft_llms",
+     "contract": "39f7bc841335b887a30845ac0d5addeaea585801855d380f0ec310659b175e93",
+     "extras": "7d07358e3c244105966d7615f8ac85155e97a4f5a2bc105460e749bd7084a445"
+    },
+    {
+     "name": "explain_finding",
+     "contract": "4294ef6e711cba8d0ae74c644c2877e920739c0cc30d67bf44c1c8ad5ef25b45",
+     "extras": "ed1f0875456120b703def0171ecf3406e1852100d004c2beac3cb2d8777cefb9"
+    },
+    {
+     "name": "field_check",
+     "contract": "2e1dfdb792d303a33262c6f83ea050dc79933cd6003eb9d0f7ad2bd242166f81",
+     "extras": "47634551770d391f327a0adfc065cc349e04b73cc3b0b6da32cb349d532b6be2"
+    },
+    {
+     "name": "fix_entitymap",
+     "contract": "9cc6f4efe4c203d94934e2465c68386cbee726a703b9dc798327fac7482ec519",
+     "extras": "d5d5e8e107415f4d783fbce14a08b1ab89486cc45c2591837568fcb758ad74a7"
+    },
+    {
+     "name": "fix_machine_chain",
+     "contract": "0aa63231bd68e9503aa1f98aa8896cd9f811cb9532b161cb6a3fa0ed3753a3aa",
+     "extras": "f0e16341bb3d62ba7ec47b5d564074ac8927dd9da529cfc2d3fb1ededbe0516a"
+    },
+    {
+     "name": "fix_mostly_code",
+     "contract": "a66aa3e8835da5ed6e67a24cb0dbb0c1df5d408ecc1b01e15033994a7d9deb84",
+     "extras": "ac82d8b04bcccc17f4a84c45d848c0630ff30e8dcebcf77ebbadf3fa2c7e32f2"
+    },
+    {
+     "name": "fix_robots",
+     "contract": "3f3d3bd962483179f20b94770fef0565c89e354a35742c80e42babf6a5b2029a",
+     "extras": "566348536cd5ca45948927b1e5e5d3547278d908a3ce15fed37904683a7a3cb0"
+    },
+    {
+     "name": "fix_stale_cache",
+     "contract": "f9cc6da2e0ec08c6205af28d11a12c4caabb1d5091864102902ad016241d4542",
+     "extras": "ae297ce127d242d30aff3f26c8e644d78217b58f93a3e778a0312c34d94720c7"
+    },
+    {
+     "name": "list_verified_capabilities",
+     "contract": "317dfda2d5cdf40952d840275acfc5ab64e69d65ce01fb2f45e4ae5252115b24",
+     "extras": "50724a0e49b90b2281929f05db1a62efb530bfc1d1903f04671976ab54752544"
+    },
+    {
+     "name": "machine_record",
+     "contract": "0fea3388e83b404160b8e42488ddc87bd41f0a18ace43c0536f3fd74670eaba5",
+     "extras": "8fe955c9292b00dedfd2b5483f844f3a0a014cdf37052390061ee62574daaabe"
+    },
+    {
+     "name": "mcp_precheck",
+     "contract": "977bdc9cab6c714d7c424ad46f1a0045a9920bdba77a92d9e187282cc1a784b4",
+     "extras": "37a31f23e816f53752bfb7d786f034c24529017ae2702e2de7ed072e895dfe5b"
+    },
+    {
+     "name": "mcp_servers",
+     "contract": "855593d472b368cbabbc69166b4c714dbca237df40676d51235dcbf69c14e40f",
+     "extras": "3394d06d8e379efe77d32df9629f6fceee103e26a8cb00d07fff59518ee8d700"
+    },
+    {
+     "name": "preflight",
+     "contract": "f922af7084a0a3f2d7beaf817ace070aed3a4056b61f0ca5eb43a1a2771b5560",
+     "extras": "9c478c1e9cf46ac859fc70be06b902daa23bff5f61588bbb75f6c96ad0dbd415"
+    },
+    {
+     "name": "public_counts",
+     "contract": "b7f900556015e662a254ccac70b40c6b84df845f071061c6cae297a7b92736a4",
+     "extras": "48f9346b27f67aadb1c7c859a4d5cdf34221f1e1990b4da54b331444897cc5a6"
+    },
+    {
+     "name": "registry_lookup",
+     "contract": "9b8fe333ea3dc61ab18651d072c01e7ab2204183cbbb7a362317f6233b23969c",
+     "extras": "3d9ee2f7e1e66c309f15908683f861e0479fe1c027a6a14ef78f6f8ac5dc5b66"
+    },
+    {
+     "name": "resolve_domain",
+     "contract": "8e76e248ba8dd8ec93567fa8bbe531f86dbfaa6791a85a8d3fa67b3e241626e2",
+     "extras": "15aca63baea65f6bc3fc892ad5d0a2c2fb90a5bc14983f6a3800f07d59856f43"
+    },
+    {
+     "name": "resolve_rights",
+     "contract": "45a997f38ff162e671b03ce93be8fed3b18fc95668ce128d34282434c0a6ab54",
+     "extras": "b0186656bdee0ad298b0a1795bf43f758a5a8dd96034b3eb07fe67d9b6254066"
+    },
+    {
+     "name": "resolve_robots",
+     "contract": "6f015b6875e10a961c3e355067b678e76ad8812541cb3747b84a6810fee0e535",
+     "extras": "289def6943335adac65a9fb1acdc00a9a82cf0804432eadb71e134470847aed6"
+    },
+    {
+     "name": "scan_domain",
+     "contract": "12ed99f7460a3fe1e797a4e4791e5a07d1a72f6af672ee33e68416eebe249d96",
+     "extras": "db104af2091f3c8e49347976ed7ece3fba6a025569d29646daa79b7a1c590bf9"
+    },
+    {
+     "name": "telemetry",
+     "contract": "b4e5462043b1c8b742397dd5906a906455d273b16c45c0157abe302df9de990e",
+     "extras": "7e2215ec70d85b9a9efe03d1798f15d978b6cb2f27119a02640c55e4271709e6"
+    },
+    {
+     "name": "verify_crawler_log",
+     "contract": "64ecfc1d0400e60050e5a5d93caac6af8094a1b16c8923885c6572daffaf9241",
+     "extras": "290c53b80dd4c6e571450186dfd2882a6fe49384a52c11d1940194456b43ece5"
+    },
+    {
+     "name": "video_channel",
+     "contract": "e66e05134c20911640ec272a8bec5006d5e9d33100a8edcf73d082f29b811753",
+     "extras": "6a538cec6fbb6306725e0f4952903f9485efa12695c0800a404583bced1bbbb9"
+    },
+    {
+     "name": "video_check",
+     "contract": "939dc6bd74e1f3fb474534daf9b7d0f952ada13817b5ecc8ec74bb14b1220e13",
+     "extras": "78922821dd39274345c603ac24b87484e4fa40e2c50e1cb54371ec2889bf6ae1"
+    },
+    {
+     "name": "video_site",
+     "contract": "efd07c9cdf9ad228910c18712b763bc135ebc57fc88fb5102aa5e14a691fa8b6",
+     "extras": "e594bc3b22c4a450a8a80ca5e0aa2ebd4046fc4920d5ff620fa8d9207ba96114"
+    }
+   ]
+  },
+  "lock_tools_sha256": "b12c0d6a5dc1a55943cd19351118aae36ebe73268f7bd8c975fa571a62a6d251"
+ }
+}
