@@ -14,7 +14,7 @@ from . import log as _log
 from .staple import staple_check, staple_from_headers
 from .revocations import new_revocation_store, apply_revocations, revoked_for
 
-VERSION = "1.16.1"
+VERSION = "1.16.2"
 ACTIONS = ("read", "cite", "connect", "transact", "administer")
 
 
@@ -146,6 +146,19 @@ class CrawlCheckError(Exception):
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None
+
+
+GUARDED_SAFE_HEADERS = ("accept", "accept-language", "accept-encoding", "user-agent", "cache-control", "pragma")
+
+
+def _origin(url):
+    """scheme://host:port with default ports filled in, or "" when the URL cannot be read."""
+    try:
+        p = urllib.parse.urlsplit(url)
+        port = p.port or {"https": 443, "http": 80}.get(p.scheme)
+        return "%s://%s:%s" % (p.scheme, (p.hostname or "").lower(), port)
+    except Exception:
+        return ""
 
 
 def _no_redirect_request(method, url, headers, data, timeout):
@@ -408,6 +421,7 @@ class CrawlCheck:
         transport = transport or (lambda m, u, h, d: _no_redirect_request(m, u, h, d, timeout or self.timeout))
         method = method.upper()
         hops, seen, cur = [], {}, url
+        origin0 = _origin(url)
 
         def out(proceed, why, status=None, hdrs=None, body=None):
             return {"proceed": proceed, "status": status, "headers": hdrs, "body": body, "url": cur, "hops": hops, "why": why}
@@ -427,7 +441,10 @@ class CrawlCheck:
             hops.append(hop)
             if not p:
                 return out(False, ["%s: %s" % (dom, "; ".join(why) or "refused")])
-            h = dict(headers or {})
+            # hdr1 (1.16.2): the caller's headers belong to the origin the caller named. On any other origin (host, scheme
+            # or port) only a short allowlist travels, so Authorization or Cookie never follows a redirect elsewhere.
+            same = _origin(cur) == origin0
+            h = {k: v for k, v in (headers or {}).items() if same or k.lower() in GUARDED_SAFE_HEADERS}
             h.update(receipt_header(rc))
             status, rh, body = transport(method, cur, h, data)
             hop["status"] = status

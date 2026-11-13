@@ -495,7 +495,8 @@ export class CrawlCheck {
         const action = opts.action ?? "read", max = opts.maxHops ?? 10, f = opts.fetch ? opts.fetch.bind(globalThis) : this.f;
         const init = Object.assign({}, opts.init || {}), method = String(init.method || "GET").toUpperCase();
         const hops = [], seen = new Map();
-        let cur = url;
+        let cur = url, origin0 = "";
+        try { origin0 = new URL(url).origin; } catch { origin0 = ""; }
         for (let n = 0; n <= max; n++) {
             let u;
             try {
@@ -519,7 +520,10 @@ export class CrawlCheck {
             hops.push(hop);
             if (!g.proceed)
                 return { proceed: false, response: null, url: cur, hops, why: [dom + ": " + (g.why.join("; ") || "refused")] };
-            const h = new Headers(init.headers || {});
+            // hdr1 (1.15.2): caller headers stay on the origin the caller named; elsewhere only the allowlist travels
+            const sameOrigin = u.origin === origin0;
+            const h = new Headers();
+            new Headers(init.headers || {}).forEach((v, k) => { if (sameOrigin || GUARDED_SAFE_HEADERS.includes(k.toLowerCase())) h.set(k, v); });
             if (g.header)
                 for (const [k, v] of Object.entries(g.header))
                     h.set(k, v);
@@ -791,3 +795,5 @@ export function langchainTools(cc, lc, opts = {}) {
     return agentTools(cc, opts).map((t) => lc.tool(async (input) => JSON.stringify(await t.execute(input ?? {})), { name: t.name, description: t.description, schema: t.parameters }));
 }
 export default CrawlCheck;
+/** Headers guardedFetch still sends after a redirect leaves the origin the caller named. */
+export const GUARDED_SAFE_HEADERS = ["accept", "accept-language", "accept-encoding", "user-agent", "cache-control", "pragma"];

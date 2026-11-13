@@ -278,6 +278,8 @@ export function checkDecision(receipt: unknown, want: DecisionWant): { ok: boole
   return { ok: why.length === 0, why, fields: f };
 }
 export interface GuardResult { proceed: boolean; receipt: DecisionReceipt | null; verification: (DocumentVerification & Trust) | null; header: Record<string, string> | null; why: string[]; /** 1.11.0: the separate acceptance questions (integrity, issuer, key policy, freshness, subject, operation, replay, baseline, completeness) and policy_result. Null when no receipt came back. */ acceptance: Acceptance | null; split_view?: LogFork[]; /** Set when the domain was refused from the held revocation list, with no network call. */ revoked?: RevokedEntry }
+/** Headers guardedFetch still sends after a redirect leaves the origin the caller named. Everything else stays behind. */
+export const GUARDED_SAFE_HEADERS: string[] = ["accept", "accept-language", "accept-encoding", "user-agent", "cache-control", "pragma"];
 export interface GuardedFetchOptions extends GuardOptions { action?: Action; init?: RequestInit; maxHops?: number; fetch?: typeof fetch }
 export interface GuardedHop { url: string; domain: string; proceed: boolean; decision: string | null; why: string[]; status?: number }
 export interface GuardedFetchResult { proceed: boolean; response: Response | null; url: string; hops: GuardedHop[]; why: string[] }
@@ -558,7 +560,7 @@ export class CrawlCheck {
     const action = opts.action ?? "read", max = opts.maxHops ?? 10, f = opts.fetch ? opts.fetch.bind(globalThis) : this.f;
     const init: RequestInit = Object.assign({}, opts.init || {}), method = String(init.method || "GET").toUpperCase();
     const hops: GuardedHop[] = [], seen = new Map<string, GuardResult>();
-    let cur = url;
+    let cur = url, origin0 = ""; try { origin0 = new URL(url).origin; } catch { origin0 = ""; }
     for (let n = 0; n <= max; n++) {
       let u: URL; try { u = new URL(cur); } catch { return { proceed: false, response: null, url: cur, hops, why: ["not a URL: " + cur] }; }
       if (u.protocol !== "https:" && u.protocol !== "http:") return { proceed: false, response: null, url: cur, hops, why: ["refused a " + u.protocol + " URL"] };
@@ -570,7 +572,12 @@ export class CrawlCheck {
       const hop: GuardedHop = { url: cur, domain: dom, proceed: g.proceed, decision: g.receipt ? String(g.receipt.decision) : null, why: g.why };
       hops.push(hop);
       if (!g.proceed) return { proceed: false, response: null, url: cur, hops, why: [dom + ": " + (g.why.join("; ") || "refused")] };
-      const h = new Headers(init.headers || {}); if (g.header) for (const [k, v] of Object.entries(g.header)) h.set(k, v);
+      // hdr1 (1.15.2): the caller's headers belong to the origin the caller named. On any other origin (host, scheme or
+      // port) only a short allowlist travels, so an Authorization or Cookie header never follows a redirect to someone else.
+      const sameOrigin = u.origin === origin0;
+      const h = new Headers();
+      new Headers(init.headers || {}).forEach((v, k) => { if (sameOrigin || GUARDED_SAFE_HEADERS.includes(k.toLowerCase())) h.set(k, v); });
+      if (g.header) for (const [k, v] of Object.entries(g.header)) h.set(k, v);
       const res = await f(cur, Object.assign({}, init, { headers: h, redirect: "manual" as RequestRedirect }));
       hop.status = res.status;
       if ((res as any).type === "opaqueredirect") return { proceed: false, response: null, url: cur, hops, why: ["the runtime hid the redirect target, so it cannot be checked"] };

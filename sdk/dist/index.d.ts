@@ -1136,3 +1136,5 @@ export interface LangChainToolsModule {
  * Same three tools as agentTools(); each returns its result as a JSON string; they fail closed. */
 export declare function langchainTools(cc: CrawlCheck, lc: LangChainToolsModule, opts?: AgentToolOptions): unknown[];
 export default CrawlCheck;
+/** Headers guardedFetch still sends after a redirect leaves the origin the caller named. Everything else stays behind. */
+export declare const GUARDED_SAFE_HEADERS: string[];
