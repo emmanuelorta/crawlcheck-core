@@ -145,6 +145,39 @@ export declare const jcsContract: (t: McpTool) => {
     outputSchema?: unknown;
 };
 export declare const jcsExtras: (t: McpTool) => Record<string, unknown>;
+export type ToolSetDigestCode = "TSD-PAGE" | "TSD-TOOL" | "TSD-NUMBER" | "TSD-TEXT" | "TSD-NAME";
+export type ToolSetDigestSide = {
+    digest: string;
+    canonical: string;
+} | {
+    digest: null;
+} | {
+    error: ToolSetDigestCode;
+    tool?: string;
+};
+export interface ToolSetDigest {
+    spec: "mcp-tool-set-digest/1";
+    contract: ToolSetDigestSide;
+    extras: ToolSetDigestSide;
+    tools?: {
+        name: string;
+        contract: string;
+        extras: string | null;
+        extras_error?: ToolSetDigestCode;
+    }[];
+}
+export declare const TSD_SPEC: "mcp-tool-set-digest/1";
+/** The contract and extras digests of a complete tools/list result as mcp-tool-set-digest/1 defines them. Each side is a digest or an error code; a member outside the contract never takes the contract digest away. Equals lock.jcs_v1 in the ordinary case. */
+export declare const toolSetDigest: (tools: unknown[], opts?: {
+    partial?: boolean;
+    perTool?: boolean;
+}) => Promise<ToolSetDigest>;
+/** RFC 8785 text of a parsed JSON value; throws ToolSetDigestError (TSD-TEXT, TSD-NUMBER) where it has none. */
+export declare const tsdCanonical: (v: unknown) => string;
+export declare const ToolSetDigestError: new (code: ToolSetDigestCode, detail: string, tool?: string) => Error & {
+    code: ToolSetDigestCode;
+    tool?: string;
+};
 /** The most tools a v1 lockfile hashes; a longer list is compared on that many and marked incomplete. */
 export declare const LOCK_V1_MAX_TOOLS: number;
 export declare const lockParts: (tools: McpTool[]) => Promise<Record<string, {

@@ -6,6 +6,7 @@ import * as R from "./revocations.js";
 import * as C from "./continuity.js";
 import * as F from "./frameworks.js";
 import * as J from "./jcs.js";
+import * as T from "./tsd.js";
 export const CONTINUITY_DEFAULT_POLICY = C.CONTINUITY_DEFAULT_POLICY;
 export const CONTINUITY_CHANGE_CLASSES = C.CONTINUITY_CHANGE_CLASSES;
 export const CONTINUITY_FAILURE_CLASSES = C.CONTINUITY_FAILURE_CLASSES;
@@ -23,6 +24,13 @@ export const jcsV1 = J.jcsV1;
 export const jcsCanon = J.jcsCanon;
 export const jcsContract = J.jcsContract;
 export const jcsExtras = J.jcsExtras;
+// ── mcp-tool-set-digest/1 (1.15.0, https://github.com/alexar76/mcp-tool-set-digest): the shared definition, nothing repaired or bounded ──
+export const TSD_SPEC = T.TSD_SPEC;
+/** The contract and extras digests of a complete tools/list result as mcp-tool-set-digest/1 defines them. Each side is a digest or an error code; a member outside the contract never takes the contract digest away. Equals lock.jcs_v1 in the ordinary case. */
+export const toolSetDigest = T.toolSetDigest;
+/** RFC 8785 text of a parsed JSON value; throws ToolSetDigestError (TSD-TEXT, TSD-NUMBER) where it has none. */
+export const tsdCanonical = T.tsdCanonical;
+export const ToolSetDigestError = T.ToolSetDigestError;
 /** The most tools a v1 lockfile hashes; a longer list is compared on that many and marked incomplete. */
 export const LOCK_V1_MAX_TOOLS = C.LOCK_V1_MAX_TOOLS;
 export const lockParts = C.lockParts;
