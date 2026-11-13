@@ -37,4 +37,4 @@ jobs:
           if npm view crawlcheck-core version >/dev/null 2>&1; then echo "ok=1" >> "$GITHUB_OUTPUT"
           else echo "::notice::crawlcheck-core is not on npm yet; skipping publish (first publish is manual)"; fi
       - if: steps.exists.outputs.ok == '1'
-        run: npm publish --access public
+        run: npm publish --access public --provenance

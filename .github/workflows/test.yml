@@ -7,6 +7,9 @@ on:
   push:
     branches: [main]
   pull_request:
+# Least privilege: these runs only read the repository.
+permissions:
+  contents: read
 jobs:
   test:
     # The README promises Node 20+ and a clone anyone can test. Prove it on the

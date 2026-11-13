@@ -7,6 +7,9 @@ on:
     paths: ['sdk/**', 'sdk-python/**']
   pull_request:
     paths: ['sdk/**', 'sdk-python/**']
+# Least privilege: these runs only read the repository.
+permissions:
+  contents: read
 jobs:
   node:
     runs-on: ubuntu-latest
