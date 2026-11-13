@@ -51,9 +51,9 @@ test("no file / unreadable file is reported as unmeasured, never as a policy", (
   assert.equal(crawlerPolicy("<html>challenge</html>", true).measured, false);
 });
 
-test("the agent table has 114 entries and no duplicates", () => {
-  assert.equal(AGENTS.length, 114);
-  assert.equal(new Set(AGENTS.map((a) => a[0].toLowerCase())).size, 114);
+test("the agent table has 115 entries and no duplicates", () => {
+  assert.equal(AGENTS.length, 115);
+  assert.equal(new Set(AGENTS.map((a) => a[0].toLowerCase())).size, 115);
 });
 
 for (const d of ["crawlcheck.io", "terrariumstation.com"]) {
@@ -165,4 +165,14 @@ test("groupFor: no group and no * still returns a usable envelope", () => {
   const m = groupFor(parseGroups("User-agent: Bingbot\nDisallow: /\n"), "GPTBot");
   assert.equal(m.group, null); assert.equal(m.named, false);
   assert.equal(pathAllowed(m, "/"), true);
+});
+
+// 0.6.3: Google's AdsBot ignores the wildcard group; only a group naming it applies (ported from production).
+test("AdsBot-Google is not bound by a * group, and is bound by its own", () => {
+  const star = crawlerPolicy("User-agent: *\nDisallow: /", false, "/").agents.find((a) => a.ua === "AdsBot-Google");
+  assert.equal(star.allowed, true); assert.equal(star.named, false);
+  const own = crawlerPolicy("User-agent: *\nAllow: /\nUser-agent: AdsBot-Google\nDisallow: /", false, "/").agents.find((a) => a.ua === "AdsBot-Google");
+  assert.equal(own.allowed, false); assert.equal(own.named, true);
+  const other = crawlerPolicy("User-agent: *\nDisallow: /", false, "/").agents.find((a) => a.ua === "GPTBot");
+  assert.equal(other.allowed, false);
 });

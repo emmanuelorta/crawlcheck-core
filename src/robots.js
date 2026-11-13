@@ -16,6 +16,7 @@
 //   - Percent-encoding is not normalised: rules and paths are compared as written.
 
 export const AGENTS = [
+["KlaviyoAIBot","Klaviyo Customer Agent knowledge-source crawler","tool"],   // first, as in production, so the table order matches the service
 // The production agent table, copied from the service unaltered. Every string was
 // taken from real robots.txt files or the operator's own documentation. Roles:
 // answer, search, train, tool, regional; only answer engines and search indexes
@@ -42,7 +43,7 @@ export const AGENTS = [
 ["ChatGPT-User","ChatGPT live fetch","answer"],["Claude-SearchBot","Claude search index","answer"],["Claude-User","Claude live fetch","answer"],
 ["PerplexityBot","Perplexity index","answer"],["Perplexity-User","Perplexity live fetch","answer"],["Gemini-Deep-Research","Gemini research agent","answer"],
 ["MistralAI-User","Le Chat live fetch","answer"],["DuckAssistBot","DuckDuckGo AI assist","answer"],["YouBot","You.com","answer"],
-["PhindBot","Phind","answer"],["Kagibot","Kagi","answer"],["Copilot-User","Microsoft Copilot fetch","answer"],
+["PhindBot","Phind","answer"],["Kagibot","Kagi","search"],["Copilot-User","Microsoft Copilot fetch","answer"],
 ["Meta-ExternalFetcher","Meta AI live fetch","answer"],["Googlebot","Google Search and AI Overviews","search"],["bingbot","Bing and Copilot index","search"],
 ["Applebot","Apple and Siri","search"],["Amazonbot","Amazon","search"],["DuckDuckBot","DuckDuckGo","search"],
 ["YandexBot","Yandex","search"],["Baiduspider","Baidu","search"],["Seznambot","Seznam","search"],
@@ -198,13 +199,17 @@ export function shadowedGroups(groups) {
   return out;
 }
 
+// Google: "AdsBot ignores the global robots.txt user agent (*)". A wildcard rule does not reach these crawlers; only a
+// group that names them does. Ported from production (0.6.3), where the same list decides the same thing.
+export const OWN_TOKEN_ONLY = ["AdsBot-Google", "AdsBot-Google-Mobile", "AdsBot-Google-Mobile-Apps"];
+function ownTokenOnly(m, ua) { return OWN_TOKEN_ONLY.indexOf(ua) > -1 && m && !m.named ? { group: null, named: false } : m; }
 export function crawlerPolicy(txt, unreadable, path) {
   if (unreadable || !String(txt || "").trim()) {
     return { measured: false, reason: unreadable ? "robots.txt did not return readable directives" : "no robots.txt served — every agent is allowed by default", agents: [] };
   }
   const groups = parseGroups(txt);
   const agents = AGENTS.map(function (a) {
-    const m = groupFor(groups, a[0]);
+    const m = ownTokenOnly(groupFor(groups, a[0]), a[0]);
     return { ua: a[0], label: a[1], role: a[2], allowed: pathAllowed(m.group, path || "/"), allowed_root: rootAllowed(m.group), named: m.named };
   });
   const shadowed = shadowedGroups(groups);
