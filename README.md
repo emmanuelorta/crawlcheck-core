@@ -36,7 +36,7 @@ policy.shadowed;
 // [{ uas:["gptbot"], missing:["/wp-admin/","/feed/"], missing_count:2 }]
 ```
 
-For each of 115 named agents (answer engines, search indexes, training crawlers, SEO tools, social unfurlers, regional engines) it reports: which user-agent group applies (`named`), whether the given path and the root are allowed under that group, and whether the group **shadows** the `*` rules.
+For each of 115 named agents (answer engines, search indexes, training crawlers, tools, social unfurlers, regional engines, and a few retired names still seen in robots.txt files) it reports: which user-agent group applies (`named`), whether the given path and the root are allowed under that group, and whether the group **shadows** the `*` rules.
 
 ### The shadowing defect
 
