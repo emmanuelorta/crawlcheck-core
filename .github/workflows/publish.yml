@@ -10,6 +10,9 @@ name: publish
 on:
   push:
     tags: ['v*']
+  # Manual run publishes the version package.json names on main. The publisher identity is the same
+  # workflow file, so trusted publishing treats both triggers alike.
+  workflow_dispatch:
 permissions:
   id-token: write   # OIDC token exchange with the npm registry
   contents: read
@@ -27,7 +30,8 @@ jobs:
       - run: npm install -g npm@11.21.0  # pinned: trusted publishing needs >= 11.5.1; bump deliberately, never @latest here
       - run: npm test
       # The tag must match package.json, or the registry would carry a version the repo never named.
-      - run: |
+      - if: github.ref_type == 'tag'
+        run: |
           TAG="${GITHUB_REF_NAME#v}"; PKG="$(node -p "require('./package.json').version")"
           [ "$TAG" = "$PKG" ] || { echo "tag v$TAG != package.json $PKG"; exit 1; }
       # The first publish is manual (see the header). Until the package exists on npm,
@@ -37,4 +41,9 @@ jobs:
           if npm view crawlcheck-core version >/dev/null 2>&1; then echo "ok=1" >> "$GITHUB_OUTPUT"
           else echo "::notice::crawlcheck-core is not on npm yet; skipping publish (first publish is manual)"; fi
       - if: steps.exists.outputs.ok == '1'
-        run: npm publish --access public --provenance
+        run: |
+          PKG="$(node -p "require('./package.json').version")"
+          if [ "$(npm view crawlcheck-core@$PKG version 2>/dev/null)" = "$PKG" ]; then echo "publish conclusion: already on npm $PKG"; exit 0; fi
+          if npm publish --access public --provenance; then echo "publish conclusion: published $PKG"
+          elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then echo "::warning::publish refused"; echo "publish conclusion: refused $PKG"
+          else exit 1; fi
