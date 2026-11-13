@@ -35,7 +35,7 @@ export const AGENTS = [
 ["cohere-training-data-crawler","Cohere training corpus","train"],["PanguBot","Huawei PanGu","train"],["Ai2Bot-Dolma","Allen Institute Dolma","train"],
 ["FriendlyCrawler","FriendlyCrawler ML","train"],["VelenPublicWebCrawler","Hunter (Velen) public web crawler","tool"],["MyCentralAIScraperBot","MyCentral AI","train"],
 ["DeepSeekBot","DeepSeek","train"],["ICC-Crawler","NICT ICC","train"],["GoogleOther","Google non-search fetch","train"],
-["Google-CloudVertexBot","Vertex AI Agents crawl, at the site owner’s request","tool"],["CloudflareBrowserRenderingCrawler","Cloudflare Browser Run /crawl","tool"],["Cloudflare-AutoRAG","Cloudflare AutoRAG","tool"],
+["Google-CloudVertexBot","Vertex AI Agents crawl, at the site owner’s request","tool"],["CloudflareBrowserRenderingCrawler","Cloudflare Browser Run /crawl","tool"],["Cloudflare-AutoRAG","Cloudflare AutoRAG","tool"],["Cloudflare-AI-Search-External","Cloudflare AI Search External","tool"],
 ["Peer39_Crawler","Peer39 ad context","tool"],["AdsBot-Google","Google Ads quality","tool"],["AmazonAdBot","Amazon Ads","tool"],
 ["AdIdxBot","Microsoft Ads","tool"],["Twitterbot","X link preview","social"],["LinkedInBot","LinkedIn link preview","social"],
 ["facebookexternalhit","Facebook link preview","social"],["Pinterestbot","Pinterest","social"],["Slackbot-LinkExpanding","Slack unfurl","social"],
@@ -201,7 +201,9 @@ export function shadowedGroups(groups) {
 
 // Google: "AdsBot ignores the global robots.txt user agent (*)". A wildcard rule does not reach these crawlers; only a
 // group that names them does. Ported from production (0.6.3), where the same list decides the same thing.
-export const OWN_TOKEN_ONLY = ["AdsBot-Google", "AdsBot-Google-Mobile", "AdsBot-Google-Mobile-Apps"];
+// Google's special-case crawlers page (dated 2026-09-17, read 2026-11-13) says the same of APIs-Google and
+// Mediapartners-Google: "The global user agent (*) is ignored."
+export const OWN_TOKEN_ONLY = ["AdsBot-Google", "AdsBot-Google-Mobile", "AdsBot-Google-Mobile-Apps", "Mediapartners-Google", "APIs-Google"];
 function ownTokenOnly(m, ua) { return OWN_TOKEN_ONLY.indexOf(ua) > -1 && m && !m.named ? { group: null, named: false } : m; }
 export function crawlerPolicy(txt, unreadable, path) {
   if (unreadable || !String(txt || "").trim()) {

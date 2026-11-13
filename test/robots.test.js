@@ -51,9 +51,9 @@ test("no file / unreadable file is reported as unmeasured, never as a policy", (
   assert.equal(crawlerPolicy("<html>challenge</html>", true).measured, false);
 });
 
-test("the agent table has 115 entries and no duplicates", () => {
-  assert.equal(AGENTS.length, 115);
-  assert.equal(new Set(AGENTS.map((a) => a[0].toLowerCase())).size, 115);
+test("the agent table has 116 entries and no duplicates", () => {
+  assert.equal(AGENTS.length, 116);
+  assert.equal(new Set(AGENTS.map((a) => a[0].toLowerCase())).size, 116);
 });
 
 for (const d of ["crawlcheck.io", "terrariumstation.com"]) {
@@ -176,3 +176,13 @@ test("AdsBot-Google is not bound by a * group, and is bound by its own", () => {
   const other = crawlerPolicy("User-agent: *\nDisallow: /", false, "/").agents.find((a) => a.ua === "GPTBot");
   assert.equal(other.allowed, false);
 });
+
+// Google documents the same for AdSense and APIs-Google: "The global user agent (*) is ignored."
+for (const ua of ["Mediapartners-Google", "APIs-Google"]) {
+  test(ua + " is not bound by a * group, and is bound by its own", () => {
+    const star = crawlerPolicy("User-agent: *\nDisallow: /", false, "/").agents.find((a) => a.ua === ua);
+    assert.equal(star.allowed, true); assert.equal(star.named, false);
+    const own = crawlerPolicy("User-agent: *\nAllow: /\nUser-agent: " + ua + "\nDisallow: /", false, "/").agents.find((a) => a.ua === ua);
+    assert.equal(own.allowed, false); assert.equal(own.named, true);
+  });
+}
