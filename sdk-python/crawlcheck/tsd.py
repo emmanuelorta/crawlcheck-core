@@ -143,6 +143,16 @@ def tool_set_digest(tools, partial=False, per_tool=False):
         out["contract"] = {"error": "TSD-TOOL"}
         out["extras"] = {"error": "TSD-TOOL"}
         return out
+    # Section 10: a set-level fault (TSD-TOOL) is found before any value is written, so it wins over
+    # TSD-TEXT / TSD-NUMBER in an earlier entry.
+    try:
+        for item in tools:
+            _tool(item)
+    except ToolSetDigestError as e:
+        r = {"error": e.code, "tool": e.tool} if e.tool else {"error": e.code}
+        out["contract"] = r
+        out["extras"] = dict(r)
+        return out
     for kind, fn in (("contract", _contract), ("extras", _extras)):
         try:
             out[kind] = fn(tools)

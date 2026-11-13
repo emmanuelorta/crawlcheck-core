@@ -1,4 +1,4 @@
-"""mcp-tool-set-digest/1: the 68 published vectors (github.com/alexar76/mcp-tool-set-digest, Apache-2.0 OR MIT), the
+"""mcp-tool-set-digest/1: the 73 published vectors (github.com/alexar76/mcp-tool-set-digest, Apache-2.0 OR MIT), the
 canonical texts they carry, the equal / differ pairs, and equality with jcs-v1 in the ordinary case."""
 import json
 import os
@@ -15,7 +15,7 @@ def key(side):
 
 class TestToolSetDigest(unittest.TestCase):
     def test_vectors(self):
-        self.assertEqual(len(V["vectors"]), 68)
+        self.assertEqual(len(V["vectors"]), 73)
         self.assertEqual(TSD_SPEC, "mcp-tool-set-digest/1")
         got = {}
         for v in V["vectors"]:

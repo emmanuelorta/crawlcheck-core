@@ -75,6 +75,9 @@ export async function toolSetDigest(tools, opts = {}) {
   const out = { spec: TSD_SPEC, contract: null, extras: null };
   if (opts.partial) { out.contract = { error: "TSD-PAGE" }; out.extras = { error: "TSD-PAGE" }; return out; }
   if (!Array.isArray(tools)) { out.contract = { error: "TSD-TOOL" }; out.extras = { error: "TSD-TOOL" }; return out; }
+  // Section 10: a set-level fault (TSD-TOOL) is found before any value is written, so it wins over TSD-TEXT / TSD-NUMBER in an earlier entry.
+  try { for (const item of tools) toolObject(item); }
+  catch (e) { if (!(e instanceof ToolSetDigestError)) throw e; const r = e.tool ? { error: e.code, tool: e.tool } : { error: e.code }; out.contract = r; out.extras = Object.assign({}, r); return out; }
   for (const [kind, fn] of [["contract", contractOf], ["extras", extrasDigestOf]]) {
     try { out[kind] = await fn(tools); }
     catch (e) { if (!(e instanceof ToolSetDigestError)) throw e; out[kind] = e.tool ? { error: e.code, tool: e.tool } : { error: e.code }; }

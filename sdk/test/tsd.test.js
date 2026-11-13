@@ -1,4 +1,4 @@
-// mcp-tool-set-digest/1: the 68 published vectors (github.com/alexar76/mcp-tool-set-digest, Apache-2.0 OR MIT), every
+// mcp-tool-set-digest/1: the 73 published vectors (github.com/alexar76/mcp-tool-set-digest, Apache-2.0 OR MIT), every
 // canonical text they carry, and the equal / differ pairs. Then the relation to jcs-v1: equal in the ordinary case.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -7,7 +7,7 @@ import { toolSetDigest, tsdCanonical, ToolSetDigestError, jcsV1, TSD_SPEC } from
 const V = JSON.parse(fs.readFileSync(new URL("./fixtures/tool-set-digest-vectors.json", import.meta.url), "utf8"));
 const key = (side) => (side.error ? "E:" + side.error : String(side.digest));
 const got = {};
-test("the fixture is the published set", () => { assert.equal(V.vectors.length, 68); assert.equal(TSD_SPEC, "mcp-tool-set-digest/1"); });
+test("the fixture is the published set", () => { assert.equal(V.vectors.length, 73); assert.equal(TSD_SPEC, "mcp-tool-set-digest/1"); });
 for (const v of V.vectors) test("vector " + v.id, async () => {
   const r = (got[v.id] = await toolSetDigest(JSON.parse(v.tools)));
   for (const k of ["contract", "extras"]) {

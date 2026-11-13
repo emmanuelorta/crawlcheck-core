@@ -2,7 +2,7 @@
   "format": "mcp-tool-set-digest/1 test vectors",
   "specification": "../SPEC.md",
   "licence": "Apache-2.0 OR MIT",
-  "how": "tools is JSON text. Parse it and compute the contract digest (SPEC.md sections 4 to 7) and the extras digest (section 8). Each of contract and extras is {digest, hex, canonical}, where digest is the SRI form, hex the same hash as sha256:<hex> and canonical the text that is hashed; or {error} with the code of section 10; extras is {digest: null} when no tool carries a member outside the contract. equal and differ name pairs of vectors whose digests of the named kind must match or must not.",
+  "how": "tools is JSON text. Parse it and compute the contract digest (SPEC.md sections 4 to 7) and the extras digest (section 8). Each of contract and extras is {digest, hex, canonical}, where digest is the SRI form, hex the same hash as sha256:<hex> and canonical the text that is hashed; or {error} with the code of section 10 (where several codes apply, the one section 10 says to report); extras is {digest: null} when no tool carries a member outside the contract. equal and differ name pairs of vectors whose digests of the named kind must match or must not.",
   "vectors": [
     {
       "id": "empty",
@@ -703,6 +703,36 @@
       }
     },
     {
+      "id": "annotation-read-only-true",
+      "note": "A tool declares readOnlyHint true.",
+      "tools": "[{\"name\":\"read_file\",\"description\":\"Read a file.\",\"inputSchema\":{\"type\":\"object\"},\"annotations\":{\"readOnlyHint\":true}}]",
+      "contract": {
+        "digest": "sha256-EElRjaxCDoKPx+5Pggp+uMlPBOZmDDmKR+jzQQr0WHI=",
+        "hex": "sha256:1049518dac420e828fc7ee4f820a7eb8c94f04e6660c398a47e8f3410af45872",
+        "canonical": "[{\"description\":\"Read a file.\",\"inputSchema\":{\"type\":\"object\"},\"name\":\"read_file\"}]"
+      },
+      "extras": {
+        "digest": "sha256-FVPy/LHwESgNQH8PzbY0n/dTpoAdDJ0krCgoTwQrbKY=",
+        "hex": "sha256:1553f2fcb1f011280d407f0fcdb6349ff753a6801d0c9d24ac28284f042b6ca6",
+        "canonical": "{\"tools\":{\"read_file\":{\"annotations\":{\"readOnlyHint\":true}}}}"
+      }
+    },
+    {
+      "id": "annotation-read-only-false",
+      "note": "Only readOnlyHint changes to false: the contract digest stays equal and the extras digest changes.",
+      "tools": "[{\"name\":\"read_file\",\"description\":\"Read a file.\",\"inputSchema\":{\"type\":\"object\"},\"annotations\":{\"readOnlyHint\":false}}]",
+      "contract": {
+        "digest": "sha256-EElRjaxCDoKPx+5Pggp+uMlPBOZmDDmKR+jzQQr0WHI=",
+        "hex": "sha256:1049518dac420e828fc7ee4f820a7eb8c94f04e6660c398a47e8f3410af45872",
+        "canonical": "[{\"description\":\"Read a file.\",\"inputSchema\":{\"type\":\"object\"},\"name\":\"read_file\"}]"
+      },
+      "extras": {
+        "digest": "sha256-p9clya9gL1QRbgrZodGLEAIPJIQUO5ZkgO6V4uuksE8=",
+        "hex": "sha256:a7d725c9af602f54116e0ad9a1d18b10020f2484143b966480ee95e2eba4b04f",
+        "canonical": "{\"tools\":{\"read_file\":{\"annotations\":{\"readOnlyHint\":false}}}}"
+      }
+    },
+    {
       "id": "extras-numbers-as-written",
       "note": "Numbers in extras, in forms JSON allows.",
       "tools": "[{\"name\":\"n\",\"_meta\":{\"price\":1.0,\"limit\":1E2,\"ratio\":0.50,\"big\":9007199254740993,\"tiny\":1e-7}}]",
@@ -804,6 +834,32 @@
       }
     },
     {
+      "id": "duplicate-names-before-lone-surrogate",
+      "note": "Two tools share a name, both carry extras, and the first listed holds a lone surrogate in them: TSD-NAME and TSD-TEXT both apply, and section 10 reports TSD-NAME.",
+      "tools": "[{\"name\":\"search\",\"description\":\"Search the web.\",\"title\":\"Web \\ud800 search\"},{\"name\":\"search\",\"description\":\"Search the docs.\",\"title\":\"Docs search\"}]",
+      "contract": {
+        "digest": "sha256-+KFZbT1NAvgwjx+ZGq/rkpRMzXZRftl4baxdoEbNKEk=",
+        "hex": "sha256:f8a1596d3d4d02f8308f1f991aafeb92944ccd76517ed9786dac5da046cd2849",
+        "canonical": "[{\"description\":\"Search the docs.\",\"inputSchema\":{},\"name\":\"search\"},{\"description\":\"Search the web.\",\"inputSchema\":{},\"name\":\"search\"}]"
+      },
+      "extras": {
+        "error": "TSD-NAME"
+      }
+    },
+    {
+      "id": "duplicate-names-before-number-overflow",
+      "note": "The same with a number that has no double in the first one's extras: TSD-NAME and TSD-NUMBER both apply, and section 10 reports TSD-NAME.",
+      "tools": "[{\"name\":\"search\",\"description\":\"Search the web.\",\"_meta\":{\"limit\":1e400}},{\"name\":\"search\",\"description\":\"Search the docs.\",\"title\":\"Docs search\"}]",
+      "contract": {
+        "digest": "sha256-+KFZbT1NAvgwjx+ZGq/rkpRMzXZRftl4baxdoEbNKEk=",
+        "hex": "sha256:f8a1596d3d4d02f8308f1f991aafeb92944ccd76517ed9786dac5da046cd2849",
+        "canonical": "[{\"description\":\"Search the docs.\",\"inputSchema\":{},\"name\":\"search\"},{\"description\":\"Search the web.\",\"inputSchema\":{},\"name\":\"search\"}]"
+      },
+      "extras": {
+        "error": "TSD-NAME"
+      }
+    },
+    {
       "id": "tool-is-string",
       "note": "An entry that is not an object.",
       "tools": "[\"ping\"]",
@@ -873,6 +929,17 @@
       "id": "one-bad-among-good",
       "note": "One entry that is not a tool: the whole set has no digest.",
       "tools": "[{\"name\":\"ping\"},{\"name\":null}]",
+      "contract": {
+        "error": "TSD-TOOL"
+      },
+      "extras": {
+        "error": "TSD-TOOL"
+      }
+    },
+    {
+      "id": "lone-surrogate-before-bad-entry",
+      "note": "A lone surrogate in the first tool and an entry with an empty name after it: TSD-TOOL and TSD-TEXT both apply, and section 10 reports TSD-TOOL for both digests.",
+      "tools": "[{\"name\":\"read\",\"description\":\"x\\ud800y\"},{\"name\":\"\"}]",
       "contract": {
         "error": "TSD-TOOL"
       },
@@ -975,6 +1042,13 @@
     },
     {
       "ids": [
+        "annotation-read-only-true",
+        "annotation-read-only-false"
+      ],
+      "digest": "contract"
+    },
+    {
+      "ids": [
         "extras-numbers-as-written",
         "extras-numbers-canonical"
       ],
@@ -1058,6 +1132,13 @@
         "extras-contract-changed"
       ],
       "digest": "contract"
+    },
+    {
+      "ids": [
+        "annotation-read-only-true",
+        "annotation-read-only-false"
+      ],
+      "digest": "extras"
     },
     {
       "ids": [
