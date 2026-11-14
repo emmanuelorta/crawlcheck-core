@@ -8,7 +8,7 @@
 Same three tools as crawlcheck.langchain (crawlcheck_check_site, crawlcheck_verify_fact, crawlcheck_fetch); they fail
 closed. Needs crewai; this package itself still has no dependencies."""
 import json
-from .tools import agent_tools
+from .tools import agent_tools, bind_tool
 from .llama_index import _schema_model
 
 
@@ -23,8 +23,8 @@ def crawlcheck_tools(cc=None, agent=None, allow_warn=False, confirm=None, max_ch
         cc = CrawlCheck()
     out = []
     for t in agent_tools(cc, agent=agent, allow_warn=allow_warn, confirm=confirm, max_chars=max_chars):
-        def _run(self, _execute=t["execute"], **kwargs):
-            return json.dumps(_execute({k: v for k, v in kwargs.items() if v is not None}), default=str)
+        def _run(self, *args, _call=bind_tool(t), **kwargs):   # 1.16.3: _call is keyword-only, so tool.run("example.com") maps to the first schema field
+            return _call(*args, **kwargs)
         from pydantic import BaseModel
         cls = type("CrawlCheck_" + t["name"], (BaseTool,), {
             "__module__": __name__, "__qualname__": "CrawlCheck_" + t["name"],

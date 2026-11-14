@@ -14,7 +14,7 @@ from . import log as _log
 from .staple import staple_check, staple_from_headers
 from .revocations import new_revocation_store, apply_revocations, revoked_for
 
-VERSION = "1.16.2"
+VERSION = "1.16.3"
 ACTIONS = ("read", "cite", "connect", "transact", "administer")
 
 
@@ -173,8 +173,9 @@ def _no_redirect_request(method, url, headers, data, timeout):
 class CrawlCheck:
     """client = CrawlCheck(key=None)   # a licence key is optional; it unlocks full findings for licensed domains"""
 
-    def __init__(self, key=None, base="https://crawlcheck.io", timeout=30, log_store=None, revocation_store=None, private_lookups=False):
+    def __init__(self, key=None, base="https://crawlcheck.io", timeout=30, log_store=None, revocation_store=None, private_lookups=False, headers=None):
         self.key, self.base, self.timeout = key, base.rstrip("/"), timeout
+        self.headers = dict(headers or {})   # extra headers for every request to CrawlCheck (same as the JS client's headers option)
         self._kids = None
         self._kp = None   # conf2: (read time, key policy)
         self.last_guard = None
@@ -192,6 +193,7 @@ class CrawlCheck:
     def _req(self, method, path, query=None, body=None):
         url = self.base + path + ("?" + urllib.parse.urlencode({k: v for k, v in (query or {}).items() if v is not None}) if query else "")
         h = {"user-agent": "crawlcheck-python/" + VERSION, "accept": "application/json"}
+        h.update({str(k).lower(): v for k, v in self.headers.items()})
         if self.key:
             h["x-crawlcheck-key"] = self.key
         data = None

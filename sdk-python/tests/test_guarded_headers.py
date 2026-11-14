@@ -5,6 +5,9 @@ from crawlcheck import client as C
 H = {"Authorization": "Bearer secret", "Cookie": "sid=1", "X-Api-Key": "k", "Accept": "text/html", "User-Agent": "t/1"}
 
 
+SELFTEST = {"user-agent": "crawlcheck-selftest sdk-python-tests"}   # our own runs: the adoption meter counts them as ours
+
+
 def run(mapping, url="https://a.example/x"):
     seen = []
 
@@ -13,7 +16,7 @@ def run(mapping, url="https://a.example/x"):
         to = mapping.get(u)
         return (302, {"Location": to}, b"") if to else (200, {}, b"ok")
 
-    cc = C.CrawlCheck()
+    cc = C.CrawlCheck(headers=SELFTEST)
     cc.last_guard = {"why": []}
     cc.guard = lambda *a, **k: (True, {"decision": "allow"})
     orig = C.receipt_header

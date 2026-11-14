@@ -9,7 +9,7 @@ paying or administering a site), crawlcheck_verify_fact (a phone, address, hours
 what the business publishes) and crawlcheck_fetch (fetches a page only after its domain, and every redirect hop,
 proceeds). They fail closed. Needs langchain-core; this package itself still has no dependencies."""
 import json
-from .tools import agent_tools
+from .tools import agent_tools, bind_tool
 
 
 def crawlcheck_tools(cc=None, agent=None, allow_warn=False, confirm=None, max_chars=20000):
@@ -23,9 +23,7 @@ def crawlcheck_tools(cc=None, agent=None, allow_warn=False, confirm=None, max_ch
         cc = CrawlCheck()
     out = []
     for t in agent_tools(cc, agent=agent, allow_warn=allow_warn, confirm=confirm, max_chars=max_chars):
-        def run(_execute=t["execute"], **kwargs):
-            return json.dumps(_execute(kwargs), default=str)
-        out.append(StructuredTool.from_function(func=run, name=t["name"], description=t["description"], args_schema=t["parameters"]))
+        out.append(StructuredTool.from_function(func=bind_tool(t, drop_none=False), name=t["name"], description=t["description"], args_schema=t["parameters"]))
     return out
 
 

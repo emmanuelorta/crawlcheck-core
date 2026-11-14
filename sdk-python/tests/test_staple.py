@@ -2,6 +2,9 @@ import json, os, unittest
 from crawlcheck import staple_check, staple_from_headers, CrawlCheck
 F = json.load(open(os.path.join(os.path.dirname(__file__), "fixtures", "staple.json")))
 K = [F["kid"]]
+SELFTEST = {"user-agent": "crawlcheck-selftest sdk-python-tests"}   # our own runs: the adoption meter counts them as ours
+
+
 class T(unittest.TestCase):
     def test_valid(self):
         c = staple_check(F["valid"], "example.com", K); self.assertTrue(c["valid"], c["reason"]); self.assertEqual(c["decisions"]["transact"], "block")
@@ -14,7 +17,7 @@ class T(unittest.TestCase):
     def test_unpublished(self): self.assertFalse(staple_check(F["valid"], "example.com", ["x"])["valid"])
     def test_headers(self): self.assertEqual(staple_from_headers({"CrawlCheck-Staple": "v"}), "v")
     def test_resolve_for(self):
-        c = CrawlCheck(); calls = []
+        c = CrawlCheck(headers=SELFTEST); calls = []
         c.published_key_ids = lambda refresh=False: K
         def fake(m, p, q=None, b=None):
             calls.append(p); return {"actions": {"read": {"decision": "warn"}}}

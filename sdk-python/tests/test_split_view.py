@@ -10,6 +10,9 @@ from crawlcheck.log import _walk_heads
 F = json.load(open(os.path.join(os.path.dirname(__file__), "fixtures", "split-view.json")))
 
 
+SELFTEST = {"user-agent": "crawlcheck-selftest sdk-python-tests"}   # our own runs: the adoption meter counts them as ours
+
+
 class SplitView(unittest.TestCase):
     def test_gossip_detects_fork(self):
         a, b = new_log_store(), new_log_store()
@@ -68,7 +71,7 @@ class SplitView(unittest.TestCase):
         self.assertEqual(_walk_heads(batched, 3, 4), [])
 
     def test_live_log_consistent_and_witnessed(self):
-        c = CrawlCheck()
+        c = CrawlCheck(headers=SELFTEST)
         c.resolve("github.com")
         r = c.log_check(report=False)
         self.assertTrue(r["consistent"], r["summary"])

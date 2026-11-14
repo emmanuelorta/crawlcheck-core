@@ -2,9 +2,12 @@ import json, unittest
 from crawlcheck import CrawlCheck, agent_tools, tools_for
 
 
+SELFTEST = {"user-agent": "crawlcheck-selftest sdk-python-tests"}   # our own runs: the adoption meter counts them as ours
+
+
 class ToolsTest(unittest.TestCase):
     def setUp(self):
-        self.tools = agent_tools(CrawlCheck())
+        self.tools = agent_tools(CrawlCheck(headers=SELFTEST))
 
     def test_shapes(self):
         self.assertEqual([t["name"] for t in self.tools], ["crawlcheck_check_site", "crawlcheck_verify_fact", "crawlcheck_fetch"])
@@ -41,12 +44,12 @@ if __name__ == "__main__":
 
 class VerifyFactTest(unittest.TestCase):
     def test_bad_input(self):
-        t = agent_tools(CrawlCheck())[1]
+        t = agent_tools(CrawlCheck(headers=SELFTEST))[1]
         self.assertFalse(t["execute"]({"site": "not a domain", "field": "phone", "value": "1"})["ok"])
         self.assertFalse(t["execute"]({"site": "example.com", "field": "email", "value": "x"})["ok"])
 
     def test_live_signed(self):
-        r = agent_tools(CrawlCheck())[1]["execute"]({"site": "crawlcheck.io", "field": "phone", "value": "(720) 555-0100"})
+        r = agent_tools(CrawlCheck(headers=SELFTEST))[1]["execute"]({"site": "crawlcheck.io", "field": "phone", "value": "(720) 555-0100"})
         if r.get("ok"):
             self.assertEqual(r["kind"], "crawlcheck-field-check")
             self.assertTrue(r["verified"])

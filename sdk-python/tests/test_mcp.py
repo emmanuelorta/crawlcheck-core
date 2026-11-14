@@ -5,8 +5,11 @@ from crawlcheck.mcp import with_preflight, McpPreflight, McpPreflightRefused
 TOOLS = [{"name": "search", "description": "find", "inputSchema": {"type": "object"}, "annotations": {"readOnlyHint": True}},
          {"name": "delete_repo", "description": "rm", "inputSchema": {"type": "object"}, "annotations": {"destructiveHint": True}}]
 
+SELFTEST = {"user-agent": "crawlcheck-selftest sdk-python-tests"}   # our own runs: the adoption meter counts them as ours
+
+
 def cc(table):
-    c = CrawlCheck(); c.calls = []
+    c = CrawlCheck(headers=SELFTEST); c.calls = []
     def pf(domain, action="read", agent=None, template=None, policy=None, operation=None, mcp=None):
         c.scopes.append(mcp)
         c.calls.append((domain, action, template) if operation is None else (domain, action, template, operation.get("tool")))

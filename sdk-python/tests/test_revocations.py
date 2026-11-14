@@ -6,8 +6,11 @@ F = json.load(open(os.path.join(os.path.dirname(__file__), "fixtures", "revocati
 KIDS = [k.get("kid") or key_id(k) for k in F["directory"]["keys"]]
 
 
+SELFTEST = {"user-agent": "crawlcheck-selftest sdk-python-tests"}   # our own runs: the adoption meter counts them as ours
+
+
 def client(state):
-    c = CrawlCheck()
+    c = CrawlCheck(headers=SELFTEST)
     c.published_key_ids = lambda refresh=False: KIDS
 
     def fake(m, p, q=None, b=None):
@@ -47,7 +50,7 @@ class T(unittest.TestCase):
         self.assertFalse(ok); self.assertNotIn("revoked", c.last_guard)   # read is never revoked; network cut still fails closed
 
     def test_tampered_never_applied(self):
-        c = CrawlCheck(); c.published_key_ids = lambda refresh=False: KIDS
+        c = CrawlCheck(headers=SELFTEST); c.published_key_ids = lambda refresh=False: KIDS
         bad = copy.deepcopy(F["full"]); bad["revoked"] = []
         c._req = lambda m, p, q=None, b=None: bad
         r = c.sync_revocations()

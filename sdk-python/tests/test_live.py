@@ -5,8 +5,11 @@ import unittest
 from crawlcheck import CrawlCheck, CrawlCheckError, canon, verify_document
 
 
+SELFTEST = {"user-agent": "crawlcheck-selftest sdk-python-tests"}   # our own runs: the adoption meter counts them as ours
+
+
 class T(unittest.TestCase):
-    cc = CrawlCheck()
+    cc = CrawlCheck(headers=SELFTEST)
 
     def test_canon_matches_js(self):
         self.assertEqual(canon({"b": 1, "a": [True, None, 1.5, 1.0, "é\n"], "c": {"z": 1e-7, "y": 1e21, "x": 1e16}}),
@@ -74,7 +77,7 @@ class T(unittest.TestCase):
 
     def test_mcp_lockfile_matches_server_and_blocks_changes(self):
         from crawlcheck import CrawlCheck, verify_document, lock_from_tools, check_lock
-        c = CrawlCheck()
+        c = CrawlCheck(headers=SELFTEST)
         tools = [
             {"name": "create_issue", "description": "Create an issue in a repository.", "inputSchema": {"type": "object", "properties": {"title": {"type": "string"}}, "required": ["title"]}},
             {"name": "get_issue", "description": "Read one issue — by number.", "inputSchema": {"type": "object", "properties": {"n": {"type": "integer"}}}},

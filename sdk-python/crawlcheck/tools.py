@@ -123,3 +123,23 @@ def tools_for(fmt, tools):
     else:
         raise ValueError("format must be openai, anthropic or mcp")
     return defs, call
+
+
+def bind_tool(t, drop_none=True):
+    """A plain callable for one agent tool: keyword arguments by schema name, positional arguments in schema order.
+    The executor is held in the closure, so no caller argument can land on it (1.16.3: a positional argument to a
+    crewAI tool used to bind to the internal executor parameter and fail with "'str' object is not callable")."""
+    import json
+    execute, names = t["execute"], list((t.get("parameters") or {}).get("properties") or {})
+
+    def run(*args, **kwargs):
+        if len(args) > len(names):
+            raise TypeError("%s takes at most %d positional arguments (%s), got %d" % (t["name"], len(names), ", ".join(names), len(args)))
+        for k, v in zip(names, args):
+            if k in kwargs:
+                raise TypeError("%s got multiple values for argument %r" % (t["name"], k))
+            kwargs[k] = v
+        a = {k: v for k, v in kwargs.items() if v is not None} if drop_none else kwargs
+        return json.dumps(execute(a), default=str)
+    run.__name__ = t["name"]
+    return run

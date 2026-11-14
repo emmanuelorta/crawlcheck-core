@@ -8,7 +8,7 @@ Same three tools as crawlcheck.langchain; they fail closed. Needs llama-index-co
 no dependencies."""
 import json
 from typing import Literal, Optional
-from .tools import agent_tools
+from .tools import agent_tools, bind_tool
 
 
 def _schema_model(name, params):
@@ -35,7 +35,5 @@ def crawlcheck_tools(cc=None, agent=None, allow_warn=False, confirm=None, max_ch
         cc = CrawlCheck()
     out = []
     for t in agent_tools(cc, agent=agent, allow_warn=allow_warn, confirm=confirm, max_chars=max_chars):
-        def run(_execute=t["execute"], **kwargs):
-            return json.dumps(_execute({k: v for k, v in kwargs.items() if v is not None}), default=str)
-        out.append(FunctionTool.from_defaults(fn=run, name=t["name"], description=t["description"], fn_schema=_schema_model(t["name"] + "_args", t["parameters"])))
+        out.append(FunctionTool.from_defaults(fn=bind_tool(t), name=t["name"], description=t["description"], fn_schema=_schema_model(t["name"] + "_args", t["parameters"])))
     return out
