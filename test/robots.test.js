@@ -186,3 +186,16 @@ for (const ua of ["Mediapartners-Google", "APIs-Google"]) {
     assert.equal(own.allowed, false); assert.equal(own.named, true);
   });
 }
+
+test("groupFor: Bingbot follows an msnbot group when the file has none for bingbot", () => {
+  const legacy = parseGroups("User-agent: msnbot\nDisallow: /private/\n\nUser-agent: *\nDisallow: /\n");
+  assert.equal(pathAllowed(groupFor(legacy, "bingbot"), "/"), true);
+  assert.equal(pathAllowed(groupFor(legacy, "bingbot"), "/private/x"), false);
+  // an old "block msnbot" rule blocks Bingbot too
+  assert.equal(pathAllowed(groupFor(parseGroups("User-agent: msnbot\nDisallow: /\n\nUser-agent: *\nAllow: /\n"), "bingbot"), "/"), false);
+  // a group written for bingbot wins over the msnbot one
+  const own = parseGroups("User-agent: bingbot\nDisallow: /a/\n\nUser-agent: msnbot\nDisallow: /\n");
+  assert.equal(pathAllowed(groupFor(own, "bingbot"), "/b"), true);
+  // the fallback never reaches another crawler
+  assert.equal(pathAllowed(groupFor(parseGroups("User-agent: msnbot\nDisallow: /\n"), "Googlebot"), "/"), true);
+});

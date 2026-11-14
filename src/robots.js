@@ -95,7 +95,11 @@ export function starGroup(groups) {
 export const UA_FALLBACK = {
   "google-inspectiontool": ["googlebot"], "google-cloudvertexbot": ["googlebot"],
   "googleother-image": ["googleother"], "googleother-video": ["googleother"],
-  "googlebot-image": ["googlebot"], "googlebot-video": ["googlebot"], "googlebot-news": ["googlebot"]
+  "googlebot-image": ["googlebot"], "googlebot-video": ["googlebot"], "googlebot-news": ["googlebot"],
+  // Bing: when a file has a group for msnbot and none for bingbot, Bingbot follows the msnbot group
+  // (blogs.bing.com/webmaster, "Bing crawler bingbot on the horizon", June 2010, and "To crawl or not to
+  // crawl", May 2012). A group written for bingbot still wins. Production reads it this way since 2026-11-13.
+  "bingbot": ["msnbot"]
 };
 
 // RFC 9309 2.2.1: the most specific matching product token wins, a token is
