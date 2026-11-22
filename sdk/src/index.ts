@@ -42,14 +42,14 @@ export const jcsCanon = J.jcsCanon as (v: unknown) => string;
 export const jcsContract = J.jcsContract as (t: McpTool) => { name: string; description: string; inputSchema: unknown; outputSchema?: unknown };
 export const jcsExtras = J.jcsExtras as (t: McpTool) => Record<string, unknown>;
 // ── mcp-tool-set-digest/1 (1.15.0, https://github.com/alexar76/mcp-tool-set-digest): the shared definition, nothing repaired or bounded ──
-export type ToolSetDigestCode = "TSD-PAGE" | "TSD-TOOL" | "TSD-NUMBER" | "TSD-TEXT" | "TSD-NAME";
+export type ToolSetDigestCode = "TSD-PAGE" | "TSD-TOOL" | "TSD-NUMBER" | "TSD-TEXT" | "TSD-NAME" | "TSD-DEPTH";
 export type ToolSetDigestSide = { digest: string; canonical: string } | { digest: null } | { error: ToolSetDigestCode; tool?: string };
 export interface ToolSetDigest { spec: "mcp-tool-set-digest/1"; contract: ToolSetDigestSide; extras: ToolSetDigestSide; tools?: { name: string; contract: string; extras: string | null; extras_error?: ToolSetDigestCode }[] }
 export const TSD_SPEC = T.TSD_SPEC as "mcp-tool-set-digest/1";
 /** The contract and extras digests of a complete tools/list result as mcp-tool-set-digest/1 defines them. Each side is a digest or an error code; a member outside the contract never takes the contract digest away. Equals lock.jcs_v1 in the ordinary case. */
 export const toolSetDigest = T.toolSetDigest as (tools: unknown[], opts?: { partial?: boolean; perTool?: boolean }) => Promise<ToolSetDigest>;
-/** RFC 8785 text of a parsed JSON value; throws ToolSetDigestError (TSD-TEXT, TSD-NUMBER) where it has none. */
-export const tsdCanonical = T.tsdCanonical as (v: unknown) => string;
+/** RFC 8785 text of a parsed JSON value; throws ToolSetDigestError (TSD-TEXT, TSD-NUMBER, TSD-DEPTH) where it has none. level: nesting level of v (1 = the tools array). */
+export const tsdCanonical = T.tsdCanonical as (v: unknown, level?: number) => string;
 export const ToolSetDigestError = T.ToolSetDigestError as new (code: ToolSetDigestCode, detail: string, tool?: string) => Error & { code: ToolSetDigestCode; tool?: string };
 /** The most tools a v1 lockfile hashes; a longer list is compared on that many and marked incomplete. */
 export const LOCK_V1_MAX_TOOLS = C.LOCK_V1_MAX_TOOLS as number;
