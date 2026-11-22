@@ -43,27 +43,99 @@ export function abortable(ms) {
 // browser-shaped Accept; so does this fetcher now. Markdown negotiation is
 // measured on purpose, once, in agentSurfaces, with Accept: text/markdown.
 export const CRAWLER_ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
-export async function grab(url) {
+
+// ── safe transport (2026-11-22, outside audit F5/F6) ───────────────────────
+// These probes are fed URLs built from a domain someone else typed, so the transport is a security boundary:
+//  - only http(s); never a loopback, private, link-local, CGNAT, multicast or reserved address, a bare "localhost",
+//    or a .local / .internal / .localhost name - checked on the URL and on EVERY redirect hop (redirects are followed
+//    by hand, at most MAX_REDIRECTS), and, under Node, on the addresses the name resolves to (a name that does not
+//    resolve is left to fetch to fail). DNS can still change between this check and the connection (rebinding):
+//    run untrusted fetches behind an egress policy as well; this is a guard, not a firewall.
+//  - bodies are read as a stream and cut at a byte ceiling, so a 2 GB answer costs at most the ceiling in memory;
+//    the result says whether it was cut (truncated) instead of reporting the cut length as the whole.
+// { trustedNetwork: true } turns the address checks off for callers that fetch their own infrastructure on purpose.
+export const MAX_REDIRECTS = 5;
+export const BYTE_CEILING = 2 * 1024 * 1024;
+function v4Private(a) {
+  const p = a.split(".").map(Number); if (p.length !== 4 || p.some((n) => !(n >= 0 && n <= 255))) return false;
+  const [x, y] = p;
+  return x === 0 || x === 10 || x === 127 || (x === 100 && y >= 64 && y <= 127) || (x === 169 && y === 254) || (x === 172 && y >= 16 && y <= 31) ||
+    (x === 192 && y === 168) || (x === 192 && y === 0) || (x === 198 && (y === 18 || y === 19)) || x >= 224;
+}
+function v6Private(a) {
+  const s = a.toLowerCase().replace(/^\[|\]$/g, "");
+  if (s === "::" || s === "::1") return true;
+  const m = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(s); if (m) return v4Private(m[1]);
+  return /^(fc|fd|fe8|fe9|fea|feb|ff)/.test(s) || /^64:ff9b:/.test(s) || /^2001:db8:/.test(s);
+}
+export function isPublicHost(host) {
+  const h = String(host || "").toLowerCase().replace(/\.$/, "");
+  if (!h) return false;
+  if (h === "localhost" || /\.(localhost|local|internal|home\.arpa)$/.test(h)) return false;
+  if (h.startsWith("[") || h.includes(":")) return !v6Private(h);
+  if (/^\d+(\.\d+){3}$/.test(h)) return !v4Private(h);
+  if (/^(0x[0-9a-f]+|\d+)$/i.test(h) || /^[0-9.]+$/.test(h)) return false;   // integer / short-form IPv4 spellings
+  return true;
+}
+async function resolvesPublic(host) {
+  if (!(globalThis.process && process.versions && process.versions.node)) return true;
+  if (/^\[|:|^\d+(\.\d+){3}$/.test(host)) return true;   // literals were checked by isPublicHost
+  try {
+    const dns = await import("node:dns");
+    const addrs = await dns.promises.lookup(host, { all: true, verbatim: true });
+    return addrs.every((a) => (a.family === 6 ? !v6Private(a.address) : !v4Private(a.address)));
+  } catch (e) { return true; }   // unresolvable: fetch fails on its own
+}
+export async function safeFetch(url, init, opts) {
+  const o = opts || {}, max = o.maxRedirects == null ? MAX_REDIRECTS : o.maxRedirects;
+  let u = String(url);
+  for (let hop = 0; hop <= max; hop++) {
+    const p = new URL(u);
+    if (p.protocol !== "https:" && p.protocol !== "http:") throw new Error("blocked: scheme " + p.protocol);
+    if (!o.trustedNetwork && (!isPublicHost(p.hostname) || !(await resolvesPublic(p.hostname)))) throw new Error("blocked: non-public address " + p.hostname);
+    const res = await fetch(u, Object.assign({}, init, { redirect: "manual" }));
+    const loc = res.headers && res.headers.get("location");
+    if (res.status >= 300 && res.status < 400 && loc) {
+      try { if (res.body && res.body.cancel) await res.body.cancel(); } catch (e) { }
+      u = new URL(loc, u).toString(); continue;
+    }
+    if (!res.url) { try { Object.defineProperty(res, "url", { value: u }); } catch (e) { } }
+    res.finalUrl = res.url || u;
+    return res;
+  }
+  throw new Error("blocked: more than " + max + " redirects");
+}
+export async function readCapped(res, ceiling) {
+  const cap = ceiling || BYTE_CEILING;
+  if (!res.body || !res.body.getReader) { const b = new Uint8Array(await res.arrayBuffer()); return { buf: b.slice(0, cap), bytes: Math.min(b.byteLength, cap), truncated: b.byteLength > cap }; }
+  const rd = res.body.getReader(), parts = []; let n = 0, truncated = false;
+  for (;;) {
+    const { done, value } = await rd.read(); if (done) break;
+    if (n + value.byteLength > cap) { parts.push(value.subarray(0, cap - n)); n = cap; truncated = true; try { await rd.cancel(); } catch (e) { } break; }
+    parts.push(value); n += value.byteLength;
+  }
+  const buf = new Uint8Array(n); let off = 0; for (const x of parts) { buf.set(x, off); off += x.byteLength; }
+  return { buf, bytes: n, truncated };
+}
+const dec = (b, n) => new TextDecoder("utf-8", { fatal: false }).decode(b.subarray(0, n));
+export async function grab(url, opts) {
   const t0 = Date.now();
   try {
-    const res = await fetch(url, {
+    const res = await safeFetch(url, {
       headers: { "User-Agent": UA, Accept: CRAWLER_ACCEPT },
-      redirect: "follow",
       signal: abortable(TIMEOUT_MS),
-    });
-    const buf = await res.arrayBuffer();
-    const bytes = buf.byteLength;
-    const body = new TextDecoder("utf-8", { fatal: false }).decode(
-      buf.slice(0, 60000)
-    );
+    }, opts);
+    const r = await readCapped(res, (opts && opts.ceiling) || BYTE_CEILING);
+    const body = dec(r.buf, 60000);
     const headers = {};
     res.headers.forEach((v, k) => (headers[k.toLowerCase()] = v));
     return {
       status: res.status,
       headers,
       body,
-      bytes,
-      finalUrl: res.url || url,
+      bytes: r.bytes,
+      truncated: r.truncated,
+      finalUrl: res.finalUrl || res.url || url,
       ms: Date.now() - t0,
       error: null,
     };
@@ -73,6 +145,7 @@ export async function grab(url) {
       headers: {},
       body: "",
       bytes: 0,
+      truncated: false,
       finalUrl: url,
       ms: Date.now() - t0,
       error: String(e && e.message ? e.message : e),
@@ -121,10 +194,11 @@ export async function agentSurfaces(base, root) {
   out.evidence.link_header = { value: lh.slice(0, 180) };
   // Markdown negotiation needs its own request because it turns on Accept.
   try {
-    const res = await fetch(base + "/", {
+    const res = await safeFetch(base + "/", {
       headers: { "User-Agent": UA, Accept: "text/markdown" },
-      redirect: "follow", signal: abortable(TIMEOUT_MS)
+      signal: abortable(TIMEOUT_MS)
     });
+    try { if (res.body && res.body.cancel) await res.body.cancel(); } catch (e) { }
     const ct = (res.headers.get("content-type") || "").toLowerCase();
     out.found.markdown = ct.indexOf("text/markdown") !== -1;
     out.evidence.markdown = { content_type: ct.slice(0, 60) };
@@ -148,11 +222,11 @@ export async function agentSurfaces(base, root) {
 export async function skillMd(host) {
   const out = { url: "https://" + host + "/SKILL.md", status: null, bytes: 0, markdown: false, frontmatter: false, name: "", present: false };
   try {
-    const r = await fetch(out.url, { headers: { "user-agent": UA, accept: "text/markdown, text/plain" }, redirect: "follow" });
+    const r = await safeFetch(out.url, { headers: { "user-agent": UA, accept: "text/markdown, text/plain" }, signal: abortable(TIMEOUT_MS) });
     out.status = r.status;
     if (r.status !== 200) return out;
     const ct = String(r.headers.get("content-type") || "").toLowerCase();
-    const b = (await r.text()).slice(0, 60000);
+    const b = dec((await readCapped(r, 60000)).buf, 60000);
     out.bytes = b.length;
     if (/^\s*<(!doctype|html)/i.test(b)) return out;      // soft 404
     if (/html/.test(ct) && !/markdown|plain/.test(ct)) return out;
@@ -170,11 +244,11 @@ export async function skillMd(host) {
 export async function agentsMd(host) {
   const out = { url: "https://" + host + "/agents.md", status: null, bytes: 0, text: "" };
   try {
-    const r = await fetch(out.url, { redirect: "follow", signal: abortable(8000),
+    const r = await safeFetch(out.url, { signal: abortable(8000),
       headers: { "user-agent": UA, accept: "text/markdown,text/plain" } });
     out.status = r.status;
     if (r.status !== 200) return out;
-    const b = (await r.text()).slice(0, 300000);
+    const b = dec((await readCapped(r, 300000)).buf, 300000);
     // A 200 that hands back HTML is a soft 404, not a policy file.
     if (/^\s*<(!doctype|html)/i.test(b)) { out.status = 200; out.bytes = b.length; out.text = ""; out.html = true; return out; }
     out.bytes = b.length;
