@@ -1,7 +1,7 @@
 // hdr1: caller headers stay on the origin the caller named; after a redirect to another origin only the allowlist travels.
 import test from "node:test"; import assert from "node:assert/strict";
 import { CrawlCheck, GUARDED_SAFE_HEADERS } from "../dist/index.js";
-function client() { const cc = new CrawlCheck(); cc.guard = async () => ({ proceed: true, why: [], receipt: { decision: "allow" }, header: { "crawlcheck-receipt": "r" } }); return cc; }
+function client() { const cc = new CrawlCheck({ headers: { "user-agent": "crawlcheck-selftest sdk-js-tests" } }); cc.guard = async () => ({ proceed: true, why: [], receipt: { decision: "allow" }, header: { "crawlcheck-receipt": "r" } }); return cc; }
 function recorder(map) { const seen = []; const f = async (u, init) => { seen.push({ url: String(u), headers: Object.fromEntries(new Headers(init.headers).entries()) }); const to = map[String(u)]; return to ? new Response(null, { status: 302, headers: { location: to } }) : new Response("ok", { status: 200 }); }; return { f, seen }; }
 const H = { authorization: "Bearer secret", cookie: "sid=1", "x-api-key": "k", accept: "text/html", "user-agent": "t/1" };
 test("another host: Authorization, Cookie and custom headers are dropped; the allowlist and the receipt stay", async () => {

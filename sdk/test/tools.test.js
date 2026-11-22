@@ -1,7 +1,7 @@
 // Agent tools (1.6.0): shapes offline, decisions against the live API. npm test
 import test from "node:test"; import assert from "node:assert/strict";
 import { CrawlCheck, agentTools, toolsFor } from "../dist/index.js";
-const cc = new CrawlCheck();
+const cc = new CrawlCheck({ headers: { "user-agent": "crawlcheck-selftest sdk-js-tests" } });
 const tools = agentTools(cc);
 
 test("agent tools: two tools, each with a JSON-schema object and an execute()", () => {

@@ -41,7 +41,7 @@ test("1.9.0: the chain walk reads 200 heads per request, and falls back to one p
   assert.deepEqual(await walkHeads(batched, 3, 4), []);
 });
 test("live: the production log is consistent and GitHub's witness co-signature verifies", async () => {
-  const c = new CrawlCheck(); await c.resolve("github.com");
+  const c = new CrawlCheck({ headers: { "user-agent": "crawlcheck-selftest sdk-js-tests" } }); await c.resolve("github.com");
   const r = await c.logCheck({ report: false });
   assert.equal(r.consistent, true, r.summary);
   assert.ok(r.witnessed && r.witnessed.token === true, JSON.stringify(r.witnessed));
