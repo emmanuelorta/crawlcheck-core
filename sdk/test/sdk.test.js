@@ -40,8 +40,15 @@ test("a tampered live bundle fails offline", async () => {
   assert.equal(v.checks.find((x) => x.id === "manifest_hash").ok, false);
 });
 
+// /api/impact opened to keyless callers on 2026-11-14 (open1/open3: everything about today's scan is free).
+// A site's receipt list stays with its owner, so it is the route that still answers 403 locked without a key.
 test("locked data surfaces as a typed error, not a crash", async () => {
-  await assert.rejects(c.impact({ domain: "wikipedia.org" }), (e) => e instanceof CrawlCheckError && e.locked === true && e.status === 403);
+  await assert.rejects(c.receipts("wikipedia.org"), (e) => e instanceof CrawlCheckError && e.locked === true && e.status === 403);
+});
+
+test("fix impact for today's scan is open without a key", async () => {
+  const r = await c.impact({ domain: "wikipedia.org" });
+  assert.equal(r.kind, "crawlcheck-fix-impact");
 });
 
 test("live preflight: the decision receipt verifies offline, its key is published, a changed decision fails, guard agrees", async () => {
