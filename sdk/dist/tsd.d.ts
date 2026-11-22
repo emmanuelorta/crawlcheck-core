@@ -4,8 +4,8 @@ export declare class ToolSetDigestError extends Error {
     code: any;
     tool?: any;
 }
-/** RFC 8785 text of a parsed JSON value. Throws ToolSetDigestError (TSD-TEXT, TSD-NUMBER) where the value has none. */
-export declare function tsdCanonical(v: any): any;
+/** RFC 8785 text of a parsed JSON value. Throws ToolSetDigestError (TSD-TEXT, TSD-NUMBER, TSD-DEPTH) where the value has none. */
+export declare function tsdCanonical(v: any, level?: number): any;
 /** A tool's contract entry (section 4). */
 export declare function tsdContractEntry(tool: any): {
     name: any;

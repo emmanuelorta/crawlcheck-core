@@ -145,7 +145,7 @@ export declare const jcsContract: (t: McpTool) => {
     outputSchema?: unknown;
 };
 export declare const jcsExtras: (t: McpTool) => Record<string, unknown>;
-export type ToolSetDigestCode = "TSD-PAGE" | "TSD-TOOL" | "TSD-NUMBER" | "TSD-TEXT" | "TSD-NAME";
+export type ToolSetDigestCode = "TSD-PAGE" | "TSD-TOOL" | "TSD-NUMBER" | "TSD-TEXT" | "TSD-NAME" | "TSD-DEPTH";
 export type ToolSetDigestSide = {
     digest: string;
     canonical: string;
@@ -172,8 +172,8 @@ export declare const toolSetDigest: (tools: unknown[], opts?: {
     partial?: boolean;
     perTool?: boolean;
 }) => Promise<ToolSetDigest>;
-/** RFC 8785 text of a parsed JSON value; throws ToolSetDigestError (TSD-TEXT, TSD-NUMBER) where it has none. */
-export declare const tsdCanonical: (v: unknown) => string;
+/** RFC 8785 text of a parsed JSON value; throws ToolSetDigestError (TSD-TEXT, TSD-NUMBER, TSD-DEPTH) where it has none. level: nesting level of v (1 = the tools array). */
+export declare const tsdCanonical: (v: unknown, level?: number) => string;
 export declare const ToolSetDigestError: new (code: ToolSetDigestCode, detail: string, tool?: string) => Error & {
     code: ToolSetDigestCode;
     tool?: string;

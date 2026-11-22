@@ -28,7 +28,7 @@ export const jcsExtras = J.jcsExtras;
 export const TSD_SPEC = T.TSD_SPEC;
 /** The contract and extras digests of a complete tools/list result as mcp-tool-set-digest/1 defines them. Each side is a digest or an error code; a member outside the contract never takes the contract digest away. Equals lock.jcs_v1 in the ordinary case. */
 export const toolSetDigest = T.toolSetDigest;
-/** RFC 8785 text of a parsed JSON value; throws ToolSetDigestError (TSD-TEXT, TSD-NUMBER) where it has none. */
+/** RFC 8785 text of a parsed JSON value; throws ToolSetDigestError (TSD-TEXT, TSD-NUMBER, TSD-DEPTH) where it has none. level: nesting level of v (1 = the tools array). */
 export const tsdCanonical = T.tsdCanonical;
 export const ToolSetDigestError = T.ToolSetDigestError;
 /** The most tools a v1 lockfile hashes; a longer list is compared on that many and marked incomplete. */
