@@ -89,13 +89,27 @@ export async function observe(opts) {
   return { observer_id: observerId, reputation: plan.observer && plan.observer.reputation || null, tasks: (plan.tasks || []).length, results };
 }
 
+// The request token is a GitHub credential. It is sent to GitHub's own token service over https and to no other host.
+export function githubTokenUrl(raw) {
+  let u; try { u = new URL(String(raw)); } catch { return null; }
+  const h = u.hostname.toLowerCase();
+  if (u.protocol !== "https:" || u.username || u.password) return null;
+  return h === "actions.githubusercontent.com" || h.endsWith(".actions.githubusercontent.com") ? u : null;
+}
+
 async function main() {
   if (!process.env.ACTIONS_ID_TOKEN_REQUEST_URL) {
     console.log("::warning::observe: the job needs `permissions: id-token: write` to prove which repository is observing; skipped.");
     return;
   }
+  const tokenUrl = githubTokenUrl(process.env.ACTIONS_ID_TOKEN_REQUEST_URL);
+  if (!tokenUrl) {
+    console.log("::warning::observe: ACTIONS_ID_TOKEN_REQUEST_URL is not a GitHub Actions token service address; the request token was not sent; skipped.");
+    return;
+  }
   const r = await observe({ base: process.env.CC_API, domain: process.env.CC_DOMAIN, oidcToken: async (aud) => {
-    const tr = await fetch(process.env.ACTIONS_ID_TOKEN_REQUEST_URL + "&audience=" + encodeURIComponent(aud), { headers: { authorization: "bearer " + process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN } });
+    const u = new URL(tokenUrl); u.searchParams.set("audience", aud);
+    const tr = await fetch(u, { redirect: "error", headers: { authorization: "bearer " + process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN } });
     const v = (await tr.json()).value; if (!v) throw new Error("GitHub issued no OIDC token (HTTP " + tr.status + ")"); return v; } });
   console.log("observer " + r.observer_id + ": " + r.tasks + " task(s)" + (r.reputation ? " | vote: " + r.reputation.basis : ""));
   for (const x of r.results) console.log("  " + x.domain + " HTTP " + x.status + " " + (x.ok ? "stored " + String(x.sha256).slice(0, 12) : "REJECTED " + x.error) + " | " + x.identities);
