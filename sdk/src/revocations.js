@@ -1,4 +1,4 @@
-// Offline revocations (rvd1): hold CrawlCheck's signed revocation list and refuse a listed domain for a listed action
+// Offline revocations: hold CrawlCheck's signed revocation list and refuse a listed domain for a listed action
 // with no network call. A store is plain JSON; persist it between runs. Only a document whose signature was checked
 // should be applied (the client's syncRevocations does that). https://crawlcheck.io/docs/api#revocations
 

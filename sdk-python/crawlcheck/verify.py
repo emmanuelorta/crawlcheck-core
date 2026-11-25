@@ -11,6 +11,9 @@ from . import _ed25519
 DATA_SIG_PREFIX = "crawlcheck-data-v1\n"
 DATA_KINDS = ("crawlcheck-data-inventory", "crawlcheck-data-export-part", "crawlcheck-deletion-record", "crawlcheck-resolve", "crawlcheck-decision", "crawlcheck-snapshot", "crawlcheck-visitor", "crawlcheck-conduct", "crawlcheck-traffic-index", "crawlcheck-anchor", "crawlcheck-anchor-check", "crawlcheck-content-clock", "crawlcheck-origin", "crawlcheck-claims", "crawlcheck-read-equivalence", "crawlcheck-rights", "crawlcheck-rights-feed", "crawlcheck-mcp-scan", "crawlcheck-mcp-lock", "crawlcheck-mcp-lock-check", "crawlcheck-mcp-shadow", "crawlcheck-mcp-auth", "crawlcheck-impersonation", "crawlcheck-task-canaries", "crawlcheck-incident", "crawlcheck-revocations", "crawlcheck-high-risk", "crawlcheck-log-sth", "crawlcheck-agent-safety-benchmark", "crawlcheck-compliance-pack", "crawlcheck-share-of-preflight", "crawlcheck-threshold-verdict", "crawlcheck-resolve-as-of")
 DECISIONS = ("allow", "warn", "require_confirmation", "block", "unsupported")
+# CrawlCheck's signing key ids (RFC 7638 thumbprints), as published at /.well-known/http-message-signatures-directory on
+# 2026-11-25. Offline (no published_kids given), a document under any other key id has issuer_pinned False.
+CRAWLCHECK_KEY_IDS = ("hcIAczGf-8EFBnkunmZlvFWnD2nHHeHeC9cM4BTiBVo", "1hHmE3fo1rg5Ig70wuFtJ5wBc7G-sUTgUJkxyPWFRps", "NP5GewowKgJmU_ITSisKu-0ZFpvAL1ov86KDXIFmecw", "AqR_NNfBCBE0A_KXkQ86yrLAHiC-JbA5Df0BSV1PIEU")
 
 
 def _js_number(v):
@@ -33,10 +36,16 @@ def _js_number(v):
     return r
 
 
+def _u16_key(k):
+    return k.encode("utf-16-be", "surrogatepass") if isinstance(k, str) else str(k).encode("utf-16-be", "surrogatepass")
+
+
 def canon(v):
     """Canonical JSON exactly as the server computes it: keys sorted, no whitespace, JSON.stringify for scalars."""
     if isinstance(v, dict):
-        return "{" + ",".join(json.dumps(k, ensure_ascii=False) + ":" + canon(v[k]) for k in sorted(v)) + "}"
+        # member names in UTF-16 code unit order, as JavaScript's sort gives (it differs from code point order only
+        # between U+E000..U+FFFF and characters above U+FFFF)
+        return "{" + ",".join(json.dumps(k, ensure_ascii=False) + ":" + canon(v[k]) for k in sorted(v, key=_u16_key)) + "}"
     if isinstance(v, (list, tuple)):
         return "[" + ",".join(canon(x) for x in v) + "]"
     if v is None:
@@ -58,6 +67,23 @@ def _b64u(b):
 def key_id(jwk):
     """RFC 7638 thumbprint of an Ed25519 JWK - the kid CrawlCheck publishes."""
     return _b64u(hashlib.sha256(json.dumps({"crv": jwk["crv"], "kty": jwk["kty"], "x": jwk["x"]}, separators=(",", ":")).encode()).digest())
+
+
+def _ed_ok(x, msg, sig):
+    """Ed25519 over msg under the JWK x: True or False. A missing, empty, non-string or undecodable key or signature is
+    False - it must never read as "could not run", and never raise into the caller."""
+    if not isinstance(x, str) or not x or not isinstance(sig, str) or not sig:
+        return False
+    try:
+        return _ed25519.verify(_b64u_decode(x), msg.encode("utf-8"), _b64u_decode(sig)) is True
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _sig_checked(checks):
+    """The signature was checked and verifies under the key whose thumbprint is the stated key id."""
+    by = {c["id"]: c["ok"] for c in checks if c["id"] in ("signature", "key_id")}
+    return by.get("signature") is True and by.get("key_id") is True
 
 
 LOG_ID = "crawlcheck-resolve-log-v1"
@@ -104,7 +130,7 @@ def rfc9162_root(leaf_hex, index, size, path):
 
 
 def related_kids(x):
-    """kp3: keys a document leans on besides its own signer (the resolve answer a decision names, the log head an answer
+    """keys a document leans on besides its own signer (the resolve answer a decision names, the log head an answer
     carries). Since keys are separated by purpose these can differ; online, every one must be published."""
     out = []
     try:
@@ -122,7 +148,12 @@ def related_kids(x):
 def verify_document(doc, published_kids=None):
     """Verify a signed CrawlCheck document offline. Returns {"verified": bool, "checks": [...]}.
     published_kids: optional list of key ids from https://crawlcheck.io/.well-known/http-message-signatures-directory;
-    without it key_published stays None (undecided), as in the JavaScript verifier."""
+    without it key_published stays None (undecided), as in the JavaScript verifier, accepted is False, and issuer_pinned
+    says whether the key id is one this release ships (CRAWLCHECK_KEY_IDS).
+    A signature that could not be checked is never a pass: a document that names a signing key but does not carry it,
+    or carries no signature, an empty one or one that does not decode, fails key_id / signature. integrity_valid,
+    accepted and accepted_strict all need the signature to have been checked and to verify. A Resolve answer without
+    its transparency proof is partial assurance (accepted_strict False), not a skipped check."""
     checks = []
 
     def C(i, ok, why):
@@ -136,25 +167,25 @@ def verify_document(doc, published_kids=None):
     sha = hashlib.sha256(canon(body).encode("utf-8")).hexdigest()
     C("document_hash", sha == doc.get("sha256"), "the document hashes to its stated digest" if sha == doc.get("sha256") else "the document hashes to %s, it states %s - a field was changed" % (sha, doc.get("sha256")))
     sig = doc["signature"]
-    jwk = (sig.get("key") or {}).get("jwk") or {}
-    if not jwk.get("x"):
-        C("key_id", None, "no key in the document")
-        C("signature", None, "no key to check against")
+    jwk = sig.get("key").get("jwk") if isinstance(sig.get("key"), dict) else None
+    if not isinstance(jwk, dict) or not isinstance(jwk.get("x"), str) or not jwk.get("x"):
+        C("key_id", False, "the signature names key id %s but the document does not carry that public key, so the signature cannot be checked: reject this document" % sig.get("kid"))
+        C("signature", False, "no key to check against: the signature was not checked")
     else:
-        kid = key_id(jwk)
+        kid = key_id({"crv": jwk.get("crv"), "kty": jwk.get("kty"), "x": jwk["x"]})
         C("key_id", kid == sig.get("kid"), "public key thumbprint (RFC 7638) is the key id" if kid == sig.get("kid") else "thumbprint %s does not match key id %s" % (kid, sig.get("kid")))
         msg = DATA_SIG_PREFIX + sha
-        ok = sig.get("message") == msg and _ed25519.verify(_b64u_decode(jwk["x"]), msg.encode(), _b64u_decode(sig.get("sig", "")))
+        ok = sig.get("message") == msg and _ed_ok(jwk["x"], msg, sig.get("sig"))
         C("signature", ok, "Ed25519 signature over the document digest verifies" if ok else "signature does NOT verify over this content")
     if published_kids is None:
         C("key_published", None, "offline this cannot be decided: compare key id %s with the published key directory" % sig.get("kid"))
     else:
-        miss = [k for k in related_kids(doc) if k != sig.get("kid") and k not in published_kids]   # kp3
+        miss = [k for k in related_kids(doc) if k != sig.get("kid") and k not in published_kids]
         okp = sig.get("kid") in published_kids and not miss
         C("key_published", okp, "the signing key is published" if okp else ("the document leans on key %s, which is NOT published - reject this document" % ", ".join(miss) if miss and sig.get("kid") in published_kids else "the signing key is NOT in the published directory - reject this document"))
     if doc.get("kind") == "crawlcheck-decision":
         r = doc.get("resolve") or {}
-        bound = bool(re.fullmatch(r"[0-9a-f]{64}", str(r.get("sha256") or ""))) and isinstance(r.get("kid"), str) and len(r.get("kid")) > 0   # kp3: any published key (checked below)
+        bound = bool(re.fullmatch(r"[0-9a-f]{64}", str(r.get("sha256") or ""))) and isinstance(r.get("kid"), str) and len(r.get("kid")) > 0   # any published key (checked below)
         C("resolve_bound", bound, "the decision names the resolve answer it was made from, signed by the same key" if bound else "the decision does not name a resolve answer digest")
         C("decision_known", doc.get("decision") in DECISIONS, "decision is %s" % doc.get("decision"))
     if doc.get("kind") == "crawlcheck-snapshot":
@@ -173,23 +204,36 @@ def verify_document(doc, published_kids=None):
                 sv = verify_document(sth)
             except ValueError:
                 sv = None
-            same = True   # kp3: the log head may be signed by the log key; online its key must be published (checked below)
+            same = True   # the log head may be signed by the log key; online its key must be published (checked below)
             okh = bool(sv and sv["verified"]) and sth.get("kind") == "crawlcheck-log-sth" and sth.get("batch") == t.get("batch") and same
             C("log_head_signature", okh, "batch %s's signed tree head verifies (tree size %s)" % (t.get("batch"), sth.get("tree_size")) if okh else "the signed tree head does NOT verify")
         else:
             C("log_inclusion", None, "pending: the leaf is merged within %s minutes" % (t.get("merged_within_minutes") or 30))
+    if doc.get("kind") == "crawlcheck-resolve" and not doc.get("transparency"):   # no proof of the answer's place in the log: partial assurance, never a skipped check
+        C("log_leaf", None, "the answer carries no transparency proof, so its log leaf was not checked")
+        C("log_inclusion", None, "the answer carries no transparency proof: its place in the Resolve log is unproven (ask the log for the proof of this answer)")
     if doc.get("kind") == "crawlcheck-deletion-record":
         C("counts", sum((f.get("keys") or 0) for f in doc.get("deleted") or []) == doc.get("deleted_total"), "the per-family counts add up to deleted_total")
     ran = [c for c in checks if c["ok"] is not None]
     verified = bool(ran) and all(c["ok"] for c in ran)
     kp = next((c["ok"] for c in checks if c["id"] == "key_published"), None)
-    integrity = all(c["ok"] is not False for c in checks if c["id"] != "key_published")
+    signed = _sig_checked(checks)   # the signature was checked, not skipped
+    integrity = all(c["ok"] is not False for c in checks if c["id"] != "key_published") and signed
     # verified alone can be true for a document someone else signed (offline, key_published is None). accepted needs
     # the signing key to be one CrawlCheck publishes: pass published_kids (CrawlCheck.verify does) before trusting it.
-    return {"verified": verified, "integrity_valid": integrity, "issuer_trusted": kp, "accepted": verified and kp is True, "checks": checks}
+    accepted = verified and integrity and kp is True
+    partial = any(c["ok"] is None for c in checks if c["id"] != "key_published")
+    kid0 = sig.get("kid")
+    # offline: does the signature verify under a key id this release ships? A claimed key id alone is never enough.
+    pinned = None if published_kids is not None or not kid0 else (kid0 in CRAWLCHECK_KEY_IDS and signed)
+    failed = sum(1 for c in checks if c["ok"] is False)
+    out = {"verified": verified, "integrity_valid": integrity, "issuer_trusted": kp, "issuer_pinned": pinned, "accepted": accepted,
+           "accepted_strict": accepted and not partial, "assurance": "partial" if partial else "complete",
+           "summary": "%d check(s) FAILED" % failed if failed else "%d of %d checks ran and passed" % (len(ran), len(checks)), "checks": checks}
+    return apply_pinned_purpose(out, doc, published_kids)   # key ids only: the purposes of the ids this release knows still apply
 
 
-# conf2: the signing policy (https://crawlcheck.io/keys#policy, machine copy spec/key-policy/policy.json) as code: which
+# the signing policy (https://crawlcheck.io/keys#policy, machine copy spec/key-policy/policy.json) as code: which
 # key PURPOSE may sign which object at which time, retired keys and compromised keys. Same rule as crawlcheck-verify.mjs.
 KEY_POLICY = {"v": 2,
               "object_purpose": {"crawlcheck-decision": "decisions", "crawlcheck-log-sth": "log heads", "*": "documents"},
@@ -251,7 +295,7 @@ def key_policy_from(directory, rotation=None):
                 rs = _kp_ms(r.get("not_before"))
             if rs is None:
                 rs = _kp_ms(KEY_POLICY["starts"].get(rp))
-            # conf3: a retired key keeps its signing window
+            # a retired key keeps its signing window
             retired[r["thumbprint"]] = {"purpose": rp, "start": rs, "stopped": st if st is not None else _kp_ms(r.get("retired_at"))}
     for c in (rotation or {}).get("compromised") or []:
         if isinstance(c, dict) and c.get("thumbprint"):
@@ -259,13 +303,31 @@ def key_policy_from(directory, rotation=None):
     return {"v": 2, "kids": list(keys), "keys": keys, "retired": retired, "compromised": compromised, "rotation": bool(rotation)}
 
 
+_KP_BODY_TIMES = ("decided_at", "answered_at", "sealed_at", "generated_at", "issued_at", "at", "created_at", "approved_at")
+
+
+def _kp_times(x):
+    """The times a document states: (body, claimed). body is the latest time inside the signed bytes; claimed is
+    signature.signed_at, which the signature does NOT cover (the signature object is outside the hashed body), so
+    anyone holding the document can edit it."""
+    if not isinstance(x, dict):
+        return None, None
+    body = None
+    for f in _KP_BODY_TIMES:
+        t = _kp_ms(x.get(f))
+        if t is not None and (body is None or t > body):
+            body = t
+    s = x.get("signature")
+    return body, _kp_ms(s.get("signed_at")) if isinstance(s, dict) else None
+
+
 def signed_at_of(x):
-    s = (x or {}).get("signature") if isinstance(x, dict) else None
-    for v in ((s or {}).get("signed_at") if isinstance(s, dict) else None, x.get("decided_at"), x.get("answered_at"), x.get("sealed_at"), x.get("generated_at"), x.get("issued_at"), x.get("at")):
-        t = _kp_ms(v)
-        if t is not None:
-            return t
-    return None
+    """The time the signing policy is read at: the latest time the document carries. signature.signed_at can move that
+    time later, never earlier than a time the signed body states (same rule as the JavaScript verifier)."""
+    body, claimed = _kp_times(x)
+    if body is None:
+        return claimed
+    return body if claimed is None else max(body, claimed)
 
 
 def _kp_bound_kid(x):
@@ -307,7 +369,7 @@ def _kp_expected(obj_purpose, t, kp):
             return p
         if any(v["purpose"] == p and kid not in kp["compromised"] and (t is None or v["start"] is None or v["start"] <= t) for kid, v in kp["keys"].items()):
             return p
-        # conf3: a key retired since still covered its own signing window
+        # a key retired since still covered its own signing window
         if t is not None and any(v["purpose"] == p and kid not in kp["compromised"] and (v.get("start") is None or v["start"] <= t) and v.get("stopped") is not None and t <= v["stopped"] for kid, v in (kp.get("retired") or {}).items()):
             return p
     return "requests"
@@ -318,8 +380,24 @@ def key_policy_check(x, kp):
     Returns {"ok": True | False | None, "code", "known", "purpose", "expected", "why"}. code (stable): ok, ok_bound,
     key_wrong_purpose, key_not_yet_active, key_retired, key_compromised, key_unknown, no_signing_time; apply_key_policy
     adds related_<code> when a key the document leans on (its answer, its log head) fails."""
+    r = _kp_check_at(x, kp, signed_at_of(x))
+    body, _claimed = _kp_times(x)
+    if body is not None or r["ok"] is False:
+        return r
+    # No time inside the signed bytes. signature.signed_at is not covered by the signature, and leaving it out is as
+    # easy as editing it, so neither a pass nor "not decided" may rest on it: the result stands only if the policy also
+    # accepts this key for this object now. Otherwise it fails, whatever the unsigned field says and whether or not
+    # it is there.
+    import time as _time
+    now = _kp_check_at(x, kp, int(_time.time() * 1000))
+    if now["ok"] is True:
+        return r
+    return {"ok": False, "code": "no_signing_time", "known": r["known"], "purpose": r.get("purpose"), "expected": r.get("expected"),
+            "why": "the signed body states no time, and the policy does not accept this key for this object now (%s); signature.signed_at is not covered by the signature, so it cannot place the document at an earlier time" % now["why"]}
+
+
+def _kp_check_at(x, kp, t):
     kid = ((x or {}).get("signature") or {}).get("kid")
-    t = signed_at_of(x)
     obj = KEY_POLICY["object_purpose"].get(x.get("kind"), KEY_POLICY["object_purpose"]["*"])
     k = _kp_key(kid, t, kp)
     if k["ok"] is not True:
@@ -334,6 +412,58 @@ def key_policy_check(x, kp):
     if later and bound and bound == kid and not decision_key_live:
         return {"ok": True, "code": "ok_bound", "known": True, "purpose": k["purpose"], "expected": expected, "why": "signed by the %s key that signed the object it is bound to (%s), as the policy allows" % (k["purpose"], KEY_POLICY["bound"][x["kind"]])}
     return {"ok": False, "code": "key_wrong_purpose", "known": True, "purpose": k["purpose"], "expected": expected, "why": "a %s key does not sign %s at %s: the %s key does%s" % (k["purpose"], obj, at, expected, "" if k["purpose"] in chain else " (%s keys never sign them)" % k["purpose"])}
+
+
+# The key ids this release ships with the purpose and start time the directory gave each (read 2026-11-25).
+_PINNED_KEYS = {"hcIAczGf-8EFBnkunmZlvFWnD2nHHeHeC9cM4BTiBVo": {"purpose": "requests", "start": 1789158247000},
+                "1hHmE3fo1rg5Ig70wuFtJ5wBc7G-sUTgUJkxyPWFRps": {"purpose": "documents", "start": 1791642323000},
+                "NP5GewowKgJmU_ITSisKu-0ZFpvAL1ov86KDXIFmecw": {"purpose": "decisions", "start": 1794243600000},
+                "AqR_NNfBCBE0A_KXkQ86yrLAHiC-JbA5Df0BSV1PIEU": {"purpose": "log heads", "start": 1794243600000}}
+
+
+def pinned_key_policy(kids=None):
+    """The signing policy for the key ids this release ships, limited to the ids in kids (all of them when None). It has
+    no rotation record, so retired and compromised keys are unknown to it: prefer published_key_policy() when online."""
+    keys = {k: dict(v) for k, v in _PINNED_KEYS.items() if kids is None or k in kids}
+    return {"v": 2, "kids": list(keys), "keys": keys, "retired": {}, "compromised": {}, "rotation": False, "source": "pinned"}
+
+
+def apply_pinned_purpose(res, x, published_kids):
+    """A caller that passes key ids only gives no purposes. For the ids this release knows, the purpose rule still
+    applies: a log-head key does not sign a decision because its id is on the list. Adds a failing key_purpose check;
+    for a listed id this release does not know, an undecided one (code purpose_unknown); otherwise returns res unchanged."""
+    if not res or published_kids is None or not isinstance(x, dict) or not isinstance(x.get("signature"), dict) or any(c["id"] == "key_purpose" for c in res.get("checks", [])):
+        return res
+    kp, bad, unknown = pinned_key_policy(list(published_kids)), None, None
+    kid = x["signature"].get("kid")
+    if isinstance(kid, str) and kid in kp["keys"]:
+        r = key_policy_check(x, kp)
+        if r["ok"] is False:
+            bad = (r["code"], r["why"])
+    elif isinstance(kid, str) and kid in published_kids:
+        unknown = kid
+    sth = (x.get("transparency") or {}).get("sth") if isinstance(x.get("transparency"), dict) else None
+    skid = sth["signature"].get("kid") if isinstance(sth, dict) and isinstance(sth.get("signature"), dict) else None
+    if not bad and isinstance(skid, str) and skid in kp["keys"]:
+        r = key_policy_check(sth, kp)
+        if r["ok"] is False:
+            bad = ("related_" + r["code"], "its log head: " + r["why"])
+    elif not bad and isinstance(skid, str) and skid in published_kids:
+        unknown = unknown or skid
+    if not bad and unknown:
+        # A listed key id this release does not ship: nothing here says what that key may sign. Not a failure and not a
+        # pass: the result is partial (never accepted_strict), and callers that keep a log head refuse it.
+        out = dict(res)
+        out.update({"checks": list(res["checks"]) + [{"id": "key_purpose", "ok": None, "code": "purpose_unknown", "why": "key %s is on the list given, but this release does not know its purpose, so which objects it may sign was not checked: pass a key policy (client.published_key_policy()) instead of key ids" % unknown}],
+                    "key_policy_valid": None, "key_policy_code": "purpose_unknown", "accepted_strict": False, "assurance": "partial"})
+        return out
+    if not bad:
+        return res
+    out = dict(res)
+    checks = list(res["checks"]) + [{"id": "key_purpose", "ok": False, "code": bad[0], "why": bad[1]}]
+    out.update({"checks": checks, "verified": False, "summary": "%d check(s) FAILED" % sum(1 for c in checks if c["ok"] is False),
+                "key_policy_valid": False, "key_policy_code": bad[0], "accepted": False, "accepted_strict": False})
+    return out
 
 
 def apply_key_policy(res, x, kp):
@@ -360,8 +490,12 @@ def apply_key_policy(res, x, kp):
     checks = [c for c in res.get("checks", []) if c["id"] not in ("key_published", "key_purpose")] + [kpub, kpur]
     own = [c for c in checks if c["id"] not in ("key_published", "key_purpose")]
     ran = [c for c in checks if c["ok"] is not None]
-    integrity = any(c["ok"] is not None for c in own) and all(c["ok"] is not False for c in own)
+    integrity = any(c["ok"] is not None for c in own) and all(c["ok"] is not False for c in own) and _sig_checked(own)   # the signature must have been checked, not skipped
     accepted = integrity and kpub["ok"] is True and kpur["ok"] is not False
+    partial = any(c["ok"] is None for c in checks)
+    failed = sum(1 for c in checks if c["ok"] is False)
     out = dict(res)
-    out.update({"checks": checks, "verified": bool(ran) and all(c["ok"] for c in ran), "integrity_valid": integrity, "issuer_trusted": kpub["ok"], "key_policy_valid": kpur["ok"], "key_policy_code": kpur["code"], "accepted": accepted})
+    out.update({"checks": checks, "verified": bool(ran) and all(c["ok"] for c in ran), "integrity_valid": integrity, "issuer_trusted": kpub["ok"], "issuer_pinned": None, "key_policy_valid": kpur["ok"], "key_policy_code": kpur["code"], "accepted": accepted,
+                "accepted_strict": accepted and not partial, "assurance": "partial" if partial else "complete",
+                "summary": "%d check(s) FAILED" % failed if failed else "%d of %d checks ran and passed" % (len(ran), len(checks))})
     return out

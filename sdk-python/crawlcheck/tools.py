@@ -36,9 +36,9 @@ def agent_tools(cc, agent=None, allow_warn=False, confirm=None, max_chars=20000)
             proceed, receipt = cc.guard(domain, action, agent=agent, allow_warn=allow_warn, confirm=confirm)
         except Exception as e:
             return {"domain": domain, "action": action, "proceed": False, "why": ["CrawlCheck did not give a decision: %s" % e]}
-        rc = receipt or {}
+        rc = receipt if isinstance(receipt, dict) else {}   # a malformed answer can be a list or a string
         last = getattr(cc, "last_guard", None) or {}
-        return {"domain": domain, "action": action, "proceed": bool(proceed), "decision": rc.get("decision"), "why": last.get("why", []),
+        return {"domain": domain, "action": action, "proceed": bool(proceed), "failure_class": last.get("failure_class"), "decision": rc.get("decision"), "why": last.get("why", []),
                 "reasons": [s.get("why") for s in rc.get("steps", []) if isinstance(s, dict) and s.get("why")], "reason_codes": rc.get("reason_codes", []),
                 "receipt_sha256": rc.get("sha256"), "verified": bool(last.get("verified")), "alternatives": rc.get("alternatives"), "facts": rc.get("facts")}
 
@@ -54,8 +54,8 @@ def agent_tools(cc, agent=None, allow_warn=False, confirm=None, max_chars=20000)
         except Exception as e:
             return {"ok": False, "domain": domain, "field": field, "value": value, "why": [str(e)]}
         try:
-            v = verify_document(doc)
-            ok = bool(v.get("verified"))
+            v = cc.verify(doc)   # against the published keys: a document someone else signed is not "verified" (same as the JS tool)
+            ok = v.get("accepted") is True
         except Exception:
             ok = False
         out = dict(doc)
@@ -69,7 +69,7 @@ def agent_tools(cc, agent=None, allow_warn=False, confirm=None, max_chars=20000)
         r = cc.guarded_fetch(str(args.get("url") or ""), action="cite" if args.get("action") == "cite" else "read", allow_warn=allow_warn, confirm=confirm)
         hops = [{"url": h.get("url"), "domain": h.get("domain"), "decision": h.get("decision"), "proceed": h.get("proceed"), "status": h.get("status")} for h in r.get("hops", [])]
         if not r.get("proceed") or r.get("body") is None:
-            return {"proceed": False, "url": r.get("url"), "why": r.get("why", []), "hops": hops}
+            return {"proceed": False, "url": r.get("url"), "failure_class": r.get("failure_class"), "why": r.get("why", []), "hops": hops}
         body = r["body"]
         text = body.decode("utf-8", "replace") if isinstance(body, (bytes, bytearray)) else str(body)
         ct = next((v for k, v in (r.get("headers") or {}).items() if str(k).lower() == "content-type"), None)

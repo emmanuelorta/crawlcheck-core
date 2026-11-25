@@ -57,6 +57,13 @@ export const lockParts = C.lockParts as (tools: McpTool[]) => Promise<Record<str
 /** The separate acceptance questions for one decision receipt. Act on policy_result, never on integrity_valid alone. */
 /** Which continuity failure class a refused guard() result is. */
 export const continuityClassOf = (C as any).continuityClassOf as (g: GuardResult | null) => string;
+/** Why a guard() or guardedFetch() result did not proceed (or, in observe mode, would not have). fetch_refused is set by guardedFetch only. https://crawlcheck.io/spec/guard */
+export type GuardFailureClass = "service_unavailable" | "check_timeout" | "response_malformed" | "signature_invalid" | "key_unknown" | "key_retired" | "server_identity_mismatch" | "evidence_expired" | "operation_mismatch" | "replay_mismatch" | "decision_refused" | "revoked" | "split_view" | "fetch_refused";
+export const GUARD_FAILURE_CLASSES = (C as any).GUARD_FAILURE_CLASSES as GuardFailureClass[];
+/** Which failure class a refused guard() result is. Finer than continuityClassOf (which is unchanged): operation_mismatch, replay_mismatch, revoked, split_view and response_malformed are named separately. guard() puts it on the result as failure_class. */
+export const guardFailureClassOf = (C as any).guardFailureClassOf as (g: GuardResult | null) => GuardFailureClass;
+/** enforce (default): a refused result has proceed false. observe: the same checks run and are reported, and nothing is enforced (proceed is true; would_proceed says what enforce would have returned). */
+export type GuardMode = "enforce" | "observe";
 export const acceptanceOf = C.acceptanceOf as (receipt: unknown, verification: unknown, scope: { fields?: unknown } | null, opts?: { allowWarn?: boolean; confirmed?: boolean | null; lock?: unknown }) => Acceptance;
 
 // ── signed baseline (1.13.0): the lockfile's signature is checked before it is trusted ──
@@ -107,8 +114,8 @@ export interface VerifyCheck { id: string; ok: boolean | null; why: string; [k: 
  * signing key is one CrawlCheck publishes (null offline: not decided). accepted: both - the only field to act on.
  * A document someone else signed with their own key is verified: true offline and accepted: false.
  */
-export interface Trust { integrity_valid: boolean; issuer_trusted: boolean | null; accepted: boolean; /** conf2: the signing policy accepts this key for this object at its signing time (purpose, retired, compromised). null: not decided. */ key_policy_valid?: boolean | null; /** conf2: stable reason: ok, ok_bound, key_wrong_purpose, key_not_yet_active, key_retired, key_compromised, key_unknown, no_signing_time, or related_<code> for a key the document leans on. */ key_policy_code?: string | null }
-/** conf2: the key directory and rotation record as the signing policy reads them (keyPolicyFrom / publishedKeyPolicy). */
+export interface Trust { integrity_valid: boolean; issuer_trusted: boolean | null; accepted: boolean; /** Offline only (no published key ids given): whether the signature verifies under a key id this release ships (CRAWLCHECK_KEY_IDS). false: not a CrawlCheck key as far as this release knows, or the document only names one. null: not applicable. An SDK released before a key rotation does not list the new key. */ issuer_pinned?: boolean | null; /** the signing policy accepts this key for this object at its signing time (purpose, retired, compromised). null: not decided. */ key_policy_valid?: boolean | null; /** stable reason: ok, ok_bound, key_wrong_purpose, key_not_yet_active, key_retired, key_compromised, key_unknown, no_signing_time, purpose_unknown (key ids only, and the id is not one this release ships: partial, purpose not checked), or related_<code> for a key the document leans on. */ key_policy_code?: string | null }
+/** the key directory and rotation record as the signing policy reads them (keyPolicyFrom / publishedKeyPolicy). */
 export interface KeyPolicyInput { v: 2; kids: string[]; keys: Record<string, { purpose: string; start: number | null }>; retired: Record<string, { purpose: string; stopped: number | null }>; compromised: Record<string, number>; rotation: boolean; read_at?: string; source?: string }
 export interface KeyPolicyResult { ok: boolean | null; code: string; known: boolean; purpose: string | null; expected: string | null; why: string }
 /** The signing policy as data (https://crawlcheck.io/keys#policy): object purposes, purpose chains, start times. */
@@ -119,11 +126,15 @@ export const keyPolicyFrom = V.keyPolicyFrom as (directory: unknown, rotation?: 
 export const keyPolicyCheck = V.keyPolicyCheck as (doc: unknown, kp: KeyPolicyInput) => KeyPolicyResult;
 /** Apply the signing policy to a verification: key_published (retired keys included), key_purpose, and the trust fields. */
 export const applyKeyPolicy = V.applyKeyPolicy as <T>(res: T, doc: unknown, kp: KeyPolicyInput) => T & Trust;
+/** The signing policy for the key ids this release ships (purposes and start times; no rotation record), limited to the ids given. For offline use; online, publishedKeyPolicy() is current. */
+export const pinnedKeyPolicy = (V as any).pinnedKeyPolicy as (kids?: string[] | readonly string[]) => KeyPolicyInput;
+/** CrawlCheck's signing key ids (RFC 7638 thumbprints) as published when this release was cut. Offline, a document under any other key id has issuer_pinned: false. */
+export const CRAWLCHECK_KEY_IDS = V.CRAWLCHECK_KEY_IDS as readonly string[];
 function withTrust<T extends { verified: boolean; summary: string; checks: VerifyCheck[] }>(v: T, kid: string | undefined, published: string[] | null, related: string[] = []): T & Trust {
   let checks = v.checks;
   let issuer: boolean | null = null;
   if (published) {
-    // kp3: keys are separated by purpose, so a decision's resolve answer or an answer's log head can carry another key; every one must be published
+    // keys are separated by purpose, so a decision's resolve answer or an answer's log head can carry another key; every one must be published
     const miss = related.filter((k) => k !== kid && !published.includes(k));
     issuer = !!kid && published.includes(kid) && miss.length === 0;
     const kc: VerifyCheck = { id: "key_published", ok: issuer, why: issuer ? "key id " + kid + " is in the published key directory" + (related.length ? ", and so is every key it leans on" : "") : miss.length && kid && published.includes(kid) ? "the document leans on key " + miss.join(", ") + ", which is NOT published - reject this document" : "key id " + (kid || "?") + " is NOT in the published key directory - reject this document" };
@@ -131,19 +142,30 @@ function withTrust<T extends { verified: boolean; summary: string; checks: Verif
   }
   const ran = checks.filter((c) => c.ok !== null), failed = checks.filter((c) => c.ok === false);
   const verified = ran.length > 0 && failed.length === 0;
-  const integrity_valid = checks.filter((c) => c.id !== "key_published").every((c) => c.ok !== false);
+  // The signature must have been checked and verify under the key whose thumbprint is the stated key id: a signature
+  // check that did not run (no key carried, no signature, no Ed25519 here) is never a pass.
+  const sg = checks.find((c) => c.id === "signature"), ki = checks.find((c) => c.id === "key_id");
+  const signed = !!sg && sg.ok === true && !!ki && ki.ok === true;
+  const integrity_valid = checks.filter((c) => c.id !== "key_published").every((c) => c.ok !== false) && (!kid || signed);
+  const unavailable = checks.filter((c) => c.ok === null && c.id !== "key_published").map((c) => c.id);
+  const accepted = verified && integrity_valid && issuer === true && signed;
   return Object.assign({}, v, { checks, verified, summary: failed.length ? failed.length + " check(s) FAILED" : ran.length + " of " + checks.length + " checks ran and passed",
-    integrity_valid, issuer_trusted: issuer, accepted: verified && issuer === true });
+    integrity_valid, issuer_trusted: issuer, issuer_pinned: published || !kid ? null : CRAWLCHECK_KEY_IDS.includes(kid) && signed, accepted,
+    accepted_strict: accepted && unavailable.length === 0, assurance: unavailable.length ? "partial" : "complete", unavailable });
 }
 export interface BundleVerification extends Partial<Trust> { verified: boolean; summary: string; report: { id?: string; domain?: string; scanned_at?: string }; checks: VerifyCheck[]; experiences: number | null; note: string }
 export interface ReceiptVerification extends Partial<Trust> { verified: boolean; summary: string; receipt: { id: string; domain: string; verdict: string; before: string; after: string }; checks: VerifyCheck[]; note: string }
 /** Verify an evidence bundle with no call to CrawlCheck (the same code as /crawlcheck-verify.mjs). */
-export const verifyBundle = V.verifyBundle as (b: unknown) => Promise<BundleVerification>;
+export const verifyBundle = V.verifyBundle as (b: unknown, opts?: { publishedKids?: string[] }) => Promise<BundleVerification>;
 /** Verify a remediation receipt with no call to CrawlCheck. */
-export const verifyReceipt = V.verifyReceipt as (rc: unknown) => Promise<ReceiptVerification>;
+export const verifyReceipt = V.verifyReceipt as (rc: unknown, opts?: { publishedKids?: string[] }) => Promise<ReceiptVerification>;
 export interface DocumentVerification extends Partial<Trust> { verified: boolean; summary: string; document: { kind: string; domain?: string; sha256: string }; checks: VerifyCheck[] }
-/** Verify a signed resolve answer, preflight decision receipt, data inventory, export part or deletion record offline. */
-export const verifyDocument = async (doc: unknown): Promise<DocumentVerification & Trust> => withTrust(await (V.verifyDataDoc as (d: unknown) => Promise<DocumentVerification>)(doc), (doc as any)?.signature?.kid, null);
+/**
+ * Verify a signed resolve answer, preflight decision receipt, data inventory, export part or deletion record offline.
+ * Offline it is never accepted (issuer_trusted: null); issuer_pinned says whether the key id is one this release ships.
+ * Pass opts.publishedKids (publishedKeyIds(), or CRAWLCHECK_KEY_IDS to trust the ids this release ships) to decide the issuer.
+ */
+export const verifyDocument = async (doc: unknown, opts?: { publishedKids?: string[] | readonly string[] }): Promise<DocumentVerification & Trust> => (V as any).applyPinnedPurpose(withTrust(await (V.verifyDataDoc as (d: unknown) => Promise<DocumentVerification>)(doc), (doc as any)?.signature?.kid, opts && Array.isArray(opts.publishedKids) ? (opts.publishedKids as string[]) : null, opts && Array.isArray(opts.publishedKids) ? (V as any).relatedKids(doc) : []), doc, opts && opts.publishedKids);
 /** Verify a signed evidence export (and every bundle and receipt inside it) offline. */
 export const verifyExport = V.verifyExport as (x: unknown) => Promise<{ verified: boolean; summary: string; checks: VerifyCheck[]; [k: string]: unknown }>;
 /** Verify a signed dispute resolution offline (re-runs the published decision table over the recorded readings). */
@@ -234,16 +256,21 @@ export interface GuardOptions extends PreflightOptions {
   onlineKeys?: boolean;
   /** Pinned CrawlCheck key ids, for offline use with onlineKeys: false. */
   publishedKids?: string[];
-  /** conf2: a pinned key policy (keyPolicyFrom(savedDirectory, savedRotation)), for offline use with onlineKeys: false. Checks key purpose too. */
+  /** a pinned key policy (keyPolicyFrom(savedDirectory, savedRotation)), for offline use with onlineKeys: false. Checks key purpose too. */
   keyPolicy?: KeyPolicyInput;
   /** Testing clock (ms since epoch). Default Date.now(). */
   now?: number;
+  /** "enforce" (default) or "observe". In observe every check still runs and the result says what enforce would have done (would_proceed, failure_class, why), but proceed is always true: nothing is refused. For a pilot before turning enforcement on. */
+  mode?: GuardMode;
+  /** Called with every guard() result, in both modes, before it is returned (guardedFetch: once per checked hop). Keep the results to see what the guard decides. An error it throws is ignored. */
+  onRecord?: (result: GuardResult) => void | Promise<void>;
 }
 /** The longest a receipt may stay valid, per action (seconds). A receipt that claims longer is refused. Published at https://crawlcheck.io/spec/guard */
 export const ACTION_MAX_LIFETIME_S: Record<string, number> = { read: 86400, cite: 86400, connect: 3600, transact: 300, administer: 300 };
 /** The most clock skew a receipt may claim (seconds). */
 export const MAX_CLOCK_SKEW_S = 300;
 const DECISIONS = ["allow", "warn", "require_confirmation", "block", "unsupported"];
+function guardMode(m: unknown): GuardMode { if (m === undefined || m === null || m === "enforce") return "enforce"; if (m === "observe") return "observe"; throw new Error("mode must be enforce or observe"); }
 export interface DecisionWant { domain: string; action: Action | string; nonce?: string | null; now?: number; operation?: Operation | null }
 /**
  * Is this receipt about the operation you are about to perform? Checks the scope only (kind, domain, action, nonce,
@@ -277,30 +304,49 @@ export function checkDecision(receipt: unknown, want: DecisionWant): { ok: boole
   f.resolve_bound = !!(r.resolve && /^[0-9a-f]{64}$/.test(String(r.resolve.sha256 || ""))); if (!f.resolve_bound) why.push("the receipt names no resolve answer");
   return { ok: why.length === 0, why, fields: f };
 }
-export interface GuardResult { proceed: boolean; receipt: DecisionReceipt | null; verification: (DocumentVerification & Trust) | null; header: Record<string, string> | null; why: string[]; /** 1.11.0: the separate acceptance questions (integrity, issuer, key policy, freshness, subject, operation, replay, baseline, completeness) and policy_result. Null when no receipt came back. */ acceptance: Acceptance | null; split_view?: LogFork[]; /** Set when the domain was refused from the held revocation list, with no network call. */ revoked?: RevokedEntry }
+export interface GuardResult { proceed: boolean; receipt: DecisionReceipt | null; verification: (DocumentVerification & Trust) | null; header: Record<string, string> | null; why: string[]; /** 1.11.0: the separate acceptance questions (integrity, issuer, key policy, freshness, subject, operation, replay, baseline, completeness) and policy_result. Null when no receipt came back. */ acceptance: Acceptance | null; split_view?: LogFork[]; /** Set when the domain was refused from the held revocation list, with no network call. */ revoked?: RevokedEntry;
+  /** Why the result did not proceed, as one class; null when it did. In observe mode: why enforce would not have proceeded. Always set by guard(). */
+  failure_class?: GuardFailureClass | null;
+  /** The mode this result was produced in. Always set by guard(). */
+  mode?: GuardMode;
+  /** false in observe mode: proceed was not decided by the checks. Always set by guard(). */
+  enforced?: boolean;
+  /** What enforce mode returns as proceed for the same checks. Equals proceed in enforce mode. Always set by guard(). */
+  would_proceed?: boolean }
 /** Headers guardedFetch still sends after a redirect leaves the origin the caller named. Everything else stays behind. */
 export const GUARDED_SAFE_HEADERS: string[] = ["accept", "accept-language", "accept-encoding", "user-agent", "cache-control", "pragma"];
 export interface GuardedFetchOptions extends GuardOptions { action?: Action; init?: RequestInit; maxHops?: number; fetch?: typeof fetch }
-export interface GuardedHop { url: string; domain: string; proceed: boolean; decision: string | null; why: string[]; status?: number }
-export interface GuardedFetchResult { proceed: boolean; response: Response | null; url: string; hops: GuardedHop[]; why: string[] }
+export interface GuardedHop { url: string; domain: string; proceed: boolean; decision: string | null; why: string[]; status?: number; /** This hop's guard failure class; null when its check passed. */ failure_class?: GuardFailureClass | null; /** What enforce mode decides for this hop. */ would_proceed?: boolean }
+export interface GuardedFetchResult { proceed: boolean; response: Response | null; url: string; hops: GuardedHop[]; why: string[];
+  /** Why the fetch did not proceed: the refused hop's guard failure class, or fetch_refused when the URL or a redirect could not be checked at all. null when every check passed. In observe mode: the first hop enforce would have refused. */
+  failure_class?: GuardFailureClass | null;
+  mode?: GuardMode;
+  /** false in observe mode. */
+  enforced?: boolean;
+  /** false when enforce mode would have stopped the fetch (at the first hop whose would_proceed is false). */
+  would_proceed?: boolean }
 
 // ── split-view detection (the Resolve transparency log) ──
 export interface LogHead { kind: "crawlcheck-log-sth"; log_id: string; batch: number; first_index: number; batch_size: number; tree_size: number; batch_root: string; prev_sth_sha256: string | null; created_at: string; sha256: string; signature: JsonObject; [k: string]: unknown }
-export interface LogFork { kind: "two_heads_for_one_batch" | "chain_break" | "size_mismatch" | "inconsistent_head"; batch: number; why: string; a: LogHead; b: LogHead; detected_at: string; proof: string }
-export interface LogStore { v: 1; log_id: string; heads: Record<string, { batch: number; sha256: string; first_index: number; batch_size: number; tree_size: number; prev_sth_sha256: string | null; created_at: string | null; sth: LogHead }>; forks: LogFork[]; witnessed: { batch: number; sha256: string; at: string | null; run_id: string | null } | null }
+export interface LogFork { kind: "two_heads_for_one_batch" | "chain_break" | "size_mismatch" | "inconsistent_head"; batch: number; why: string; a: LogHead; b: LogHead; detected_at: string; proof: string; /** true when both heads were checked against CrawlCheck's keys; false: either may be signed by anyone. */ issuer_checked?: boolean }
+export interface LogStore { v: 1; log_id: string; heads: Record<string, { batch: number; sha256: string; first_index: number; batch_size: number; tree_size: number; prev_sth_sha256: string | null; created_at: string | null; sth: LogHead; /** true when the head was checked against CrawlCheck's keys before it was kept. */ issuer_checked?: boolean }>; forks: LogFork[]; witnessed: { batch: number; sha256: string; at: string | null; run_id: string | null } | null }
 export interface LogObservation { state: "new" | "known" | "fork" | "invalid" | "none"; why?: string; fork?: LogFork }
 export interface LogCheckResult { consistent: boolean; forks: LogFork[]; all_forks: number; witnessed: { batch: number; sha256: string; at: string | null; run_id: string | null; token: boolean | null; why: string; observed: string; warning?: string } | null; unwitnessed: { batch: number; sha256: string; created_at: string | null }[]; stale_unwitnessed: { batch: number; sha256: string; created_at: string | null }[]; summary: string }
 export const LOG_ID = L.LOG_ID as string;
 /** A new, empty transparency-log store (plain JSON: persist it between runs). */
 export const newLogStore = L.newLogStore as () => LogStore;
-/** Check one signed tree head against the store and keep it. A fork carries both contradicting signed heads. */
-export const logObserve = L.logObserve as (store: LogStore, sth: unknown, opts?: { publishedKids?: string[]; maxHeads?: number }) => Promise<LogObservation>;
+/** The keys a log head is checked against: key ids, or (better) the signing policy with purposes and rotation. */
+export interface LogKeyOptions { publishedKids?: string[]; keyPolicy?: KeyPolicyInput }
+/** Check one signed tree head against the store and keep it. Pass publishedKids or keyPolicy: a head that is not signed by a published key is invalid and is not kept. A fork carries both contradicting signed heads. */
+export const logObserve = L.logObserve as (store: LogStore, sth: unknown, opts?: LogKeyOptions & { maxHeads?: number }) => Promise<LogObservation>;
 /** Check the head inside a Resolve answer (transparency.sth), if it carries one. */
-export const logObserveAnswer = L.logObserveAnswer as (store: LogStore, answer: unknown, opts?: { publishedKids?: string[] }) => Promise<LogObservation>;
+export const logObserveAnswer = L.logObserveAnswer as (store: LogStore, answer: unknown, opts?: LogKeyOptions) => Promise<LogObservation>;
 /** The signed heads a store holds, newest first: what a client sends its peers. */
 export const logHeads = L.logHeads as (store: LogStore, limit?: number) => LogHead[];
 /** Gossip: check another client's heads against this store. */
-export const logGossip = L.logGossip as (store: LogStore, sths: unknown[], opts?: { publishedKids?: string[] }) => Promise<{ forks: LogFork[]; results: (LogObservation & { batch: number; sha256: string })[] }>;
+export const logGossip = L.logGossip as (store: LogStore, sths: unknown[], opts?: LogKeyOptions) => Promise<{ forks: LogFork[]; results: (LogObservation & { batch: number; sha256: string })[] }>;
+/** Re-check a saved store against CrawlCheck's keys: forks and heads that are not signed by a published key are dropped. */
+export const logPrune = (L as any).logPrune as (store: LogStore, opts: LogKeyOptions) => Promise<{ forks_dropped: number; heads_dropped: number }>;
 /** Verify the outside witness's co-signature: a GitHub OIDC JWT (RS256) whose audience is crawlcheck-sth:<head sha256>. */
 export const verifyWitnessToken = L.verifyWitnessToken as (token: string, sthSha256: string, jwks: unknown) => Promise<{ ok: boolean | null; why: string; claims?: JsonObject }>;
 export const GITHUB_OIDC_JWKS = "https://token.actions.githubusercontent.com/.well-known/jwks";
@@ -423,16 +469,16 @@ export class CrawlCheck {
   // ── read before acting ──
   /** The signed ResolveV1 answer: crawl policy, delivery, machine files, capabilities, entity, findings, freshness and a decision per action. */
   async resolve(domain: string): Promise<ResponseOf<"/api/v1/resolve", "get">> {
-    if (this.privateLookups) {   // pfx2: only the hash prefix leaves this process
+    if (this.privateLookups) {   // only the hash prefix leaves this process
       const p = await this.resolvePrivate(domain);
       if (!p.ready) throw new CrawlCheckError(503, "/api/v1/resolve-prefix", { error: p.why || "the prefix index is not built yet" });
       if (!p.found) throw new CrawlCheckError(404, "/api/v1/resolve-prefix", { error: "CrawlCheck holds no public measurement of " + domain + "; in private mode the domain is never sent, so no just-in-time answer is made" });
       if (!p.accepted) throw new CrawlCheckError(502, "/api/v1/resolve-prefix", { error: "the answer in the bucket did not verify: " + (p.verification ? p.verification.summary : "no verification") });
-      await logObserveAnswer(this.log, p.answer).catch(() => null);
+      await this.observeAnswer(p.answer);
       return p.answer as unknown as ResponseOf<"/api/v1/resolve", "get">;
     }
     const a = await this.get("/api/v1/resolve", { domain } as QueryOf<"/api/v1/resolve">);
-    await logObserveAnswer(this.log, a).catch(() => null);   // a head that contradicts one this client already holds is recorded in this.log.forks
+    await this.observeAnswer(a);   // a head that contradicts one this client already holds is recorded in this.log.forks
     return a;
   }
   private kidCache: { at: number; kids: string[] } | null = null;
@@ -460,18 +506,32 @@ export class CrawlCheck {
   /** Up to 100 domains in one call; each answer is a full signed ResolveV1 document. */
   async resolveBatch(domains: string[]) {
     const r: any = await this.post("/api/v1/resolve", { domains } as JsonObject);
-    for (const a of (r && r.answers) || []) await logObserveAnswer(this.log, a).catch(() => null);
+    for (const a of (r && r.answers) || []) await this.observeAnswer(a);
     return r;
   }
   /** Split-view check: the current head, GitHub's witness co-signature on the last witnessed head, and the chain from it down to every head this client holds. Reports the heads it holds to /api/v1/log/gossip unless report is false. */
   async logCheck(opts: { report?: boolean; maxWalk?: number; maxUnwitnessedMinutes?: number } = {}): Promise<LogCheckResult> {
-    const kids = await this.publishedKeyIds();
-    return L.logCheck(this.log, (p: string) => this.req("GET", p), { publishedKids: kids, maxWalk: opts.maxWalk, maxUnwitnessedMinutes: opts.maxUnwitnessedMinutes,
+    const kids = await this.publishedKeyIds(), ko = await this.logKeyOptions();
+    return L.logCheck(this.log, (p: string) => this.req("GET", p), { publishedKids: kids, keyPolicy: ko.keyPolicy, maxWalk: opts.maxWalk, maxUnwitnessedMinutes: opts.maxUnwitnessedMinutes,
       fetchJwks: async () => { const r = await this.f(GITHUB_OIDC_JWKS); return r.ok ? r.json() : null; },
       post: opts.report === false ? undefined : (p: string, b: unknown) => this.req("POST", p, undefined, b) }) as Promise<LogCheckResult>;
   }
   /** Check heads another client sent (logHeads on their side) against this client's store. */
-  logGossip(sths: unknown[]) { return logGossip(this.log, sths); }
+  async logGossip(sths: unknown[]) {
+    const g = await logGossip(this.log, sths, await this.logKeyOptions());
+    for (const r of g.results) if (r.state === "invalid") this.noteIgnored(r, r.why);
+    return g;
+  }
+  /** Log heads this client was shown and did not keep, newest last (at most 50): not signed by a key CrawlCheck publishes for log heads, or not a head at all. They are never stored and never count as a fork. */
+  logIgnored: { batch: number | null; sha256: string | null; why: string; at: string }[] = [];
+  private noteIgnored(h: any, why?: string) { this.logIgnored.push({ batch: h && Number.isInteger(h.batch) ? h.batch : null, sha256: h && typeof h.sha256 === "string" ? h.sha256 : null, why: why || "not a head CrawlCheck signed", at: new Date().toISOString() }); if (this.logIgnored.length > 50) this.logIgnored.shift(); }
+  /** What a log head must be signed with before this client keeps it: the published signing policy, or (when the directory cannot be read) the policy for the key ids this release ships. A head is never kept on its own word. */
+  private async logKeyOptions(): Promise<LogKeyOptions> { try { return { keyPolicy: await this.publishedKeyPolicy() }; } catch { return { keyPolicy: pinnedKeyPolicy() }; } }
+  private async observeAnswer(a: any): Promise<void> {
+    const t = a && a.transparency;
+    if (!t || t.state !== "included" || !t.sth) return;
+    try { const r = await logObserveAnswer(this.log, a, await this.logKeyOptions()); if (r.state === "invalid") this.noteIgnored(t.sth, r.why); } catch { /* an unreadable head is not kept */ }
+  }
   /**
    * Fetch the signed revocation list (a ?since= delta when the store already holds one), verify it (integrity and a
    * published signing key) and apply it. A delta that no longer reaches back is replaced by the full list. Nothing is
@@ -496,7 +556,7 @@ export class CrawlCheck {
     return this.post("/api/v1/preflight", b) as unknown as Promise<DecisionReceipt>;
   }
   private kpCache: { at: number; kp: KeyPolicyInput } | null = null;
-  /** conf2: the key directory and rotation record, read now (cached 10 minutes), as the signing policy reads them. */
+  /** the key directory and rotation record, read now (cached 10 minutes), as the signing policy reads them. */
   async publishedKeyPolicy(): Promise<KeyPolicyInput> {
     if (this.kpCache && Date.now() - this.kpCache.at < 600e3) return this.kpCache.kp;
     const d: any = await this.req("GET", "/.well-known/http-message-signatures-directory");
@@ -516,32 +576,47 @@ export class CrawlCheck {
    * require_confirmation only if confirm() says yes; block, unsupported and every failure never (fail closed: an error,
    * an unreachable CrawlCheck, a malformed, foreign, expired, replayed or out-of-scope receipt all return proceed false
    * with why[]). Passes the acceptance suite at https://crawlcheck.io/spec/guard
+   * Every result carries failure_class (null when it proceeds; otherwise one of GUARD_FAILURE_CLASSES). With
+   * opts.mode "observe" the same checks run and are reported (would_proceed, failure_class, why) and nothing is refused.
    */
   async guard(domain: string, action: Action = "read", opts: GuardOptions = {}): Promise<GuardResult> {
+    const mode = guardMode(opts.mode);
+    const g = await this.guardDecide(domain, action, opts);
+    g.failure_class = g.proceed ? null : guardFailureClassOf(g);   // guardDecide names the class itself where the result alone cannot tell
+    g.mode = mode; g.enforced = mode !== "observe"; g.would_proceed = g.proceed;
+    if (mode === "observe") g.proceed = true;   // observe: checked and reported, never refused. header stays null unless the receipt was accepted.
+    if (opts.onRecord) { try { await opts.onRecord(g); } catch { /* a failing recorder never changes the result */ } }
+    return g;
+  }
+  private async guardDecide(domain: string, action: Action, opts: GuardOptions): Promise<GuardResult> {
     const nonce = opts.nonce || randomNonce();
     let scope: ReturnType<typeof checkDecision> | null = null;
     const no = (why: string[], receipt: any = null, verification: any = null): GuardResult => ({ proceed: false, receipt, verification, header: null, why, acceptance: receipt && scope ? acceptanceOf(receipt, verification, scope, { allowWarn: !!opts.allowWarn }) : null });
-    const rv = revokedFor(this.revocations, normalizeDomain(domain) || domain, action);   // rvd1: refused offline, before any request
+    const rv = revokedFor(this.revocations, normalizeDomain(domain) || domain, action);   // refused offline, before any request
     if (rv) return Object.assign(no([rv.domain + " is on CrawlCheck's signed revocation list for " + action + " (" + (rv.causes.join(", ") || rv.state || "revoked") + (rv.since ? ", since " + rv.since : "") + "; list of " + this.revocations.generated_at + ")"]), { revoked: rv });
     let receipt: any;
     try { receipt = await this.preflight(domain, action, Object.assign({}, opts, { nonce })); }
-    catch (e) { return no(["CrawlCheck did not give a decision: " + ((e as any)?.message || e)]); }
+    catch (e) { return Object.assign(no(["CrawlCheck did not give a decision: " + ((e as any)?.message || e)]), { failure_class: (/^(TimeoutError|AbortError)$/.test(String((e as any)?.name)) || /timed? ?out|abort/i.test(String((e as any)?.message || e)) ? "check_timeout" : "service_unavailable") as GuardFailureClass }); }
+    // A fork counts only when both of its heads are signed by a published key (a store saved by an earlier release may hold unchecked ones).
+    if (this.log.forks.some((f) => f.issuer_checked !== true)) { try { await logPrune(this.log, await this.logKeyOptions()); } catch { /* left as it is: refused below */ } }
     if (this.log.forks.length) return Object.assign(no(["the transparency log has shown this client two histories (split view)"], receipt), { split_view: this.log.forks.slice() });
     scope = checkDecision(receipt, { domain, action, nonce, now: opts.now, operation: opts.operation });
-    if (!receipt || typeof receipt !== "object") return no(scope.why);
+    if (!receipt || typeof receipt !== "object") return Object.assign(no(scope.why), { failure_class: "response_malformed" as GuardFailureClass });
     const online = opts.onlineKeys ?? true;
-    if (!online && !opts.keyPolicy && !(Array.isArray(opts.publishedKids) && opts.publishedKids.length)) return no(["onlineKeys is false and no keyPolicy or publishedKids were pinned: the signer cannot be checked"], receipt);
+    if (!online && !opts.keyPolicy && !(Array.isArray(opts.publishedKids) && opts.publishedKids.length)) return Object.assign(no(["onlineKeys is false and no keyPolicy or publishedKids were pinned: the signer cannot be checked"], receipt), { failure_class: "key_unknown" as GuardFailureClass });
     let verification: DocumentVerification & Trust;
     try {
-      const kp = online ? await this.publishedKeyPolicy() : opts.keyPolicy || null;   // conf2: purpose, retired and compromised keys, not only "published"
+      const kp = online ? await this.publishedKeyPolicy() : opts.keyPolicy || null;   // purpose, retired and compromised keys, not only "published"
       verification = withTrust(await (V.verifyDataDoc as (d: unknown) => Promise<DocumentVerification>)(receipt), receipt?.signature?.kid, kp ? kp.kids : opts.publishedKids!, (V as any).relatedKids(receipt));
       if (kp) verification = applyKeyPolicy(verification, receipt, kp);
+      else verification = (V as any).applyPinnedPurpose(verification, receipt, opts.publishedKids);   // key ids only: the purposes of the ids this release knows still apply
     }
     catch (e) { return no(["the receipt could not be verified: " + ((e as any)?.message || e)].concat(scope.why), receipt); }
     const why = scope.why.slice();
     if (!verification.integrity_valid) why.push("integrity failed: " + verification.checks.filter((c) => c.ok === false).map((c) => c.id).join(", "));
     if (verification.issuer_trusted !== true) why.push("signed by a key that is not in CrawlCheck's published key directory");
     else if (verification.key_policy_valid === false) why.push("the signing policy rejects this key for a decision receipt: " + ((verification.checks.find((c) => c.id === "key_purpose") || {}) as VerifyCheck).why);
+    else if (verification.key_policy_code === "purpose_unknown") why.push("the receipt is signed by a listed key whose purpose this release does not know, so it cannot tell a decision key from any other: pass keyPolicy instead of publishedKids");
     if (why.length) return no(why, receipt, verification);
     const d = receipt.decision;
     let proceed = d === "allow" || (d === "warn" && !!opts.allowWarn), confirmed: boolean | null = null;
@@ -555,23 +630,31 @@ export class CrawlCheck {
    * to a new domain. The site is contacted only after its domain proceeds; a refused hop is never requested. Redirects
    * are followed by hand (GET/HEAD only), to http(s) only, at most maxHops (10). The receipt header is sent only to the
    * domain it names. In a browser a cross-origin redirect hides its target, so it is refused rather than followed blind.
+   * The result and every hop carry failure_class. With opts.mode "observe" a hop the guard would refuse is recorded
+   * (would_proceed false, failure_class, why) and requested anyway, without a receipt header; a URL or redirect that
+   * cannot be checked at all (fetch_refused) is refused in both modes.
    */
   async guardedFetch(url: string, opts: GuardedFetchOptions = {}): Promise<GuardedFetchResult> {
     const action = opts.action ?? "read", max = opts.maxHops ?? 10, f = opts.fetch ? opts.fetch.bind(globalThis) : this.f;
     const init: RequestInit = Object.assign({}, opts.init || {}), method = String(init.method || "GET").toUpperCase();
-    const hops: GuardedHop[] = [], seen = new Map<string, GuardResult>();
+    const hops: GuardedHop[] = [], seen = new Map<string, GuardResult>(), mode = guardMode(opts.mode);
     let cur = url, origin0 = ""; try { origin0 = new URL(url).origin; } catch { origin0 = ""; }
+    // The result, with the class: the first hop enforce would have refused, else fetch_refused for a refusal made here.
+    const out = (proceed: boolean, response: Response | null, why: string[], local = false): GuardedFetchResult => {
+      const bad = hops.find((h) => h.would_proceed === false);
+      return { proceed, response, url: cur, hops, why, failure_class: bad ? bad.failure_class ?? null : local ? "fetch_refused" : null, mode, enforced: mode !== "observe", would_proceed: !bad && !local };
+    };
     for (let n = 0; n <= max; n++) {
-      let u: URL; try { u = new URL(cur); } catch { return { proceed: false, response: null, url: cur, hops, why: ["not a URL: " + cur] }; }
-      if (u.protocol !== "https:" && u.protocol !== "http:") return { proceed: false, response: null, url: cur, hops, why: ["refused a " + u.protocol + " URL"] };
+      let u: URL; try { u = new URL(cur); } catch { return out(false, null, ["not a URL: " + cur], true); }
+      if (u.protocol !== "https:" && u.protocol !== "http:") return out(false, null, ["refused a " + u.protocol + " URL"], true);
       const dom = normalizeDomain(u.hostname);
-      if (!dom) return { proceed: false, response: null, url: cur, hops, why: ["not a public domain name: " + u.hostname] };
-      const op: Operation = { method: method as Operation["method"], url: cur };   // op1: each hop's receipt names that exact request
+      if (!dom) return out(false, null, ["not a public domain name: " + u.hostname], true);
+      const op: Operation = { method: method as Operation["method"], url: cur };   // each hop's receipt names that exact request
       let g = seen.get(method + " " + cur);
       if (!g) { g = await this.guard(dom, action, Object.assign({}, opts, { operation: op })); seen.set(method + " " + cur, g); }
-      const hop: GuardedHop = { url: cur, domain: dom, proceed: g.proceed, decision: g.receipt ? String(g.receipt.decision) : null, why: g.why };
+      const hop: GuardedHop = { url: cur, domain: dom, proceed: g.proceed, decision: g.receipt ? String(g.receipt.decision) : null, why: g.why, failure_class: g.failure_class !== undefined ? g.failure_class : g.proceed ? null : guardFailureClassOf(g), would_proceed: g.would_proceed ?? g.proceed };
       hops.push(hop);
-      if (!g.proceed) return { proceed: false, response: null, url: cur, hops, why: [dom + ": " + (g.why.join("; ") || "refused")] };
+      if (!g.proceed) return out(false, null, [dom + ": " + (g.why.join("; ") || "refused")]);
       // hdr1 (1.15.2): the caller's headers belong to the origin the caller named. On any other origin (host, scheme or
       // port) only a short allowlist travels, so an Authorization or Cookie header never follows a redirect to someone else.
       const sameOrigin = u.origin === origin0;
@@ -580,13 +663,13 @@ export class CrawlCheck {
       if (g.header) for (const [k, v] of Object.entries(g.header)) h.set(k, v);
       const res = await f(cur, Object.assign({}, init, { headers: h, redirect: "manual" as RequestRedirect }));
       hop.status = res.status;
-      if ((res as any).type === "opaqueredirect") return { proceed: false, response: null, url: cur, hops, why: ["the runtime hid the redirect target, so it cannot be checked"] };
+      if ((res as any).type === "opaqueredirect") return out(false, null, ["the runtime hid the redirect target, so it cannot be checked"], true);
       const loc = res.headers.get("location");
-      if (![301, 302, 303, 307, 308].includes(res.status) || !loc) return { proceed: true, response: res, url: cur, hops, why: [] };
-      if (method !== "GET" && method !== "HEAD") return { proceed: true, response: res, url: cur, hops, why: ["redirect not followed for " + method] };
-      try { cur = new URL(loc, cur).toString(); } catch { return { proceed: false, response: null, url: cur, hops, why: ["unreadable redirect target " + loc] }; }
+      if (![301, 302, 303, 307, 308].includes(res.status) || !loc) return out(true, res, []);
+      if (method !== "GET" && method !== "HEAD") return out(true, res, ["redirect not followed for " + method]);
+      try { cur = new URL(loc, cur).toString(); } catch { return out(false, null, ["unreadable redirect target " + loc], true); }
     }
-    return { proceed: false, response: null, url: cur, hops, why: ["more than " + max + " redirects"] };
+    return out(false, null, ["more than " + max + " redirects"], true);
   }
   /** Look a domain up without sending it: only the first prefixLen hex characters of sha256(domain) leave this process (one more character per 413, up to 8). found false with ready true means no public measurement. */
   /** Make a signed lockfile for an MCP server (CrawlCheck reads tools/list; no tool is called). Save it; check with checkLock before every connect. */
@@ -602,7 +685,7 @@ export class CrawlCheck {
     if (prefixLen < 2 || prefixLen > 8) throw new Error("prefixLen must be 2 to 8");
     const h = await sha256Hex(d);
     let r: any;
-    // pfx3: a 413 means more than 100 measured domains share the prefix (the corpus grows); send one more hex character and
+    // a 413 means more than 100 measured domains share the prefix (the corpus grows); send one more hex character and
     // try again, up to 8. Each extra character halves the bucket twice and still never names the domain.
     for (let n = prefixLen; ; n++) {
       try { r = await this.req("GET", "/api/v1/resolve-prefix/" + h.slice(0, n)); break; }
@@ -732,7 +815,7 @@ export function agentTools(cc: CrawlCheck, opts: AgentToolOptions = {}): AgentTo
         if (!action) return atBadAction(a?.action);
         if (!domain) return { proceed: false, why: ["not a public domain name: " + String(a?.site ?? "")] };
         const g = await cc.guard(domain, action, opts);
-        return { domain, action, proceed: g.proceed, decision: g.receipt ? String(g.receipt.decision) : null, why: g.why, reasons: Array.isArray((g.receipt as any)?.steps) ? (g.receipt as any).steps.map((x: any) => String(x?.why ?? "")).filter(Boolean) : [], reason_codes: (g.receipt as any)?.reason_codes ?? [],
+        return { domain, action, proceed: g.proceed, failure_class: g.failure_class ?? null, decision: g.receipt ? String(g.receipt.decision) : null, why: g.why, reasons: Array.isArray((g.receipt as any)?.steps) ? (g.receipt as any).steps.map((x: any) => String(x?.why ?? "")).filter(Boolean) : [], reason_codes: (g.receipt as any)?.reason_codes ?? [],
           receipt_sha256: g.receipt?.sha256 ?? null, verified: g.verification ? g.verification.accepted : false, alternatives: g.receipt?.alternatives ?? null,
           facts: (g.receipt as any)?.facts ?? null };
       } },
@@ -760,7 +843,7 @@ export function agentTools(cc: CrawlCheck, opts: AgentToolOptions = {}): AgentTo
         if (a?.action !== undefined && a?.action !== null && a?.action !== "" && a.action !== "read" && a.action !== "cite") return Object.assign(atBadAction(a.action), { url: String(a?.url ?? "") });
         const r = await cc.guardedFetch(String(a?.url ?? ""), Object.assign({}, opts, { action: (a?.action === "cite" ? "cite" : "read") as Action }));
         const hops = r.hops.map((h) => ({ url: h.url, domain: h.domain, decision: h.decision, proceed: h.proceed, status: h.status ?? null }));
-        if (!r.proceed || !r.response) return { proceed: false, url: r.url, why: r.why, hops };
+        if (!r.proceed || !r.response) return { proceed: false, url: r.url, failure_class: r.failure_class ?? null, why: r.why, hops };
         const text = await r.response.text();
         return { proceed: true, url: r.url, status: r.response.status, content_type: r.response.headers.get("content-type"), text: text.slice(0, max), truncated: text.length > max, chars: text.length, hops };
       } }

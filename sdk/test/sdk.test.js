@@ -1,7 +1,7 @@
 // Runs against the live API. npm test
 import test from "node:test"; import assert from "node:assert/strict";
 import { CrawlCheck, verifyBundle, verifyReceipt, CrawlCheckError, verifyDocument, normalizeDomain, receiptHeader, lockFromTools, checkLock } from "../dist/index.js";
-const c = new CrawlCheck();
+const c = new CrawlCheck({ headers: { "user-agent": "crawlcheck-selftest sdk-js-tests" } });
 
 test("conformance: every published fixture gives its expected output through this package's verifier", async () => {
   const r = await c.conformance();

@@ -67,7 +67,7 @@ export function tsdContractEntry(tool) {
   return o;
 }
 const CONTRACT = { name: 1, description: 1, inputSchema: 1, outputSchema: 1 };
-const extrasOf = (t) => { const o = {}; for (const k of Object.keys(t)) if (!Object.prototype.hasOwnProperty.call(CONTRACT, k)) o[k] = t[k]; return o; };
+const extrasOf = (t) => Object.fromEntries(Object.entries(t).filter(([k]) => !Object.prototype.hasOwnProperty.call(CONTRACT, k)));   // every own member, one named __proto__ included
 const byteCmp = (a, b) => { const n = Math.min(a.length, b.length); for (let i = 0; i < n; i++) if (a[i] !== b[i]) return a[i] - b[i]; return a.length - b.length; };
 const named = (e, t) => { if (e instanceof ToolSetDigestError && !e.tool && isObj(t) && typeof t.name === "string" && t.name && !LONE.test(t.name)) e.tool = t.name; return e; };
 
@@ -90,10 +90,16 @@ async function extrasDigestOf(tools) {
   const text = '{"tools":{' + names.map((n) => { try { return str(n) + ":" + tsdCanonical(per.get(n), 2); } catch (e) { throw named(e, { name: n }); } }).join(",") + "}}";
   return { digest: "sha256-" + b64(await sha(text)), canonical: text };
 }
+/** @typedef {"TSD-PAGE" | "TSD-TOOL" | "TSD-NUMBER" | "TSD-TEXT" | "TSD-NAME" | "TSD-DEPTH"} ToolSetDigestCode */
+/** @typedef {{ digest: string, canonical: string } | { digest: null } | { error: ToolSetDigestCode, tool?: string }} ToolSetDigestSide */
+/** @typedef {{ spec: "mcp-tool-set-digest/1", contract: ToolSetDigestSide, extras: ToolSetDigestSide, tools?: { name: string, contract: string, extras: string | null, extras_error?: ToolSetDigestCode }[] }} ToolSetDigestResult */
 /**
  * The two digests of a complete tools/list result (every page joined). Each side is { digest, canonical } or
  * { error: "TSD-…", tool? }; extras is { digest: null } when no tool carries a member outside the contract.
  * opts.partial: true when a page was not read: neither digest (TSD-PAGE). opts.perTool adds the optional per-tool digests.
+ * @param {unknown} tools
+ * @param {{ partial?: boolean, perTool?: boolean }} [opts]
+ * @returns {Promise<ToolSetDigestResult>}
  */
 export async function toolSetDigest(tools, opts = {}) {
   const out = { spec: TSD_SPEC, contract: null, extras: null };

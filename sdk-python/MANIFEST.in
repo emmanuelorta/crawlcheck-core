@@ -1,0 +1,5 @@
+include README.md CHANGELOG.md
+prune tests
+prune examples
+exclude build_wheel.py .gitignore
+global-exclude __pycache__ *.py[cod]

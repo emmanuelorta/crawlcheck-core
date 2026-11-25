@@ -1,0 +1,129 @@
+{
+ "made": "test = the service's own log and witness code run in a test harness over real batches 0..300 of the answer log, with throwaway keys; live = the real checkpoint read from crawlcheck.io/log/checkpoint on 2026-11-14",
+ "test": {
+  "log_vkey": "crawlcheck.io/log+bb7e5915+AZYlF03uQoas0wyfNMvnJXN0EOYGLlQDDEELTeBeXErR",
+  "w1_vkey": "crawlcheck.io/witness+bcdc264a+BNuVo2HRzjVq56vURIWqRN6uHmseXA2EqXEnpzQHLguQ",
+  "w2_vkey": "w2.test/witness+819c64c5+BCvU8SVggasVBAvVT1GUUiIPVXsN2/8KdAXZavHHYgAw",
+  "stranger_vkey": "stranger.test/witness+83ba0b23+BKqQPjKrt18q5icsFaLfYzgNp209uM7OYtutdY8bzAqH",
+  "note": "crawlcheck.io/log\n94967\ni1qn3Js5xWpsjFwm1zGl1t6YAnxO2UNWEOKDbFx5vAo=\n\n— crawlcheck.io/log u35ZFdb/CpqI6V0aciALHspolb8Yf0k15XUE5/sNsrF3jfZBhY0xF22TYuEU1uF8uxIZuoXiag0qgbAgdzAG8fX97Qc=\n",
+  "note_w1": "crawlcheck.io/log\n94967\ni1qn3Js5xWpsjFwm1zGl1t6YAnxO2UNWEOKDbFx5vAo=\n\n— crawlcheck.io/log u35ZFdb/CpqI6V0aciALHspolb8Yf0k15XUE5/sNsrF3jfZBhY0xF22TYuEU1uF8uxIZuoXiag0qgbAgdzAG8fX97Qc=\n— crawlcheck.io/witness vNwmSgAAAABq+I6R8GEshQccnWTtNWAEJu6uiNTMztKAbCBB3yFlZNdyzN/+lXRsXaOwD7xWGKOACW+2mawo+x4WVJhqlKWrPP7eAw==\n",
+  "note_w1_w2": "crawlcheck.io/log\n94967\ni1qn3Js5xWpsjFwm1zGl1t6YAnxO2UNWEOKDbFx5vAo=\n\n— crawlcheck.io/log u35ZFdb/CpqI6V0aciALHspolb8Yf0k15XUE5/sNsrF3jfZBhY0xF22TYuEU1uF8uxIZuoXiag0qgbAgdzAG8fX97Qc=\n— crawlcheck.io/witness vNwmSgAAAABq+I6R8GEshQccnWTtNWAEJu6uiNTMztKAbCBB3yFlZNdyzN/+lXRsXaOwD7xWGKOACW+2mawo+x4WVJhqlKWrPP7eAw==\n— w2.test/witness gZxkxQAAAABq+IWAxWxmIIq2fCMF22fRiDjqtKD08XjL2yKZPO5mpdEXchfFxix+os/Cupg4i0Pnfnj/zYzl4kpMntSlil3bxgcyDg==\n",
+  "note_w1_stranger": "crawlcheck.io/log\n94967\ni1qn3Js5xWpsjFwm1zGl1t6YAnxO2UNWEOKDbFx5vAo=\n\n— crawlcheck.io/log u35ZFdb/CpqI6V0aciALHspolb8Yf0k15XUE5/sNsrF3jfZBhY0xF22TYuEU1uF8uxIZuoXiag0qgbAgdzAG8fX97Qc=\n— crawlcheck.io/witness vNwmSgAAAABq+I6R8GEshQccnWTtNWAEJu6uiNTMztKAbCBB3yFlZNdyzN/+lXRsXaOwD7xWGKOACW+2mawo+x4WVJhqlKWrPP7eAw==\n— stranger.test/witness g7oLIwAAAABq+IWASEG+ZgbaK4sg26TIEww94mhN+jYS87XToeu+7GbhuLAusEeTxVS4zs3KI7jXderNabvAiO8Z0wNxx4A6U5WTBQ==\n",
+  "inclusion": [
+   {
+    "ok": true,
+    "origin": "crawlcheck.io/log",
+    "leaf_hash": "5a997d019c6516b345f3da94e978c266f1800fd3e825e809e744a465d7a0824b",
+    "index": 0,
+    "tree_size": 94967,
+    "root": "i1qn3Js5xWpsjFwm1zGl1t6YAnxO2UNWEOKDbFx5vAo=",
+    "path": [
+     "5uIK29mUEYlhPDXxtBKZFaZNvdd6LSxQdATW7yKGr+Q=",
+     "d1lzaNI44VwphMe2NOueYQnuC0aqHDVLY1XjzGC1wiU=",
+     "dga4+g+dXUtIUkxiwvT+IU5uwvh/MF5fYOKQPmp09G4=",
+     "XN7XzkiD/aPUeIrirJ4PNd9LSuqoVIvyuhxvnJj76nk=",
+     "nMCCc2Y2w8cU3pqvVZljHBDxAyaiKfa9kE798mFuRnE=",
+     "ydgtUQK1xTT1v6+WQd5eVPQElhaskrUeecvR7ULTo1k=",
+     "/AbwymUFQ41QKfglZoFI095r3yVQxjLyDvg1m/lEqp8=",
+     "WUNfKiI/6edSWocVJlBD/noiO1ziQLHwHVQTKU5Zdd8=",
+     "tAr7HK7pQFu1rJHGakrAbneGj+ZctinyaCdMiBr1mrs=",
+     "9THvdwl3N7e5l0PT4VwhQGY/Opz/ll6MDPABMv206Dk=",
+     "yikxDzLQeToSct2F3sWl90Kr2cJCWcJfKnAP4paMCoY=",
+     "w1ejHI1JNQEgfPLDJ25RcKOMMgER59v4wnVKn74QHgE=",
+     "0GeHkHyXkdUqOzZh2lxnBOC/xZkNHt4QgYesuWn3DdQ=",
+     "69oCONpKq7YNjutdEIRDt4Dwcw8j///VlIpN9Fz9bbo=",
+     "iSps1CkQh5T8TudsN+d8TYfx0RfYZRUGfT+DguEGNj8=",
+     "5eZuUH5RZp59xEvbhoDQfLeis8s+ZwuHkg4BVN4kXsk=",
+     "gJ+lUc4FPDumj3W6vU6et5n7yYf58NZTSsj8Q2KC37Q="
+    ],
+    "batch": 0,
+    "checkpoint": "crawlcheck.io/log\n94967\ni1qn3Js5xWpsjFwm1zGl1t6YAnxO2UNWEOKDbFx5vAo=\n\n— crawlcheck.io/log u35ZFdb/CpqI6V0aciALHspolb8Yf0k15XUE5/sNsrF3jfZBhY0xF22TYuEU1uF8uxIZuoXiag0qgbAgdzAG8fX97Qc=\n— crawlcheck.io/witness vNwmSgAAAABq+I6R8GEshQccnWTtNWAEJu6uiNTMztKAbCBB3yFlZNdyzN/+lXRsXaOwD7xWGKOACW+2mawo+x4WVJhqlKWrPP7eAw==\n",
+    "rule": "leaf_hash is the answer's leaf (SHA-256 of 0x00 and its canonical decision content); hash it up the path as RFC 6962 says (0x01 prefix, left or right by the index bits) and the result is the root in the checkpoint"
+   },
+   {
+    "ok": true,
+    "origin": "crawlcheck.io/log",
+    "leaf_hash": "02ff93c479b01a658e202fd2e49821fcb9c973fb62dafe2cdbc0229cb6945b4b",
+    "index": 27892,
+    "tree_size": 94967,
+    "root": "i1qn3Js5xWpsjFwm1zGl1t6YAnxO2UNWEOKDbFx5vAo=",
+    "path": [
+     "A4YB0jfwPzlfnQ6Zp/MPGMYDu6WtKvjmakjxG31GamQ=",
+     "gjErntnIOxhfBeEkxWqvplnqZRNrckeTTznEOliNE50=",
+     "XHek+zWP/1AeYZK8KStsdTcvzY+KVO1WxGOf+1pAM+k=",
+     "z6OV89VlnJrU3Z5Rcr2Fh55/K33E02woBlOmNBxurvY=",
+     "Je2nPWtWoG5S5ZORdwByZzqorkuelRHcaVUO27hWc/I=",
+     "mEE7ASHZ+UxufWAIzVWUZXNO5PSmYD7s+wtckcpHRuQ=",
+     "fV3O1cnFo1eNxfMo360wYlBTfDze1ZvqKVSWg6xMx7Y=",
+     "h5PVJcNcCepJiBv3exNasCqiKofdkfnneagl3oikk7E=",
+     "eoK5VotKtgEivtCyBTEZRF+r3QYl+wqbOsDvQG4d+Pc=",
+     "BsVK7BKZwMiJp+aR7IgFMmXCGSqnPa5k8APLpVo9TEE=",
+     "4fg2QjaAYHEnYfngCf5rNE6vDYUqGbjT1V+MoaeVGT8=",
+     "+hTqVcwtAXt8qhhSGcUpKFcvJ3rCi0z/1TIrvU7Ldgw=",
+     "WF/osbDSFiLKLK/pp6YWiynARwQzyf9j7xkMJ9f+b+8=",
+     "wXBAh9hNeEHC243QXw42ZAGKhnAB/ONs/wqqoKq9eDk=",
+     "CstbtNB0w6A9Vu6DVqrsCw5N3rEv3n9ij/s00uRDINs=",
+     "5eZuUH5RZp59xEvbhoDQfLeis8s+ZwuHkg4BVN4kXsk=",
+     "gJ+lUc4FPDumj3W6vU6et5n7yYf58NZTSsj8Q2KC37Q="
+    ],
+    "batch": 150,
+    "checkpoint": "crawlcheck.io/log\n94967\ni1qn3Js5xWpsjFwm1zGl1t6YAnxO2UNWEOKDbFx5vAo=\n\n— crawlcheck.io/log u35ZFdb/CpqI6V0aciALHspolb8Yf0k15XUE5/sNsrF3jfZBhY0xF22TYuEU1uF8uxIZuoXiag0qgbAgdzAG8fX97Qc=\n— crawlcheck.io/witness vNwmSgAAAABq+I6R8GEshQccnWTtNWAEJu6uiNTMztKAbCBB3yFlZNdyzN/+lXRsXaOwD7xWGKOACW+2mawo+x4WVJhqlKWrPP7eAw==\n",
+    "rule": "leaf_hash is the answer's leaf (SHA-256 of 0x00 and its canonical decision content); hash it up the path as RFC 6962 says (0x01 prefix, left or right by the index bits) and the result is the root in the checkpoint"
+   },
+   {
+    "ok": true,
+    "origin": "crawlcheck.io/log",
+    "leaf_hash": "ff4c6ff4cdda7dcfc711ada51a5792033d73b5b2ed6d8c7a157211a78d44b1b6",
+    "index": 94966,
+    "tree_size": 94967,
+    "root": "i1qn3Js5xWpsjFwm1zGl1t6YAnxO2UNWEOKDbFx5vAo=",
+    "path": [
+     "E7r4ZoMuaROqHcjjnJrgg/DJ7HqRAuIJZ5I/kxGyKuA=",
+     "u0XkhgXrXP0C15/yZ7Jl8FHKSv3UsI93aRE3vW3SrJg=",
+     "UgJ3K2NJe7UnN/iW0GsD7zdaiPV2je2xbs1TsQ5Y4bU=",
+     "+mccsdlAwHy+GqZZoq0BlkRIaCdHaicLkV9LMMiH4Tc=",
+     "5Fba5bRxOsjghrnfKL/GtFT+x1T5E3Gqr2x5r08kB+o=",
+     "cZ1XMS/h2fmNkI9uqg7AlSC4klYFue63NnNd/hAt5bs=",
+     "KhrwIESd6nJnOLw6jfxylwyRbvmwY2Y+OZ3VfhWX2zg=",
+     "w2UrjIOmltlMaYZzVUbETbJR61I8fKPvfUyJTDc98w4=",
+     "hOLlbwcKv2Mole1HH9FaLwneXMXaDy7QDUEw0tFpiOA=",
+     "O3t+hBNsAvYfwrkcE8Q+DFEZKYT/vtmcu6g0OpE7gc0=",
+     "mX6C8v0KSooU8ZvPqDKuq9jfgPXlP8Aa2gpvhQj9XZQ="
+    ],
+    "batch": 300,
+    "checkpoint": "crawlcheck.io/log\n94967\ni1qn3Js5xWpsjFwm1zGl1t6YAnxO2UNWEOKDbFx5vAo=\n\n— crawlcheck.io/log u35ZFdb/CpqI6V0aciALHspolb8Yf0k15XUE5/sNsrF3jfZBhY0xF22TYuEU1uF8uxIZuoXiag0qgbAgdzAG8fX97Qc=\n— crawlcheck.io/witness vNwmSgAAAABq+I6R8GEshQccnWTtNWAEJu6uiNTMztKAbCBB3yFlZNdyzN/+lXRsXaOwD7xWGKOACW+2mawo+x4WVJhqlKWrPP7eAw==\n",
+    "rule": "leaf_hash is the answer's leaf (SHA-256 of 0x00 and its canonical decision content); hash it up the path as RFC 6962 says (0x01 prefix, left or right by the index bits) and the result is the root in the checkpoint"
+   }
+  ],
+  "consistency": {
+   "first": 49215,
+   "second": 94967,
+   "root1": "jFxuNQHGPfygpgh6Zr5RniDBarEgb8PVyo4idyKxBtw=",
+   "root2": "i1qn3Js5xWpsjFwm1zGl1t6YAnxO2UNWEOKDbFx5vAo=",
+   "proof": [
+    "gNYzBzrPULsfNuBvK6izZkyEyOep5yLuKFrCUyKOBkI=",
+    "AExWipi6rMWGDR77SdQID3kPj7X+OMN62CnpHsBkuak=",
+    "Coy93r0KTTmj1bOktlwmyPkE3MRJ+xlJ7dw5E700ILI=",
+    "U/aBxoTJGmEbcsBCNmjVchDZGqL4LzqIjEjKmWn/9T0=",
+    "70vg5RkU8PG2y120ZYC2LoIdrg/LTNxtnbgYjIjptk8=",
+    "Ycn1+17EVe74qPvujZQzre7ezyX8vxlznvnMupMrUtY=",
+    "ofDSVpd2hZasNfH1ojZGxLY7Xhr2FSP+sRb2/uuXAGI=",
+    "murU3pJp0XeOI69kvC2fNQck/yWiuwIoFqtw9YszTpA=",
+    "RvulYaroDlc9+DT4VL2LewbzfMK88JndntftF6nYZ2E=",
+    "xVJxXuDmiIwMRx8wKaaPES3kYW9EgK0eVePPR25fFmI=",
+    "Es5n1U8XcuPyLmo3Pdg7sMXnABpjNq7fjV4vxKdBDAM=",
+    "uOWYsGGngG23oNesKCjXd9Y9/KOT9PqJg+VaxX+j7Ow=",
+    "d1rjkuMYqMuJYn/QLtD0ADQWg7wbV0WrYwQyV2BzNAM=",
+    "pIUiyJzCGkrCYALVqLJ6L+EoMuzc0yMrmL4dNGajJvU=",
+    "H9gHoldVXQ/IP2McPCCJPz/PTsR88r2JeHWn9uhEgwo=",
+    "10IYwQuJCxbXkfc8veXGsop5mJi+1KeOrjvQQQ3TiuU=",
+    "4ZWa3rWPKokZFjAmLO0+AMCVqrSYH4XiZN89WqN4pD0=",
+    "gJ+lUc4FPDumj3W6vU6et5n7yYf58NZTSsj8Q2KC37Q="
+   ]
+  }
+ },
+ "live": {
+  "note": "crawlcheck.io/log\n516203\nLFYzcwxDqaEwBAMxGQSe9eC27KuIED+yi/HYmxudS+g=\n\n— crawlcheck.io/log SxPjTmkWE15ouRgzo1nB3n2IU29W8BfbLnwRfqFuc5DNp9XZxVf2RmWrFLW1SmhJLcw0FSFf8SaDN7R/FfFOHNqvJwQ=\n",
+  "size": 516203
+ }
+}

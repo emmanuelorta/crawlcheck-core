@@ -12,18 +12,24 @@ def main(argv=None):
         return 2
     cc = CrawlCheck()
     if a[0] == "verify":
-        doc = json.load(open(a[1], encoding="utf-8"))
+        with open(a[1], encoding="utf-8") as fh:
+            doc = json.load(fh)
         r = cc.verify(doc)
         for c in r["checks"]:
             print({True: "PASS", False: "FAIL", None: " -- "}[c["ok"]], c["id"].ljust(16), c["why"])
-        return 0 if r["verified"] else 1
+        print("ACCEPTED" if r.get("accepted") else "NOT ACCEPTED")
+        return 0 if r["verified"] and r.get("accepted") else 1   # never a passing status for a document that was not accepted
     if a[0] == "resolve":
         print(json.dumps(cc.resolve(a[1]), indent=1))
         return 0
     rc = cc.preflight(a[1], a[2] if len(a) > 2 else "read", a[3] if len(a) > 3 else None)
-    print(rc["decision"], "-", rc.get("meaning"))
+    v = cc.verify(rc)   # the receipt is checked before its decision is shown as CrawlCheck's
+    print(rc.get("decision"), "-", rc.get("meaning"))
     for s in rc.get("steps", []):
         print("  ", s["rule"].ljust(26), s["effect"].ljust(20), s["why"])
+    if not v.get("accepted"):
+        print("NOT ACCEPTED: this receipt does not verify as CrawlCheck's (%s); do not act on it" % v.get("summary"))
+        return 1
     return 0
 
 

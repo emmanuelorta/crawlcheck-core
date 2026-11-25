@@ -24,7 +24,6 @@ export const jcsV1 = J.jcsV1;
 export const jcsCanon = J.jcsCanon;
 export const jcsContract = J.jcsContract;
 export const jcsExtras = J.jcsExtras;
-// ── mcp-tool-set-digest/1 (1.15.0, https://github.com/alexar76/mcp-tool-set-digest): the shared definition, nothing repaired or bounded ──
 export const TSD_SPEC = T.TSD_SPEC;
 /** The contract and extras digests of a complete tools/list result as mcp-tool-set-digest/1 defines them. Each side is a digest or an error code; a member outside the contract never takes the contract digest away. Equals lock.jcs_v1 in the ordinary case. */
 export const toolSetDigest = T.toolSetDigest;
@@ -37,6 +36,9 @@ export const lockParts = C.lockParts;
 /** The separate acceptance questions for one decision receipt. Act on policy_result, never on integrity_valid alone. */
 /** Which continuity failure class a refused guard() result is. */
 export const continuityClassOf = C.continuityClassOf;
+export const GUARD_FAILURE_CLASSES = C.GUARD_FAILURE_CLASSES;
+/** Which failure class a refused guard() result is. Finer than continuityClassOf (which is unchanged): operation_mismatch, replay_mismatch, revoked, split_view and response_malformed are named separately. guard() puts it on the result as failure_class. */
+export const guardFailureClassOf = C.guardFailureClassOf;
 export const acceptanceOf = C.acceptanceOf;
 export const CRAWLCHECK_LOCK_KIDS = C.CRAWLCHECK_LOCK_KIDS;
 /** Is this the lockfile CrawlCheck or the operator signed? Offline. lock is the baseline to compare against (unsigned parts removed). */
@@ -63,11 +65,15 @@ export const keyPolicyFrom = V.keyPolicyFrom;
 export const keyPolicyCheck = V.keyPolicyCheck;
 /** Apply the signing policy to a verification: key_published (retired keys included), key_purpose, and the trust fields. */
 export const applyKeyPolicy = V.applyKeyPolicy;
+/** The signing policy for the key ids this release ships (purposes and start times; no rotation record), limited to the ids given. For offline use; online, publishedKeyPolicy() is current. */
+export const pinnedKeyPolicy = V.pinnedKeyPolicy;
+/** CrawlCheck's signing key ids (RFC 7638 thumbprints) as published when this release was cut. Offline, a document under any other key id has issuer_pinned: false. */
+export const CRAWLCHECK_KEY_IDS = V.CRAWLCHECK_KEY_IDS;
 function withTrust(v, kid, published, related = []) {
     let checks = v.checks;
     let issuer = null;
     if (published) {
-        // kp3: keys are separated by purpose, so a decision's resolve answer or an answer's log head can carry another key; every one must be published
+        // keys are separated by purpose, so a decision's resolve answer or an answer's log head can carry another key; every one must be published
         const miss = related.filter((k) => k !== kid && !published.includes(k));
         issuer = !!kid && published.includes(kid) && miss.length === 0;
         const kc = { id: "key_published", ok: issuer, why: issuer ? "key id " + kid + " is in the published key directory" + (related.length ? ", and so is every key it leans on" : "") : miss.length && kid && published.includes(kid) ? "the document leans on key " + miss.join(", ") + ", which is NOT published - reject this document" : "key id " + (kid || "?") + " is NOT in the published key directory - reject this document" };
@@ -75,16 +81,27 @@ function withTrust(v, kid, published, related = []) {
     }
     const ran = checks.filter((c) => c.ok !== null), failed = checks.filter((c) => c.ok === false);
     const verified = ran.length > 0 && failed.length === 0;
-    const integrity_valid = checks.filter((c) => c.id !== "key_published").every((c) => c.ok !== false);
+    // The signature must have been checked and verify under the key whose thumbprint is the stated key id: a signature
+    // check that did not run (no key carried, no signature, no Ed25519 here) is never a pass.
+    const sg = checks.find((c) => c.id === "signature"), ki = checks.find((c) => c.id === "key_id");
+    const signed = !!sg && sg.ok === true && !!ki && ki.ok === true;
+    const integrity_valid = checks.filter((c) => c.id !== "key_published").every((c) => c.ok !== false) && (!kid || signed);
+    const unavailable = checks.filter((c) => c.ok === null && c.id !== "key_published").map((c) => c.id);
+    const accepted = verified && integrity_valid && issuer === true && signed;
     return Object.assign({}, v, { checks, verified, summary: failed.length ? failed.length + " check(s) FAILED" : ran.length + " of " + checks.length + " checks ran and passed",
-        integrity_valid, issuer_trusted: issuer, accepted: verified && issuer === true });
+        integrity_valid, issuer_trusted: issuer, issuer_pinned: published || !kid ? null : CRAWLCHECK_KEY_IDS.includes(kid) && signed, accepted,
+        accepted_strict: accepted && unavailable.length === 0, assurance: unavailable.length ? "partial" : "complete", unavailable });
 }
 /** Verify an evidence bundle with no call to CrawlCheck (the same code as /crawlcheck-verify.mjs). */
 export const verifyBundle = V.verifyBundle;
 /** Verify a remediation receipt with no call to CrawlCheck. */
 export const verifyReceipt = V.verifyReceipt;
-/** Verify a signed resolve answer, preflight decision receipt, data inventory, export part or deletion record offline. */
-export const verifyDocument = async (doc) => withTrust(await V.verifyDataDoc(doc), doc?.signature?.kid, null);
+/**
+ * Verify a signed resolve answer, preflight decision receipt, data inventory, export part or deletion record offline.
+ * Offline it is never accepted (issuer_trusted: null); issuer_pinned says whether the key id is one this release ships.
+ * Pass opts.publishedKids (publishedKeyIds(), or CRAWLCHECK_KEY_IDS to trust the ids this release ships) to decide the issuer.
+ */
+export const verifyDocument = async (doc, opts) => V.applyPinnedPurpose(withTrust(await V.verifyDataDoc(doc), doc?.signature?.kid, opts && Array.isArray(opts.publishedKids) ? opts.publishedKids : null, opts && Array.isArray(opts.publishedKids) ? V.relatedKids(doc) : []), doc, opts && opts.publishedKids);
 /** Verify a signed evidence export (and every bundle and receipt inside it) offline. */
 export const verifyExport = V.verifyExport;
 /** Verify a signed dispute resolution offline (re-runs the published decision table over the recorded readings). */
@@ -149,6 +166,9 @@ export const ACTION_MAX_LIFETIME_S = { read: 86400, cite: 86400, connect: 3600, 
 /** The most clock skew a receipt may claim (seconds). */
 export const MAX_CLOCK_SKEW_S = 300;
 const DECISIONS = ["allow", "warn", "require_confirmation", "block", "unsupported"];
+function guardMode(m) { if (m === undefined || m === null || m === "enforce")
+    return "enforce"; if (m === "observe")
+    return "observe"; throw new Error("mode must be enforce or observe"); }
 export function checkDecision(receipt, want) {
     const why = [], r = receipt;
     const f = { kind_ok: false, domain_matches: false, action_matches: false, times_present: false, not_expired: false, not_future: false, lifetime_ok: false, decision_known: false, resolve_bound: false };
@@ -207,10 +227,12 @@ export function checkDecision(receipt, want) {
         why.push("the receipt names no resolve answer");
     return { ok: why.length === 0, why, fields: f };
 }
+/** Headers guardedFetch still sends after a redirect leaves the origin the caller named. Everything else stays behind. */
+export const GUARDED_SAFE_HEADERS = ["accept", "accept-language", "accept-encoding", "user-agent", "cache-control", "pragma"];
 export const LOG_ID = L.LOG_ID;
 /** A new, empty transparency-log store (plain JSON: persist it between runs). */
 export const newLogStore = L.newLogStore;
-/** Check one signed tree head against the store and keep it. A fork carries both contradicting signed heads. */
+/** Check one signed tree head against the store and keep it. Pass publishedKids or keyPolicy: a head that is not signed by a published key is invalid and is not kept. A fork carries both contradicting signed heads. */
 export const logObserve = L.logObserve;
 /** Check the head inside a Resolve answer (transparency.sth), if it carries one. */
 export const logObserveAnswer = L.logObserveAnswer;
@@ -218,6 +240,8 @@ export const logObserveAnswer = L.logObserveAnswer;
 export const logHeads = L.logHeads;
 /** Gossip: check another client's heads against this store. */
 export const logGossip = L.logGossip;
+/** Re-check a saved store against CrawlCheck's keys: forks and heads that are not signed by a published key are dropped. */
+export const logPrune = L.logPrune;
 /** Verify the outside witness's co-signature: a GitHub OIDC JWT (RS256) whose audience is crawlcheck-sth:<head sha256>. */
 export const verifyWitnessToken = L.verifyWitnessToken;
 export const GITHUB_OIDC_JWKS = "https://token.actions.githubusercontent.com/.well-known/jwks";
@@ -290,7 +314,7 @@ export class CrawlCheck {
     // ── read before acting ──
     /** The signed ResolveV1 answer: crawl policy, delivery, machine files, capabilities, entity, findings, freshness and a decision per action. */
     async resolve(domain) {
-        if (this.privateLookups) { // pfx2: only the hash prefix leaves this process
+        if (this.privateLookups) { // only the hash prefix leaves this process
             const p = await this.resolvePrivate(domain);
             if (!p.ready)
                 throw new CrawlCheckError(503, "/api/v1/resolve-prefix", { error: p.why || "the prefix index is not built yet" });
@@ -298,11 +322,11 @@ export class CrawlCheck {
                 throw new CrawlCheckError(404, "/api/v1/resolve-prefix", { error: "CrawlCheck holds no public measurement of " + domain + "; in private mode the domain is never sent, so no just-in-time answer is made" });
             if (!p.accepted)
                 throw new CrawlCheckError(502, "/api/v1/resolve-prefix", { error: "the answer in the bucket did not verify: " + (p.verification ? p.verification.summary : "no verification") });
-            await logObserveAnswer(this.log, p.answer).catch(() => null);
+            await this.observeAnswer(p.answer);
             return p.answer;
         }
         const a = await this.get("/api/v1/resolve", { domain });
-        await logObserveAnswer(this.log, a).catch(() => null); // a head that contradicts one this client already holds is recorded in this.log.forks
+        await this.observeAnswer(a); // a head that contradicts one this client already holds is recorded in this.log.forks
         return a;
     }
     kidCache = null;
@@ -344,18 +368,46 @@ export class CrawlCheck {
     async resolveBatch(domains) {
         const r = await this.post("/api/v1/resolve", { domains });
         for (const a of (r && r.answers) || [])
-            await logObserveAnswer(this.log, a).catch(() => null);
+            await this.observeAnswer(a);
         return r;
     }
     /** Split-view check: the current head, GitHub's witness co-signature on the last witnessed head, and the chain from it down to every head this client holds. Reports the heads it holds to /api/v1/log/gossip unless report is false. */
     async logCheck(opts = {}) {
-        const kids = await this.publishedKeyIds();
-        return L.logCheck(this.log, (p) => this.req("GET", p), { publishedKids: kids, maxWalk: opts.maxWalk, maxUnwitnessedMinutes: opts.maxUnwitnessedMinutes,
+        const kids = await this.publishedKeyIds(), ko = await this.logKeyOptions();
+        return L.logCheck(this.log, (p) => this.req("GET", p), { publishedKids: kids, keyPolicy: ko.keyPolicy, maxWalk: opts.maxWalk, maxUnwitnessedMinutes: opts.maxUnwitnessedMinutes,
             fetchJwks: async () => { const r = await this.f(GITHUB_OIDC_JWKS); return r.ok ? r.json() : null; },
             post: opts.report === false ? undefined : (p, b) => this.req("POST", p, undefined, b) });
     }
     /** Check heads another client sent (logHeads on their side) against this client's store. */
-    logGossip(sths) { return logGossip(this.log, sths); }
+    async logGossip(sths) {
+        const g = await logGossip(this.log, sths, await this.logKeyOptions());
+        for (const r of g.results)
+            if (r.state === "invalid")
+                this.noteIgnored(r, r.why);
+        return g;
+    }
+    /** Log heads this client was shown and did not keep, newest last (at most 50): not signed by a key CrawlCheck publishes for log heads, or not a head at all. They are never stored and never count as a fork. */
+    logIgnored = [];
+    noteIgnored(h, why) { this.logIgnored.push({ batch: h && Number.isInteger(h.batch) ? h.batch : null, sha256: h && typeof h.sha256 === "string" ? h.sha256 : null, why: why || "not a head CrawlCheck signed", at: new Date().toISOString() }); if (this.logIgnored.length > 50)
+        this.logIgnored.shift(); }
+    /** What a log head must be signed with before this client keeps it: the published signing policy, or (when the directory cannot be read) the policy for the key ids this release ships. A head is never kept on its own word. */
+    async logKeyOptions() { try {
+        return { keyPolicy: await this.publishedKeyPolicy() };
+    }
+    catch {
+        return { keyPolicy: pinnedKeyPolicy() };
+    } }
+    async observeAnswer(a) {
+        const t = a && a.transparency;
+        if (!t || t.state !== "included" || !t.sth)
+            return;
+        try {
+            const r = await logObserveAnswer(this.log, a, await this.logKeyOptions());
+            if (r.state === "invalid")
+                this.noteIgnored(t.sth, r.why);
+        }
+        catch { /* an unreadable head is not kept */ }
+    }
     /**
      * Fetch the signed revocation list (a ?since= delta when the store already holds one), verify it (integrity and a
      * published signing key) and apply it. A delta that no longer reaches back is replaced by the full list. Nothing is
@@ -397,7 +449,7 @@ export class CrawlCheck {
         return this.post("/api/v1/preflight", b);
     }
     kpCache = null;
-    /** conf2: the key directory and rotation record, read now (cached 10 minutes), as the signing policy reads them. */
+    /** the key directory and rotation record, read now (cached 10 minutes), as the signing policy reads them. */
     async publishedKeyPolicy() {
         if (this.kpCache && Date.now() - this.kpCache.at < 600e3)
             return this.kpCache.kp;
@@ -426,12 +478,31 @@ export class CrawlCheck {
      * require_confirmation only if confirm() says yes; block, unsupported and every failure never (fail closed: an error,
      * an unreachable CrawlCheck, a malformed, foreign, expired, replayed or out-of-scope receipt all return proceed false
      * with why[]). Passes the acceptance suite at https://crawlcheck.io/spec/guard
+     * Every result carries failure_class (null when it proceeds; otherwise one of GUARD_FAILURE_CLASSES). With
+     * opts.mode "observe" the same checks run and are reported (would_proceed, failure_class, why) and nothing is refused.
      */
     async guard(domain, action = "read", opts = {}) {
+        const mode = guardMode(opts.mode);
+        const g = await this.guardDecide(domain, action, opts);
+        g.failure_class = g.proceed ? null : guardFailureClassOf(g); // guardDecide names the class itself where the result alone cannot tell
+        g.mode = mode;
+        g.enforced = mode !== "observe";
+        g.would_proceed = g.proceed;
+        if (mode === "observe")
+            g.proceed = true; // observe: checked and reported, never refused. header stays null unless the receipt was accepted.
+        if (opts.onRecord) {
+            try {
+                await opts.onRecord(g);
+            }
+            catch { /* a failing recorder never changes the result */ }
+        }
+        return g;
+    }
+    async guardDecide(domain, action, opts) {
         const nonce = opts.nonce || randomNonce();
         let scope = null;
         const no = (why, receipt = null, verification = null) => ({ proceed: false, receipt, verification, header: null, why, acceptance: receipt && scope ? acceptanceOf(receipt, verification, scope, { allowWarn: !!opts.allowWarn }) : null });
-        const rv = revokedFor(this.revocations, normalizeDomain(domain) || domain, action); // rvd1: refused offline, before any request
+        const rv = revokedFor(this.revocations, normalizeDomain(domain) || domain, action); // refused offline, before any request
         if (rv)
             return Object.assign(no([rv.domain + " is on CrawlCheck's signed revocation list for " + action + " (" + (rv.causes.join(", ") || rv.state || "revoked") + (rv.since ? ", since " + rv.since : "") + "; list of " + this.revocations.generated_at + ")"]), { revoked: rv });
         let receipt;
@@ -439,22 +510,31 @@ export class CrawlCheck {
             receipt = await this.preflight(domain, action, Object.assign({}, opts, { nonce }));
         }
         catch (e) {
-            return no(["CrawlCheck did not give a decision: " + (e?.message || e)]);
+            return Object.assign(no(["CrawlCheck did not give a decision: " + (e?.message || e)]), { failure_class: (/^(TimeoutError|AbortError)$/.test(String(e?.name)) || /timed? ?out|abort/i.test(String(e?.message || e)) ? "check_timeout" : "service_unavailable") });
+        }
+        // A fork counts only when both of its heads are signed by a published key (a store saved by an earlier release may hold unchecked ones).
+        if (this.log.forks.some((f) => f.issuer_checked !== true)) {
+            try {
+                await logPrune(this.log, await this.logKeyOptions());
+            }
+            catch { /* left as it is: refused below */ }
         }
         if (this.log.forks.length)
             return Object.assign(no(["the transparency log has shown this client two histories (split view)"], receipt), { split_view: this.log.forks.slice() });
         scope = checkDecision(receipt, { domain, action, nonce, now: opts.now, operation: opts.operation });
         if (!receipt || typeof receipt !== "object")
-            return no(scope.why);
+            return Object.assign(no(scope.why), { failure_class: "response_malformed" });
         const online = opts.onlineKeys ?? true;
         if (!online && !opts.keyPolicy && !(Array.isArray(opts.publishedKids) && opts.publishedKids.length))
-            return no(["onlineKeys is false and no keyPolicy or publishedKids were pinned: the signer cannot be checked"], receipt);
+            return Object.assign(no(["onlineKeys is false and no keyPolicy or publishedKids were pinned: the signer cannot be checked"], receipt), { failure_class: "key_unknown" });
         let verification;
         try {
-            const kp = online ? await this.publishedKeyPolicy() : opts.keyPolicy || null; // conf2: purpose, retired and compromised keys, not only "published"
+            const kp = online ? await this.publishedKeyPolicy() : opts.keyPolicy || null; // purpose, retired and compromised keys, not only "published"
             verification = withTrust(await V.verifyDataDoc(receipt), receipt?.signature?.kid, kp ? kp.kids : opts.publishedKids, V.relatedKids(receipt));
             if (kp)
                 verification = applyKeyPolicy(verification, receipt, kp);
+            else
+                verification = V.applyPinnedPurpose(verification, receipt, opts.publishedKids); // key ids only: the purposes of the ids this release knows still apply
         }
         catch (e) {
             return no(["the receipt could not be verified: " + (e?.message || e)].concat(scope.why), receipt);
@@ -466,6 +546,8 @@ export class CrawlCheck {
             why.push("signed by a key that is not in CrawlCheck's published key directory");
         else if (verification.key_policy_valid === false)
             why.push("the signing policy rejects this key for a decision receipt: " + (verification.checks.find((c) => c.id === "key_purpose") || {}).why);
+        else if (verification.key_policy_code === "purpose_unknown")
+            why.push("the receipt is signed by a listed key whose purpose this release does not know, so it cannot tell a decision key from any other: pass keyPolicy instead of publishedKids");
         if (why.length)
             return no(why, receipt, verification);
         const d = receipt.decision;
@@ -490,60 +572,75 @@ export class CrawlCheck {
      * to a new domain. The site is contacted only after its domain proceeds; a refused hop is never requested. Redirects
      * are followed by hand (GET/HEAD only), to http(s) only, at most maxHops (10). The receipt header is sent only to the
      * domain it names. In a browser a cross-origin redirect hides its target, so it is refused rather than followed blind.
+     * The result and every hop carry failure_class. With opts.mode "observe" a hop the guard would refuse is recorded
+     * (would_proceed false, failure_class, why) and requested anyway, without a receipt header; a URL or redirect that
+     * cannot be checked at all (fetch_refused) is refused in both modes.
      */
     async guardedFetch(url, opts = {}) {
         const action = opts.action ?? "read", max = opts.maxHops ?? 10, f = opts.fetch ? opts.fetch.bind(globalThis) : this.f;
         const init = Object.assign({}, opts.init || {}), method = String(init.method || "GET").toUpperCase();
-        const hops = [], seen = new Map();
+        const hops = [], seen = new Map(), mode = guardMode(opts.mode);
         let cur = url, origin0 = "";
-        try { origin0 = new URL(url).origin; } catch { origin0 = ""; }
+        try {
+            origin0 = new URL(url).origin;
+        }
+        catch {
+            origin0 = "";
+        }
+        // The result, with the class: the first hop enforce would have refused, else fetch_refused for a refusal made here.
+        const out = (proceed, response, why, local = false) => {
+            const bad = hops.find((h) => h.would_proceed === false);
+            return { proceed, response, url: cur, hops, why, failure_class: bad ? bad.failure_class ?? null : local ? "fetch_refused" : null, mode, enforced: mode !== "observe", would_proceed: !bad && !local };
+        };
         for (let n = 0; n <= max; n++) {
             let u;
             try {
                 u = new URL(cur);
             }
             catch {
-                return { proceed: false, response: null, url: cur, hops, why: ["not a URL: " + cur] };
+                return out(false, null, ["not a URL: " + cur], true);
             }
             if (u.protocol !== "https:" && u.protocol !== "http:")
-                return { proceed: false, response: null, url: cur, hops, why: ["refused a " + u.protocol + " URL"] };
+                return out(false, null, ["refused a " + u.protocol + " URL"], true);
             const dom = normalizeDomain(u.hostname);
             if (!dom)
-                return { proceed: false, response: null, url: cur, hops, why: ["not a public domain name: " + u.hostname] };
-            const op = { method: method, url: cur }; // op1: each hop's receipt names that exact request
+                return out(false, null, ["not a public domain name: " + u.hostname], true);
+            const op = { method: method, url: cur }; // each hop's receipt names that exact request
             let g = seen.get(method + " " + cur);
             if (!g) {
                 g = await this.guard(dom, action, Object.assign({}, opts, { operation: op }));
                 seen.set(method + " " + cur, g);
             }
-            const hop = { url: cur, domain: dom, proceed: g.proceed, decision: g.receipt ? String(g.receipt.decision) : null, why: g.why };
+            const hop = { url: cur, domain: dom, proceed: g.proceed, decision: g.receipt ? String(g.receipt.decision) : null, why: g.why, failure_class: g.failure_class !== undefined ? g.failure_class : g.proceed ? null : guardFailureClassOf(g), would_proceed: g.would_proceed ?? g.proceed };
             hops.push(hop);
             if (!g.proceed)
-                return { proceed: false, response: null, url: cur, hops, why: [dom + ": " + (g.why.join("; ") || "refused")] };
-            // hdr1 (1.15.2): caller headers stay on the origin the caller named; elsewhere only the allowlist travels
+                return out(false, null, [dom + ": " + (g.why.join("; ") || "refused")]);
+            // hdr1 (1.15.2): the caller's headers belong to the origin the caller named. On any other origin (host, scheme or
+            // port) only a short allowlist travels, so an Authorization or Cookie header never follows a redirect to someone else.
             const sameOrigin = u.origin === origin0;
             const h = new Headers();
-            new Headers(init.headers || {}).forEach((v, k) => { if (sameOrigin || GUARDED_SAFE_HEADERS.includes(k.toLowerCase())) h.set(k, v); });
+            new Headers(init.headers || {}).forEach((v, k) => { if (sameOrigin || GUARDED_SAFE_HEADERS.includes(k.toLowerCase()))
+                h.set(k, v); });
             if (g.header)
                 for (const [k, v] of Object.entries(g.header))
                     h.set(k, v);
             const res = await f(cur, Object.assign({}, init, { headers: h, redirect: "manual" }));
             hop.status = res.status;
             if (res.type === "opaqueredirect")
-                return { proceed: false, response: null, url: cur, hops, why: ["the runtime hid the redirect target, so it cannot be checked"] };
+                return out(false, null, ["the runtime hid the redirect target, so it cannot be checked"], true);
             const loc = res.headers.get("location");
             if (![301, 302, 303, 307, 308].includes(res.status) || !loc)
-                return { proceed: true, response: res, url: cur, hops, why: [] };
+                return out(true, res, []);
             if (method !== "GET" && method !== "HEAD")
-                return { proceed: true, response: res, url: cur, hops, why: ["redirect not followed for " + method] };
+                return out(true, res, ["redirect not followed for " + method]);
             try {
                 cur = new URL(loc, cur).toString();
             }
             catch {
-                return { proceed: false, response: null, url: cur, hops, why: ["unreadable redirect target " + loc] };
+                return out(false, null, ["unreadable redirect target " + loc], true);
             }
         }
-        return { proceed: false, response: null, url: cur, hops, why: ["more than " + max + " redirects"] };
+        return out(false, null, ["more than " + max + " redirects"], true);
     }
     /** Look a domain up without sending it: only the first prefixLen hex characters of sha256(domain) leave this process (one more character per 413, up to 8). found false with ready true means no public measurement. */
     /** Make a signed lockfile for an MCP server (CrawlCheck reads tools/list; no tool is called). Save it; check with checkLock before every connect. */
@@ -562,7 +659,7 @@ export class CrawlCheck {
             throw new Error("prefixLen must be 2 to 8");
         const h = await sha256Hex(d);
         let r;
-        // pfx3: a 413 means more than 100 measured domains share the prefix (the corpus grows); send one more hex character and
+        // a 413 means more than 100 measured domains share the prefix (the corpus grows); send one more hex character and
         // try again, up to 8. Each extra character halves the bucket twice and still never names the domain.
         for (let n = prefixLen;; n++) {
             try {
@@ -717,7 +814,7 @@ export function agentTools(cc, opts = {}) {
                 if (!domain)
                     return { proceed: false, why: ["not a public domain name: " + String(a?.site ?? "")] };
                 const g = await cc.guard(domain, action, opts);
-                return { domain, action, proceed: g.proceed, decision: g.receipt ? String(g.receipt.decision) : null, why: g.why, reasons: Array.isArray(g.receipt?.steps) ? g.receipt.steps.map((x) => String(x?.why ?? "")).filter(Boolean) : [], reason_codes: g.receipt?.reason_codes ?? [],
+                return { domain, action, proceed: g.proceed, failure_class: g.failure_class ?? null, decision: g.receipt ? String(g.receipt.decision) : null, why: g.why, reasons: Array.isArray(g.receipt?.steps) ? g.receipt.steps.map((x) => String(x?.why ?? "")).filter(Boolean) : [], reason_codes: g.receipt?.reason_codes ?? [],
                     receipt_sha256: g.receipt?.sha256 ?? null, verified: g.verification ? g.verification.accepted : false, alternatives: g.receipt?.alternatives ?? null,
                     facts: g.receipt?.facts ?? null };
             } },
@@ -756,7 +853,7 @@ export function agentTools(cc, opts = {}) {
                 const r = await cc.guardedFetch(String(a?.url ?? ""), Object.assign({}, opts, { action: (a?.action === "cite" ? "cite" : "read") }));
                 const hops = r.hops.map((h) => ({ url: h.url, domain: h.domain, decision: h.decision, proceed: h.proceed, status: h.status ?? null }));
                 if (!r.proceed || !r.response)
-                    return { proceed: false, url: r.url, why: r.why, hops };
+                    return { proceed: false, url: r.url, failure_class: r.failure_class ?? null, why: r.why, hops };
                 const text = await r.response.text();
                 return { proceed: true, url: r.url, status: r.response.status, content_type: r.response.headers.get("content-type"), text: text.slice(0, max), truncated: text.length > max, chars: text.length, hops };
             } }
@@ -795,5 +892,3 @@ export function langchainTools(cc, lc, opts = {}) {
     return agentTools(cc, opts).map((t) => lc.tool(async (input) => JSON.stringify(await t.execute(input ?? {})), { name: t.name, description: t.description, schema: t.parameters }));
 }
 export default CrawlCheck;
-/** Headers guardedFetch still sends after a redirect leaves the origin the caller named. */
-export const GUARDED_SAFE_HEADERS = ["accept", "accept-language", "accept-encoding", "user-agent", "cache-control", "pragma"];

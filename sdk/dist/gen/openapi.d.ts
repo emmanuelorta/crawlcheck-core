@@ -54,6 +54,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/decisions/checked": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A site's proof of checking: every CrawlCheck-Receipt header the site checked, by agent, decision and action, with the recent checks; ?domain= required, ?days= up to 90. An agent listed here asked CrawlCheck before acting on the site. */
+        get: operations["decisionsCheckedV1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/decisions/accuracy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How often each decision rule was right: every outcome agents reported against a receipt CrawlCheck issued, scored per decision and per rule that fired. hit_rate for warn / require_confirmation / block / doubt = share of acted-on decisions where acting went wrong; held_rate for allow = share where it went fine. 90-day window; the same figures ride inside every new receipt as steps[].measured and accuracy. */
+        get: operations["decisionAccuracyV1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/outcomes": {
         parameters: {
             query?: never;
@@ -80,6 +114,23 @@ export interface paths {
         };
         /** What Google's AI states about a claimed business (phone, address, website, hours) against what the business publishes, judged and sealed daily */
         get: operations["aiAccuracyV1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/domain/control": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether proven control of a domain still holds: the claim's state (proven, proof_missing, lapsed, suspended_transfer, suspended_expired, zone_not_rechecked, unproven), when the proof was last found, the next check, the grace end when the proof is missing, the registration record at claim time against now, and the lifecycle events. Proofs are re-checked every 30 days; a lapsed or suspended claim grants owner access to nobody until control is proven again. Signed (crawlcheck-domain-control). */
+        get: operations["domainControlLifecycle"];
         put?: never;
         post?: never;
         delete?: never;
@@ -175,6 +226,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mcp/precheck": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publisher pre-release check for an MCP server ({server_name or endpoint, tools, version}; without tools the endpoint is read live): compared with CrawlCheck's last read of the server, the tools added and removed, descriptions rewritten, input schemas widened, annotations changed (read-only to write and non-destructive to destructive flagged as escalations), whether serverInfo.version moved, verdicts (version_bump_needed, version_moves_with_tools, looks_like_rug_pull_risk, breaking_removal, poisoning_flagged, no_change_recorded, no_baseline) and the entry a change log will record. Signed (crawlcheck-mcp-precheck); no tool is called */
+        post: operations["mcpPrecheck"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/mcp/lock/check": {
         parameters: {
             query?: never;
@@ -186,6 +254,1659 @@ export interface paths {
         put?: never;
         /** Compare a lockfile with the server's current tools ({lock, tools} or {lock, url}): verdict unchanged | changed | unreachable, decision connect | block, tools added, removed and modified, the description text that moved. Signed (crawlcheck-mcp-lock-check) */
         post: operations["mcpLockCheck"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The Resolve transparency log: the latest signed tree head (crawlcheck-log-sth), batch count, tree size and the last outside-witness co-signature. Every Resolve answer carries transparency{} with its leaf and, once merged, its RFC 9162 inclusion proof and the signed head */
+        get: operations["resolveLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/log/sths": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Up to 200 signed tree heads in one answer, newest first from ?to (default: the head), for split-view checks */
+        get: operations["resolveLogSths"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/log/sth/{batch}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One batch's signed tree head and its witness co-signatures (signed OIDC identity tokens whose audience is the head's digest) */
+        get: operations["resolveLogSth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/log/batch/{batch}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One batch's leaf hashes in tree order, so anyone can recompute its root */
+        get: operations["resolveLogBatch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/log/proof": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Inclusion proof for a leaf (?leaf=<64 hex>): batch, index, path and the signed head; 202 while pending */
+        get: operations["resolveLogProof"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/log/witness/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The last head a witness we run on GitHub co-signed, with its token */
+        get: operations["resolveLogWitnessLatest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/log/gossip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Split-view reports: how many signed tree heads clients have sent, how many matched this log, and every fork (a head with CrawlCheck's signature that is not the head this log holds for its batch) with both digests */
+        get: operations["resolveLogGossip"];
+        put?: never;
+        /** Send the signed tree heads a client was shown ({sths: [...]}, at most 50). Each is checked for its digest, CrawlCheck's signature and the head this log holds: consistent, fork or ignored */
+        post: operations["resolveLogGossipReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/log/gossip/fork/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One reported fork with both signed heads in full */
+        get: operations["resolveLogFork"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/log/witness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Witness co-signature: a signed OIDC identity token (Authorization: Bearer) from .github/workflows/log-witness.yml whose audience is crawlcheck-sth:<sha256 of the head>, after the witness re-checked the chain */
+        post: operations["resolveLogWitness"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/high-risk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** High-risk field watch for a domain (?domain=): payment processors, checkout host, wallet addresses, OAuth authorization server, MX hosts, MCP endpoints, each with its baseline and any unconfirmed change; first call reads the site and starts the watch. Without ?domain= the recent changes. Signed (crawlcheck-high-risk) */
+        get: operations["highRiskWatch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/high-risk/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The domain claim holder confirms the pending high-risk changes ({domain} with x-crawlcheck-key): the current values become the baseline and transact returns to the measurements */
+        post: operations["highRiskConfirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/incident": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Is an owner-declared incident active on this domain? */
+        get: operations["incidentState"];
+        put?: never;
+        /** The domain claim holder declares or clears an incident ({domain, state: on|off, reason?} with x-crawlcheck-key, or {domain, state, via: well-known} after serving /.well-known/crawlcheck-incident.txt with crawlcheck-domain=<claim token> and crawlcheck-incident=on|off). connect and transact become block in Resolve, new receipts, receipt checks and /api/v1/revocations within a minute. Signed (crawlcheck-incident) */
+        post: operations["incidentSwitch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes/subscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read your change-webhook subscription (id + header x-subscription-token): domains, sections, deliveries, consecutive failures, last delivery, on/off. */
+        get: operations["changeSubscription"];
+        put?: never;
+        /** Change webhook: POST {webhook, domains, sections?} (https, public host; 1-100 domains; sections from crawl_policy, delivery, machine_files, capabilities, entity, findings, assurance - leave out for all). Each time a section of a listed domain's Resolve answer moves, the webhook gets one signed change.recorded event (kind crawlcheck-change-event) holding the entries /api/v1/changes returns. 4 s timeout, no retry; 20 failures in a row switch it off. The token is returned once. For every domain, read /api/v1/changes/stream. */
+        post: operations["changeSubscribe"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes/subscribe/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a signed change.test event to your webhook now ({id} + x-subscription-token); a success switches an off subscription back on. */
+        post: operations["changeSubscribeTest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes/unsubscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Remove a change-webhook subscription ({id} + x-subscription-token). */
+        post: operations["changeUnsubscribe"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/incident/subscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read your incident-webhook subscription (id + header x-subscription-token): domains, deliveries, consecutive failures, last delivery. */
+        get: operations["incidentSubscription"];
+        put?: never;
+        /** Incident webhook: POST {webhook, domains?} (https, public host; leave domains out for every domain, or list up to 100). When a claim holder declares or clears an incident, each matching webhook is POSTed a signed event (kind crawlcheck-incident-event; events incident.declared, incident.cleared, incident.test). Returns the subscription id and a token shown once. */
+        post: operations["incidentSubscribe"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/incident/subscribe/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a signed incident.test event to your webhook now ({id} + x-subscription-token). */
+        post: operations["incidentSubscribeTest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/incident/unsubscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Remove an incident-webhook subscription ({id} + x-subscription-token). */
+        post: operations["incidentUnsubscribe"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/incident/selftest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The daily self-test of the incident switch on selftest.crawlcheck.io: flip, Resolve, transact preflight and revocation list read back */
+        get: operations["incidentSelftest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/security/isolation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The latest cross-customer isolation run: every customer-scoped route called by nobody, by another customer, by a revoked licence that used to hold the test domain, and by its owner; the other customer and the revoked licence must get exactly what nobody gets, and writes by them must be refused. Counts; the per-route rows are shown to the owner. Signed crawlcheck-isolation-matrix. */
+        get: operations["isolationMatrix"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/budgets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What every operation accepts before it refuses: the largest request body (the gate cap and any tighter cap the handler applies), item caps inside the body, the rate limit that applies, and whether the operation has request and response schemas. The same values are on each operation here as x-crawlcheck-budget. */
+        get: operations["apiBudgets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/operator": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Everything CrawlCheck holds about one MCP endpoint, for its operator: registry listing, reliability (availability, p50/p95, drift), tool-list family, shadowing, auth audit, domain control and operator verification, plus a proof list (done / open / unknown / yours, each with evidence and the next action) and the badge snippet. Stored readings only; contacts nothing. Signed crawlcheck-mcp-operator. */
+        get: operations["mcpOperator"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/north-star": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The north-star dashboard as data (?days=1-90, default 30): signed decisions issued (by action and decision, and how many rested on a fresh measured answer), receipts checked and accepted by receiving sites, outcomes agents reported after acting, the decision-vs-outcome cells for outcomes tied to a receipt (allowed then refused, blocked then got through), and the false-positive rate on appeal. Counts only. Signed crawlcheck-north-star. */
+        get: operations["northStar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/fix-recommendations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fix recommendations from similar sites (?domain=): the domain's open problems (AI crawler refused at the edge, challenge page to crawlers, crawlers served less, AI crawler blocked in robots.txt, no llms.txt / agents.md / entity map) and, for each, the sites on the most similar stack (platform, bot protection, CDN, host) that had the same problem and fixed it - when, whether the fix still holds, and how many AI crawlers they serve now. A fix counts once two scans confirm it. Sites are not named. Signed crawlcheck-fix-recommendations. */
+        get: operations["fixRecommendations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/failure-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The Resolve failure policy: one row per state an answer can be in when something is missing or in doubt (no record, stale, disputed, observers disagree, a source unreadable, log unavailable, signing key unavailable or revoked, CrawlCheck unreachable, unknown action), what the answer carries and the decision for read, cite, connect, transact and administer, with the test that holds it. Signed crawlcheck-failure-policy; human copy at /spec/failure-policy. */
+        get: operations["failurePolicy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/revocations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Signed list of domains whose connect and transact decisions are revoked now (owner incidents); ?since=<time> for changes only. Hold it and refuse offline. Signed (crawlcheck-revocations) */
+        get: operations["revocations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/task-canaries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Agent task canaries: four safe, read-only tasks run daily as an HTML-reading browsing agent on a frame of store sites (find a product page, read its price, search the catalogue, reach the cart; GET only, nothing submitted or bought). Without ?domain= the summary per task; with ?domain= the site's last runs and 14-run success rates. Resolve carries task_canaries for frame members. Signed (crawlcheck-task-canaries) */
+        get: operations["taskCanaries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/best-source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Which business or site to cite. domains= (2-10 candidates, comma separated) or trade= and city= for a measured market (5 trades x 12 Colorado cities, the sites answer engines cited there). Each candidate gets the preflight decision for cite, a score with reasons for and against (security and threat listing, domain age, uptime, published facts directories agree with, FTC phone complaints), and its network: sites sharing one phone number or near-identical homepage text are collapsed so only the strongest is ranked. Signed (crawlcheck-best-source). POST {domains, trade, city} also accepted. */
+        get: operations["bestSource"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/network": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Other domains CrawlCheck has read that print the same phone number as this site's homepage, or whose homepage text is near-identical (64-bit SimHash, at most 6 bits apart, each site's own name, numbers and links masked). Three or more is flagged as a copycat or lead-generation network. Signed (crawlcheck-network). */
+        get: operations["siteNetwork"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/impersonation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Does this domain look built to be mistaken for a known brand (a top-10,000 popularity list)? Techniques: look-alike script (IDN homoglyph), character swaps, one-letter typos, brand plus a lure word. Corroboration: RDAP registration age, homepage copying the brand name, MCP tools copied from the brand server, redirect to the brand (brand_owned). Verdict known_site | no_lookalike | lookalike | suspected | brand_owned. Signed (crawlcheck-impersonation). Without ?domain= lists recent suspected domains. */
+        get: operations["impersonationCheck"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A stored policy by id: the exact normalised crawlcheck-policy document. Immutable. */
+        get: operations["policyGet"];
+        put?: never;
+        /** Policy as code: POST a crawlcheck-policy document (defaults, per-action rules, tests). Returns lint errors, or its id (pol1:<sha256 of the canonical normalised document>) and stores it; ?dry=1 checks without storing. Preflight then takes policy_id, and every receipt names it. Schema: /schemas/policy.json */
+        post: operations["policyPublish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/policy/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run a policy's tests (or cases[]) through the preflight engine against today's resolve answers: each case's decision, reason codes and pass or fail. For CI: node crawlcheck-policy.mjs test crawlcheck-policy.json exits 1 on a failure. */
+        post: operations["policyTest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/fix/platform": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Where to make each fix on one platform (wordpress, shopify, webflow, squarespace, wix, nextjs, drupal, cloudflare): groups of findings with the steps on that platform, including where the platform cannot do it. ?code= narrows to one finding code. */
+        get: operations["platformFix"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The change feed as Server-Sent Events: one event: change per section of a resolve answer that moved, as it is recorded (data = the event /api/v1/changes returns; id = its feed position). Resume with Last-Event-ID (EventSource does it on reconnect) or ?since=; filters ?domain= and ?section=. A heartbeat comment every 15 s; each connection ends after 5 minutes with retry: 3000 and resumes where it was. */
+        get: operations["changesStream"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/certificate/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Is this certificate still good? good, revoked (a later measurement failed before expiry), suspended (owner incident), withdrawn (opt-out), expired, never_certified or unknown. Signed (crawlcheck-certificate-status), next_update at most an hour away. POST the certificate JSON instead of the query. Rules: /spec/certificate */
+        get: operations["certificateStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/certificates/revocations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Signed list of revoked certificates (logged from 2026-10-09) and certificates suspended now by an owner incident; ?since= for changes only. */
+        get: operations["certificateRevocations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/disputes/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public dispute metrics: disputes filed, resolved and open over 30 days, 90 days and all time; verdicts; turnaround from proof of ownership to the signed resolution (median, 90th percentile, max, share within the 48-hour target); open and overdue disputes; and the corrected rate, how often a disputed finding was wrong. Signed (crawlcheck-dispute-metrics). */
+        get: operations["disputeMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organization": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Who controls this domain, when its holder has chosen to say so: the organization name, the other domains the same holder has proven control of (well-known file, DNS TXT, homepage meta tag, or a Cloudflare zone), and a GitHub organization that published the holder's token. Domains whose control was not proven are never listed. Signed (crawlcheck-organization). */
+        get: operations["organizationIdentity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/competitor-gap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Competitor gap (?domain=): the sources Gemini with Google Search cites when asked for the best companies of this trade in this city, whether the business is on each (the cited page read once: its name, phone or a link to its site), which recommended competitors are on it, and the gaps (sources the business is not on while a competitor is), ranked by how many readings cited them. Businesses on an active licence are read weekly. Unreadable pages fall back to the listing discovery, else unknown. The licence holder also gets competitor names and history. Signed (crawlcheck-business-competitor-gap). */
+        get: operations["businessCompetitorGap"];
+        put?: never;
+        /** Licence holder or owner: read the competitor gap now (once per 10 minutes). Returns the new signed reading. */
+        post: operations["businessCompetitorGapRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/number-watch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Number watch (?domain=): every phone number a directory listing or an AI answer gives for the business that is not one of its own, attributed: invented (dummy pattern), old_number (its site published it before), sibling (another business on the licence), another_business (YellowPages lists it under a different name), listed_as_this, unknown. Read daily for businesses on an active licence. Public: counts and classes; the licence holder gets the numbers, where each is printed and whose it is. Signed (crawlcheck-business-number-watch). */
+        get: operations["businessNumberWatch"];
+        put?: never;
+        /** Licence holder or owner: read the number watch now (once per 10 minutes). */
+        post: operations["businessNumberWatchRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/ai-answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What AI answer engines say a business's phone, address and hours are (?domain=). Businesses on an active licence are asked once a day: Gemini with Google Search grounding (with the sources it cites) and three open-weights models answering from training with no search. Each answer is compared with the business's own record: phone matches / wrong / not_stated; address matches / wrong_street / street_on_service_area_business / city_only / not_stated; hours matches / differs / not_stated / not_compared; says_closed. Wrong values are matched against what each directory prints (printed_by). An engine that errors is unmeasured. The licence holder also gets the history. Signed (crawlcheck-business-ai-answers). */
+        get: operations["businessAiAnswers"];
+        put?: never;
+        /** Licence holder or owner: ask every engine now (once an hour per domain). Returns the new signed reading. */
+        post: operations["businessAiAnswersRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/fix-receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fix receipts (?domain=). A correction counts only when re-reads after it, at least 20 hours apart and none in between showing otherwise, all show the corrected value; a later re-read that stops showing it voids the receipt. Corrections come from Business Profile writes (judged by reading the profile through Google's API again), directory submissions and directory edits (judged by the daily listing reading). States waiting / seen / held / reverted / not_held / not_checkable / retired. Licence holder or owner: every claim with its readings and the signed receipt (crawlcheck-business-fix-receipt); anyone else: counts. Signed (crawlcheck-business-fix-receipts). */
+        get: operations["businessFixReceipts"];
+        put?: never;
+        /** Licence holder or owner. action record: a directory edit made by hand on a directory CrawlCheck reads for this business, with the audit finding code that should clear or the field and value it should now print (422 for a directory CrawlCheck does not read: it could never be judged). action retire {id}: withdraw a claim. */
+        post: operations["businessFixReceiptRecord"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/record": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed business record (?domain=): what the business publishes about itself on its own site (name, phones, website, street address or service area, hours, types), versioned - a new version only when that content changes, each naming the previous record hash - with a schema.org LocalBusiness copy and the version's transparency-log leaf and inclusion proof (the Resolve log: RFC 9162 batches, signed tree heads, the witness we run on GitHub). &version=n returns an earlier version, &versions=1 the list. The business serves the same document at /.well-known/crawlcheck-business.json. Built from the site only, never from a linked Business Profile. Signed (crawlcheck-business-record). */
+        get: operations["businessRecord"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/submit-kit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Assisted submission for directories with no API. With a licence key and no domain: the domains this licence can fill for and the directories. With domain= (licence or owner): the values to fill from the business's own record (name, phone, website, street - blank for a service-area business - city, state, ZIP, category hint, hours), what is left to the owner (contact name, email, password, captcha, category picker, the submit button), each directory's real add or claim page, and every recorded submission with whether the directory now prints the record. The CrawlCheck extension fills the open directory form from this and never submits. Signed (crawlcheck-business-submit-kit). */
+        get: operations["businessSubmitKit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Licence holder or owner: record that a directory form was submitted from the owner's browser (the extension sends it when the owner says so). The next daily listing reading reports whether that directory now prints the record. Signed (crawlcheck-business-submission); also in the change feed. */
+        post: operations["businessSubmissionRecord"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/fixes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Licence holder or owner. The fix plan for one business (?domain=): for each platform with an official write API (Google Business Profile, Bing Places, Apple Business Connect, Foursquare, OpenStreetMap, Facebook Page) what it prints, the correction from the business's own record, and whether CrawlCheck can write it now (connected) or which connection it needs; plus the receipts of past writes. Signed (crawlcheck-business-fixes). */
+        get: operations["businessFixPlan"];
+        put?: never;
+        /** Licence holder or owner. Write one correction to the linked Business Profile through Google's Business Information API: field website or phone only, value must be one the site publishes (an https address on the domain, a phone the site declares). Dry run unless confirm is APPLY. After the write the profile is read back: applied, pending_google_review or not_applied. Signed receipt (crawlcheck-business-fix) with before / sent / read back; also in /api/v1/changes (section listings). */
+        post: operations["businessFixApply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/canaries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Canary tracing for one business (?domain=). The licence holder or owner sees every canary - a harmless variant of the business's own name or street (legal-form punctuation, street-type or direction spelling) given to ONE supplier - with where and when it was seen and the proven feed paths (supplier -> directory, with lag in days); public callers get counts only. Sightings are found by the daily listing monitor and also arrive in /api/v1/changes (section listings, kind canary_seen). Signed (crawlcheck-business-canaries). */
+        get: operations["businessCanaries"];
+        put?: never;
+        /** Licence holder or owner. action suggest: the variants that are safe and unique for this business (printed nowhere CrawlCheck has read). action create {field, value, supplier}: register one (only a suggested variant is accepted, 422 otherwise). action planted {id, planted_at?}: mark it given to the supplier; sightings before this prove nothing. action retire {id}. Signed (crawlcheck-business-canaries). */
+        post: operations["businessCanaryAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/suppliers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Supplier map. With domain=: for each of the business's listings, which source it was most likely fed from - the Business Profile, the site, or an upstream it shares with another directory - inferred from distinctive values (a value shared by two sources while a third states that field differently: a legal-form name, a deep-link website, the same wrong ZIP), with the evidence, a confidence, and what the directory itself declares (Bing names its ratings source). Public answers compare with the site only; the licence holder or owner adds the Business Profile. With no domain: the network map, counts per directory and per shared-upstream pair across every business read so far, no business named. Signed (crawlcheck-business-suppliers). */
+        get: operations["businessSupplierMap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One signed metrics document (crawlcheck-metrics): network (sites measured, crawler visits, MCP servers listed and observed, customer observers), developer (outside API calls per day by endpoint and client kind, active licence keys this month, SDK downloads, MCP calls), trust (false-positive rate on appeal, disputes, reconstruction, trace coverage, SLOs) and the north star (decisions issued, decisions to verified outside agents, outside receipt checks). CrawlCheck's own tooling is counted apart. ?days=1-30 (default 7); ?week=YYYY-Www returns the sealed weekly edition. */
+        get: operations["metrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/verified": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Operator-verified MCP endpoint (?url=): a signed statement (crawlcheck-mcp-verification) for an endpoint whose operator holds a proven claim on its domain and has CrawlCheck monitor it - about every 15 minutes, initialize and tools/list, never a tool call. Carries the operator domain, monitored since, the last check (outcome, latency), 30-day availability with its 95% interval, the approved tool-list hash and any drift (tools added, removed or changed), the tool-poisoning scan and the auth audit findings. 404 (unsigned) when the endpoint is not monitored for a verified operator or its operator has not published it. */
+        get: operations["mcpVerified"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/badge.svg": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A status badge for an MCP endpoint (?url=): verified with 30-day availability, tools changed, down, or not verified. */
+        get: operations["mcpBadge"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/infrastructure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Infrastructure monitor for one domain (?domain=): DNS (nameservers, MX, CAA, DNSSEC DS, DMARC, apex addresses), HTTPS and the newest unexpired certificate in Certificate Transparency (issuer, expiry), redirects (http to https, www, the homepage's final address, HSTS), homepage structured data (blocks that do not parse, @type set, declared business name/phone/url) and declared agent capabilities (agent card, MCP server card, API catalog, skills index). Every domain on an active licence is re-read about every 4 hours; a change is reported only when two readings in a row agree. Returns the confirmed state, any change awaiting confirmation, and - for the licence holder or owner - the change history. Changes go into /api/v1/changes (section infrastructure), the stream and the licence webhook; medium and high changes are emailed. Signed (crawlcheck-infrastructure-monitor). */
+        get: operations["infrastructureMonitor"];
+        put?: never;
+        /** Read the infrastructure now (licence holder for the domain or owner; at most every 10 minutes). */
+        post: operations["infrastructureMonitorRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/monitor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listing monitor for one business (?domain=): whether it is monitored (every domain on an active licence, re-read about once a day), when it was last read, and - for the licence holder or owner - the history of changes (listing added or removed, a field a listing prints changed, an audit finding opened or resolved). Each change also goes into /api/v1/changes (section listings), the change stream and the licence webhook. Signed (crawlcheck-business-monitor). */
+        get: operations["businessListingMonitor"];
+        put?: never;
+        /** Read the listings now (licence holder for the domain or owner; at most every 10 minutes). */
+        post: operations["businessListingMonitorRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/review-cities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Licence holder or owner. The places customers name in the Business Profile's reviews (?domain=, every review read through Google's reviews API), each against the profile's service areas and the places the website names, plus phone numbers inside reviews that are not the business's own. Findings REVIEW_CITY_NOT_DECLARED, REVIEW_CITY_NOT_ON_PROFILE, REVIEW_OTHER_PHONE. Signed (crawlcheck-business-review-cities). */
+        get: operations["businessReviewCities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/fix-calls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Licence holder or owner. Every Business Profile write and listing correction for one business (?domain=) with the business's tracked calls and profile call clicks in the 14 days before and after, beside the licence's other businesses over the same days as a baseline. A correlation, not attribution. Signed (crawlcheck-business-fix-calls). */
+        get: operations["businessFixCalls"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/search-proof": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Licence holder or owner. For every day fixes closed on the site (or a day you name with at=), Google Search clicks, impressions, CTR and average position from the site's own Search Console, in equal windows before and after (up to 28 days each), a rank test on the daily values, and the same change on the owner's other Search Console sites as a baseline. Signed (crawlcheck-business-search-proof). */
+        get: operations["businessSearchProof"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/speed-proof": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Licence holder or owner. For every day fixes closed on the site (or a day you name with at=), the site's own visitors' load times (first-party field data: TTFB, FCP, LCP, INP, CLS) in the 14 days before and after, the 75th percentile each side, a rank test on the whole distribution, and the same change on the owner's other sites as a baseline. Signed (crawlcheck-business-speed-proof). */
+        get: operations["businessSpeedProof"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/answer-gaps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Licence holder or owner. The questions people searched before seeing the business's pages (Search Console, last 28 days), each compared by meaning with the pages Google showed for them; lists the questions no page answers, most searched first. Signed (crawlcheck-business-answer-gaps). */
+        get: operations["businessAnswerGaps"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/closed-watch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** False-closed watch for one business (?domain=): whether any source says it is closed - the Business Profile's own status, Google's duplicate mark and owner control (licence holder), each directory listing's closed flag and each AI answer. Profile changes are alerted daily. Findings PROFILE_TEMPORARILY_CLOSED, PROFILE_PERMANENTLY_CLOSED, PROFILE_MARKED_DUPLICATE, PROFILE_NO_OWNER_CONTROL, DIRECTORY_MARKED_CLOSED, DIRECTORY_TEMPORARILY_CLOSED, AI_SAYS_CLOSED. Signed (crawlcheck-business-closed-watch). */
+        get: operations["businessClosedWatch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/fact-consolidation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fact consolidation: every statement of the business's phone, hours, founding year and years in business, street address, email and name on its homepage, contact page and about page - structured data, tel: links and visible text - with the page and the words around each. A fact stated more than one way is a finding (PHONE_VARIANTS, HOURS_VARIANTS, ADDRESS_VARIANTS, YEARS_VARIANTS, NAME_VARIANTS, EMAIL_VARIANTS; a number another business publishes is OTHER_BUSINESS_PHONE). With findings, recommendation gives one block of visible HTML and the matching LocalBusiness JSON-LD, built only from values the site already states. Public, signed; a licence key covering the domain may add fresh=1. */
+        get: operations["businessFactConsolidation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/nap-block": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether the homepage and the contact page state the business's name, phone and place (street, or city for a service-area business) together in one block of visible text (?domain=). Findings NAP_SPLIT and NAP_PART_MISSING. Signed (crawlcheck-business-nap-block). */
+        get: operations["businessNapBlock"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/hours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Hours day by day for one business (?domain=): what the site's structured data, the Business Profile (licence holder), each directory listing that prints hours and each AI answer state for every day, compared with the business's own record. Findings HOURS_DIFFER, HOURS_UNREAD, HOURS_NOT_ON_SITE. Signed (crawlcheck-business-hours). */
+        get: operations["businessHours"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/service-areas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Service-area truth for one business (?domain=): every place its website names - in structured data (areaServed), in visible text, and as a page of its own in the sitemap - and, for the licence holder, every place on its Business Profile (at most 20). Findings: SA_NONE_DECLARED, SA_PROFILE_PLACE_NOT_ON_SITE, SA_SITE_PAGE_NOT_ON_PROFILE, SA_PROFILE_AT_CAP, SA_SCHEMA_ONLY, SA_NOT_IN_SCHEMA. Signed (crawlcheck-business-service-areas). */
+        get: operations["businessServiceAreas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Field-by-field audit of every listing found for one business (?domain=) against its truth record: each difference is a named finding (MARKED_CLOSED, PHONE_DIFFERS, NAME_DIFFERS, STREET_DIFFERS, ADDRESS_ON_SERVICE_AREA_BUSINESS, CITY_OUTSIDE_SERVICE_AREA, ZIP_DIFFERS, WEBSITE_DIFFERS, PHONE_MISSING, WEBSITE_MISSING, ADDRESS_MISSING, DUPLICATE_LISTING) with both values and a severity, plus the values directories disagree on with each other. Public audits use the site's own record; the licence holder adds the Business Profile and ?fresh=1. Signed (crawlcheck-business-audit). */
+        get: operations["businessListingAudit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/listings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every directory and data-supplier listing found for one business (?domain=), searched from its truth record: YellowPages and DexKnows by phone, Bing Places and BBB by name and city, OpenStreetMap by phone tag or name, Data Axle by phone. Each listing is matched to the business (phone, website, or name inside its city or service area) and keeps what it prints. A directory that refuses us is not reached, never not listed. Signed (crawlcheck-business-listings). */
+        get: operations["businessListings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/wikidata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The truth record for one business (?domain=) as QuickStatements to create its Wikidata item: label, description, instance of business, website, phone and street address, each referenced to the site with today's retrieval date. Conflicting fields are left out and listed. ?format=qs returns the plain batch. Nothing is written to Wikidata. */
+        get: operations["businessWikidataKit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The truth record for one business (?domain=): name, phone, address or service area, hours, website and categories, each with every first-party statement of it (the site's structured data and tel: links; the linked Google Business Profile for the licence holder), whether they agree, and which value the record takes. A conflict is never resolved silently. Public answers are built from the site alone; the licence holder adds the profile and ?fresh=1. Signed (crawlcheck-business-truth). */
+        get: operations["businessTruthRecord"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai-classifiers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The AI classifier atlas: every field name gpt-oss writes while choosing local businesses (from SeerSEO's collection), with CrawlCheck's definition, stage, reviewed namespace and record type, aliases, what a business can do, the CrawlCheck check behind it, merged spellings, and this week's census count. ?key= for one label, ?stage= for one stage. Signed (crawlcheck-ai-classifier-atlas; one label crawlcheck-ai-classifier). */
+        get: operations["aiClassifierAtlas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai-classifiers/census": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The week's label census: local-service questions asked of gpt-oss in every batch window with its evaluation written as JSON in its own field names; each name matched to the atlas by key, alias or meaning, else counted as a label no list had. Shares with Wilson intervals. Signed (crawlcheck-ai-classifier-census). */
+        get: operations["aiClassifierCensus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tls-posture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Weekly TLS posture of a stratified sample of measured sites (local businesses, software companies, government, wider corpus), probed from an outside network: post-quantum hybrid key agreement among TLS 1.3 hosts, TLS 1.0/1.1 still accepted, CBC suites, RSA and DHE key exchange, SHA-1 signatures, 0-RTT, HSTS and the share passing all seven, per lane, with weekly history. Site names are not published. Free, CC BY 4.0. */
+        get: operations["tlsPosture"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai-classifiers/sensitivity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Which facts about a business move a model's ranking: five fictional businesses ranked with and without one fact about one of them (hours, licence, reviews, rating, years, service area, website, phone, prices, insurance, emergency service, reply time). Per fact: pairs ranked, share that dropped (Wilson interval), mean places lost, labels that appear without the fact. Signed (crawlcheck-ai-classifier-sensitivity). */
+        get: operations["aiClassifierSensitivity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/ai-screening": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How gpt-oss screened this business when asked for the best of its trade in its city: whether it was named, where, and the evaluation labels the model attached to it. Businesses on an active licence are asked about once a day. Public: labels without values; the licence holder or owner also gets the values, the answer and history. Signed (crawlcheck-business-ai-screening). */
+        get: operations["businessAiScreening"];
+        put?: never;
+        /** Licence holder or owner: screen now (once per 10 minutes). */
+        post: operations["businessAiScreeningRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/domain/authorization": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What the proven owner of a domain authorizes agents to do there (read, cite, connect, transact: allow or deny), with its end date; active, expired, void (the claim lapsed or moved) or none. Signed (crawlcheck-domain-authorization). Feeds the authorized rung of every Resolve answer's assurance_ladder. */
+        get: operations["domainAuthorizationRead"];
+        put?: never;
+        /** Publish or revoke the owner's authorization: only the licence key holding a proven claim on the domain; actions read/cite/connect/transact each allow or deny, optional agents and note, valid_days 1-365 (default 90); {revoke:true} removes it. It never lifts a block CrawlCheck measured. */
+        post: operations["domainAuthorizationPublish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/identity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether an MCP server's registry entry, its npm or PyPI package and its repository name each other: mcpName / mcp-name naming this server (match), none (absent) or another server (differs), the package's repository against the entry's, an io.github.<owner>/ namespace against the repository owner, a reverse-DNS namespace against the remote host (hosting elsewhere is noted, not a conflict). Verdict consistent, conflicting, incomplete or single_source. Without name=, the census. Signed (crawlcheck-mcp-identity, crawlcheck-mcp-identity-census). */
+        get: operations["mcpIdentity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/select": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Which MCP server to connect to for a job: the need's words matched against every observed tool list (names only; nothing is called), each candidate weighed on reliability (availability interval lower bound), registry-verified publisher, the auth audit, the tool-poisoning scan and the shadowing census; poisoned, copying, unreliable and (auth=none) login-gated servers are excluded with the reason. Signed (crawlcheck-mcp-selection). */
+        get: operations["mcpSelect"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity-divergence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Which document each crawler identity was handed, from the latest scan of a domain (?domain=): title, H1, robots meta, canonical, word count, unique-token ratio (first screen and whole body), the dates the page states, schema entities, author and salient terms, computed on the copy each identity received and diffed against the desktop browser's copy, with Googlebot named separately. Only real differences are listed; identities refused, challenged or redirected are counted as an error class and not diffed. Reported, never scored, with the likely cause (device-segmented cache, consent gate, a different document). Signed. */
+        get: operations["identityDivergence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/index-coverage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Why pages are or are not indexed, from Search Console's URL Inspection API, grouped by Google's own coverage wording (Not found (404), Page with redirect, Excluded by 'noindex' tag, Blocked by robots.txt, Crawled - currently not indexed, Discovered - currently not indexed, Alternate page with proper canonical tag…). The URL set is first-party: the site's sitemaps, pages seen in search over 90 days, and paths a verified Googlebot requested at the edge in 30 days. Each group carries its URLs with referring pages, sitemap membership, declared and Google-chosen canonicals, last crawl and fetch state, plus the fix for that reason; facts list 404s still linked to, redirecting URLs still in a sitemap, canonical disagreements and noindex pages a sitemap submits. Licence (the domain's own Search Console link) or owner. POST or ?run=1 starts a run (up to 1,900 inspections a day, Google's limit is 2,000). Signed. */
+        get: operations["indexCoverage"];
+        put?: never;
+        /** Start the inspection run for a domain (same access as GET). */
+        post: operations["indexCoverageRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/engines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How a site reads to Baidu, Naver, Seznam and Yandex, and whether it can use IndexNow, from a live read of its homepage and robots.txt: Baidu applicable-device and mobile-agent, the no-transform opt-out from transcoding, URL push and verification; Naver Search Advisor verification, the Yeti robots group and Open Graph tags; Seznam verification and the SeznamBot group; Yandex robots coverage, YandexAdditional, Clean-param, whether Yandex can read the business facts (with the same facts offered as microdata when they are in JSON-LD only), and, when named with yml= or business_feed=, the YML product feed and the Yandex Business organization feed. Each engine is graded only where the site's audience is in its market, with that market's search share. Signed. 30 reads an hour per address. */
+        get: operations["searchEngines"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ask one census frame (top1k, top10k, top100k) a question across every site it measured, with the census field ids (fields=1 lists them): where= (all hold), not= (none hold), any= (at least one), rank_max=. Returns the matching sites in rank order, the count, the denominator (sites where every named field could be measured) and its 95% interval, from one named run, signed. The first 100 matches are free; a licence key pages up to 2,000 at a time and adds format=csv. */
+        get: operations["crossDomainQuery"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/feeds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Where CrawlCheck finds domains to measure beyond top-sites lists: MCP/A2A packages on npm, MCP/A2A repositories on GitHub, the APIs.guru OpenAPI directory, and certificate transparency (mcp./agent./a2a. names under known MCP publishers, each given the MCP handshake). Per source: last run, how many records were read, domains found, how many were new, an error if any, a sample. */
+        get: operations["registryFeeds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai-recommends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Who AI recommends, by city: for every trade x city cell of the local AI-visibility grid (5 home-service trades x 12 Denver-metro cities, plus census cells: the trade, city and state combinations where CrawlCheck has measured 3+ trade businesses), the businesses answer engines cited, aggregated with none named - distinct businesses cited, top and top-3 share, Herfindahl concentration, source mix (business / directory or marketplace / social / reference), how often the most-cited business held across runs, and engine agreement on the latest run; plus by_trade and by_city summaries. CC BY 4.0. Signed crawlcheck-ai-recommends. */
+        get: operations["aiRecommends"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agentic-web-map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The agentic web map (?month=YYYY-MM; default this month, month to date until sealed): every reachable site of a census frame (top 10,000, else top 1,000) placed in four layers - DNS host (NS records), network (A record, origin autonomous system holder), bot protection and site platform (technology record) - with what the census saw it do to AI crawlers: refused an AI identity at the edge while serving the browser, blocked one in robots.txt, served llms.txt, declared Content-Signal. Per provider (named at 10+ sites), links between layers split by those outcomes, and where refusals and blocks concentrate. ?domain= returns one domain's four layers instead (signed crawlcheck-agentic-web-map-lookup; live read if the domain is not in the map, 60 an hour per address). No site named in the edition. Signed crawlcheck-agentic-web-map; sealed editions at /api/v1/agentic-web-map/YYYY-MM.json. */
+        get: operations["agenticWebMap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/census/ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ask the census a question in plain words (?q=): matched by meaning against every census measure and problem code, each answer returned with its current measured value and frame. Matching only, no generated text. 30 questions an hour per address. */
+        get: operations["censusAsk"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/census/similarity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Text similarity over one finished census run (?frame=top1k|top10k|top100k, ?run=; default the latest): homepages near-identical across different domains (template families), and how far the visible text each AI identity was served sits from the browser's, in bands of a 64-bit SimHash (same, small, different, other page). Counts only, no site named. Signed crawlcheck-census-similarity. */
+        get: operations["censusSimilarity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/census/weekly": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Weekly edition of the agentic web census (?week=YYYY-Www, ISO week UTC; default this week): per frame (top 1,000 and top 10,000, both daily), the last run finished in the week against the last run before it - every figure with its denominator, change in points, sites gained and lost among sites measured both times, the biggest moves. Week to date until Sunday midnight UTC, then sealed. No site named. Signed crawlcheck-census-weekly. Sealed editions also at /api/v1/census/weekly/YYYY-Www.json; Atom feed at /api/v1/census/weekly/feed.xml. */
+        get: operations["censusWeekly"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/families": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Template families among the remote MCP servers in the registry panel: servers whose tool lists are near-identical once each site's own name is masked (64-bit SimHash of names and descriptions, banded candidates, at most 6 of 64 bits apart). Counts and size distribution; ?url= says which family a server is in, &compare= whether two servers share one. A family is one template, typically one operator; it is not a finding. Signed crawlcheck-mcp-families. */
+        get: operations["mcpFamilies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/reliability/ranking": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Monthly MCP reliability ranking (?month=YYYY-MM, default this month): every registry endpoint with at least five observations inside the month, named, ordered by availability (answered / observations), then median time to answer, then URL; per row observations, answered, availability, p50_ms, tool_list_changes, down_spells, last_observed. Built with the monthly report from the same panel walk; month to date until the month ends, then sealed. ?limit=N keeps the top N rows. Signed crawlcheck-mcp-reliability-ranking. */
+        get: operations["mcpReliabilityRanking"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/reliability/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Monthly MCP reliability report (?month=YYYY-MM, default this month): every observation of the registry panel inside the month, aggregated - availability with a 95% interval, availability per endpoint in bands, how observations failed, endpoints that went down, time to answer, tool-list changes. No server named. Month to date until the month ends, then a sealed edition. Signed crawlcheck-mcp-reliability-report. */
+        get: operations["mcpReliabilityReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/reliability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public MCP reliability index: every remote server in the official MCP Registry that has answered the handshake, re-observed in rotation (panel.per_hour endpoints an hour; panel.each_seen_every_hours says how often each is contacted). No parameters: the ranked index (availability, p50/p95 ms, tool-list drift over 14 days, per server and per publisher). ?url= one server with its observation history and incident_history (incidents bounded between observations, blips, tool-list changes, uptime by UTC day), signed. ?host= one publisher's servers, signed. No tool is ever called. */
+        get: operations["mcpReliability"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/auth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Least-privilege auth audit of an MCP server (?url=), read without signing in: the 401 challenge, protected-resource metadata (RFC 9728) and authorization-server metadata (RFC 8414); the scopes a client requests by default, write or admin scopes requested when read-only ones exist, token audience against the endpoint, PKCE S256. Signed (crawlcheck-mcp-auth) */
+        get: operations["mcpAuthAudit"];
+        put?: never;
+        /** The same audit for {url} */
+        post: operations["mcpAuthAuditPost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-lens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What each AI is served: the homepage fetched once by two browsers and by requests claiming to be ChatGPT-User, OAI-SearchBot, GPTBot, Claude-User, Claude-SearchBot, ClaudeBot, PerplexityBot, Googlebot, Bingbot and Applebot, side by side (status, blocker, words, prices, links, robots.txt per name), plus the name-tag test: does the firewall let a request in because it claims a crawler name? and where each refusal happens: a network in front of the server, the hosting firewall or a site plugin (as the refusal names it), a block on data-centre addresses (when a person's own reading from the CrawlCheck extension, under 6 hours old, was served), or the server itself (when the site's owner has set up the skip rule). Kept 30 minutes; 10 new readings per address per hour (crawlcheck-agent-lens) */
+        get: operations["agentLens"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/changes/subscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Webhook subscriptions on this key (Data line) */
+        get: operations["mcpChangeSubscriptions"];
+        put?: never;
+        /** Add a webhook for MCP tool changes on a server list (Data line): {url (https, public host), servers?, hosts?, severity?, min_severity?}. Deliveries are POSTs of the signed event with x-crawlcheck-signature: t=<unix>,v1=<hex HMAC-SHA256 of the secret over t.body>, retried after 1 m, 5 m, 30 m, 2 h, 6 h, 12 h. {unsubscribe: id} removes one; {ping: id} sends one test delivery */
+        post: operations["mcpChangeSubscribe"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/digests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Current mcp-lockfile digest of up to 100 MCP endpoints (?servers=url,url), signed, for gateway allowlists (Data line) */
+        get: operations["mcpDigestsGet"];
+        put?: never;
+        /** The same with {servers: [endpoint URLs]} (up to 100) */
+        post: operations["mcpDigests"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Live feed of public MCP servers whose tool list changed since the previous read: tools added, removed, descriptions rewritten, or inputs/annotations only, with a severity. Also as Atom at /mcp/changes.atom (crawlcheck-mcp-tool-changes). With x-crawlcheck-key on a key holding the Data line it is the licensed feed (crawlcheck-mcp-change-feed): servers=, hosts=, severity=, min_severity=, since=, cursor= */
+        get: operations["mcpToolChanges"];
+        put?: never;
+        /** The licensed change feed (Data line): {servers?, hosts?, severity?, min_severity?, since?, cursor?, limit?}; oldest first, each event signed, every event since 7 Nov 2026 kept, next_cursor to continue. GET with the key takes the same as query parameters */
+        post: operations["mcpChangeFeedLicensed"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/demo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A runnable proof of what a guard does for an agent using a third-party MCP server: seven scenarios (approved server, rewritten description, harmless re-approval, forged answer, server outage, CrawlCheck outage, poisoned re-approval) run live against real demo servers with no guard, a lockfile alone and a lockfile plus CrawlCheck. Signed crawlcheck-mcp-workflow-demo; page at /mcp/demo; script at /mcp/demo.mjs */
+        get: operations["mcpWorkflowDemo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp/shadow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cross-server tool shadowing for one MCP server (?url=): handshake and tools/list only; which publisher-verified servers in the registry roster it copies tool names (and descriptions) from. Signed (crawlcheck-mcp-shadow) */
+        get: operations["mcpShadowUrl"];
+        put?: never;
+        /** Check the servers one client connects to ({servers:[{name, url | tools}]}, at most 10) or one tool list ({tools, url?, name?}): tool names shared between them (a call can reach the wrong server) and names copied from known servers */
+        post: operations["mcpShadowCheck"];
         delete?: never;
         options?: never;
         head?: never;
@@ -313,6 +2034,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/misquote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Misquote watch: each grounded answer that cited a page on this site, with the part of the answer naming the business held against the page version live when the answer was given (sealed content hash; the version's visible text is kept). Each claim - phone, founding year or years in business, star rating, review count, price, open 24/7 - is supported, contradicts_page (a misquote) or not_on_page. Owner data: panel, internal key or a licence covering the domain */
+        get: operations["misquoteWatch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fact-lag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fact lag: every change the business made to its published name, phone or address, with the day each verified crawler first fetched the home page afterwards and the days until each engine stated the new value (or that it still states the old one); plus today's answers per engine, a wrong value traced to where it comes from, this site's own past values included. Owner data: panel, internal key or a licence covering the domain */
+        get: operations["factLag"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/supply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One page, three ledgers: the page's content version with the day its digest was sealed and whether that day's root holds it; every crawler's fetches of exactly that path from the site's own edge log (verified / forged / unverifiable, last day seen); and every stored answer run that cited the page. Owner data: panel, internal key or a licence covering the domain */
+        get: operations["pageSupply"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/content-clock": {
         parameters: {
             query?: never;
@@ -422,7 +2194,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A site's own Cloudflare Worker reports one agent request (ua, path, verdict) after answering it; the site is proven by the CF-Worker header Cloudflare sets on Worker subrequests. Counts toward the Agent Traffic Index and the network figures on /data. 403 from anything that is not a Worker subrequest */
+        /** A site's own edge code reports one agent request (ua, path, verdict) after answering it; the request itself proves which site sent it. Counts toward the Agent Traffic Index and the network figures on /data. 403 from anything that is not the site's own edge code */
         get: operations["visitorArrivalV1"];
         put?: never;
         post?: never;
@@ -500,6 +2272,177 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/resolve/archive/{sha256}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The exact signed Resolve answer a preflight decision receipt was made from (the receipt names it as resolve.sha256 and resolve.archive). Kept for every preflight decision from 7 Oct 2026 */
+        get: operations["resolveArchiveV1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/verdict/threshold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Threshold-signed verdict for a URL (?url=https://..., &k= 2-5): the reach values (per request identity: status, final host and path, failed) that observers on at least k different networks each signed with their own key, every signer's signed envelope and key binding included so the count can be checked offline. Signed crawlcheck-threshold-verdict */
+        get: operations["thresholdVerdictV1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/observers/mesh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The customer observer mesh: site observers (bound to a site by its /.well-known/crawlcheck-observer.txt), counted apart as customers or CrawlCheck's own properties, with the network each reads from */
+        get: operations["observerMeshV1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/staple": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A site’s staple: the signed ccr1 record to send in the CrawlCheck-Staple header and the document to serve at /.well-known/crawlcheck-staple.json (record + full signed Resolve answer), with refresh_after */
+        get: operations["staple"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dns-query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Resolve over DNS (RFC 8484 DNS-over-HTTPS): TXT for <domain>._v.crawlcheck.io carries the domain’s signed per-action verdict (ccr1). ?dns=<base64url wire message> or ?name=&type=TXT for JSON; POST application/dns-message also accepted */
+        get: operations["resolveOverDns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/share-of-preflight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Share of preflight for a month (?month=YYYY-MM; default this month to date): verified agent requests reported through Visitor Resolve, receipts sites checked and accepted, the share overall and by agent. Past months are sealed. Signed */
+        get: operations["shareOfPreflight"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/compliance/pack": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Compliance evidence pack from receipt digests still held (?sha256=a,b&framework=eu-ai-act-art12|nist-ai-rmf&format=csv). Signed */
+        get: operations["compliancePackDigests"];
+        put?: never;
+        /** Compliance evidence pack: POST {receipts:[signed decision receipts]} (up to 200) with ?framework=eu-ai-act-art12|nist-ai-rmf; each receipt checked (signature, archived answer, log inclusion) and mapped to the framework’s duties. Mapping, not legal advice. Signed */
+        post: operations["compliancePack"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/compliance/frameworks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The receipt-to-duty mappings behind the compliance presets */
+        get: operations["complianceFrameworks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/benchmark": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Agent safety benchmark: the frozen suite (sha256, families, cases) and the latest run per model, alone and with CrawlCheck’s signed answer: safety (hazards stopped), usefulness (controls completed), score. Signed */
+        get: operations["agentSafetyBenchmark"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/adoption": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Outside adoption, counted so it cannot be padded by CrawlCheck's own tests: preflight decisions by caller tier (verified_agent = a named AI agent from its operator's published ranges; ours; other), receipt checks by sites we do not run, verified AI crawlers on the lookup paths, and the first-ever time of each. 30 days, counts only */
+        get: operations["adoptionV1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/decisions": {
         parameters: {
             query?: never;
@@ -509,6 +2452,92 @@ export interface paths {
         };
         /** Daily counts for the last 14 days: preflight decisions issued, and CrawlCheck-Receipt headers checked by sites (found, accepted, by decision and action). Counts only */
         get: operations["decisionStatsV1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/evidence-packet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download a stored evidence packet by its SHA-256 (sha=). Headers carry the hash check and the seal state. */
+        get: operations["evidencePacketGetV1"];
+        put?: never;
+        /** Evidence packet for an AI-licensing dispute. Send a site's access-log lines for a period (combined log format or JSON lines; up to 5,000 lines / 2 MB) with domain, optional crawler and from/to dates. Each crawler hit is checked against the operator's published ranges and matched to CrawlCheck's own sealed reading of that page on or before that day (sha256 of what the page served). Lines naming no crawler are dropped. The packet carries three witnesses to the log's own completeness (CrawlCheck's own fetches in the window, timeline gaps and silent days, the domain's earlier packets) and an Internet Archive capture for hits CrawlCheck had not read by then. Returns a signed receipt; the packet is stored under its SHA-256, bound to the log by the log's SHA-256, and sealed in the day's OpenTimestamps-anchored Merkle root. */
+        post: operations["evidencePacketCreateV1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/said": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Proof of what a site said on a date. For one URL (any page a scan or a whole-site crawl read: homepage and machine files from every scan, every page from a whole-site crawl) and a date, the SHA-256 of what was served at CrawlCheck's reading that day (or the nearest earlier one, flagged), per crawler identity, with the proof chain: record digest, day Merkle root anchored with OpenTimestamps, signed manifest. text= checks whether a passage was on the page. Raw bytes are not served. Signed. */
+        get: operations["saidV1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/served": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Time travel: what a site served each crawler identity on a past date, from the sealed readings - status, words, blocker, redirect and the visible text each identity received, beside the mobile browser's copy and the robots.txt in force that day; with identity= and from=/to=, that identity's timeline across every scan in the window. Licence covering the domain or the owner session (the content is the site's own); the public proof is /api/v1/said. Signed crawlcheck-served / crawlcheck-served-timeline */
+        get: operations["servedV1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/facts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Business fact cards. One small signed card per field of a business's record (name, phone, address, service_area, hours, url, categories, services): a stable id, the value, how the business's own statements stand, the outside sources that confirmed it, observed_at, valid_until, and a re-check link. field= returns one card. Each card verifies on its own with crawlcheck-verify.mjs. */
+        get: operations["factsV1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/field-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Verified fields. One signed verdict per business field. field=phone|address|hours|service_area and value= the value you hold. phone: matches, former_value (with dates), not_this_business (the site never published it and another publisher is named with the page that prints it), or not_published. address: matches, same_street_other_city, former_value, not_this_business, not_published or nothing_declared. hours: a week (Mo-Fr 08:00-17:00) gives matches or differs per day; a moment (Sa 10:00) gives open or closed. service_area: declared, not_declared or nothing_declared. Built from the business's own site (and its Business Profile for the licence holder), its dated fact history, CrawlCheck's scans of other sites, and for an unknown number a web search whose cited pages are read plus a YellowPages reverse lookup. Public; a licence key covering the domain adds the Business Profile. */
+        get: operations["fieldCheckV1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -619,7 +2648,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/preflight": {
+    "/api/v1/preflight/batch": {
         parameters: {
             query?: never;
             header?: never;
@@ -627,6 +2656,24 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        put?: never;
+        /** Batch preflight for answer engines: POST {domains: [up to 100 candidate sources], action? (default cite), agent?, template?, policy?, policy_id?, receipts? ('full' inline up to 25 by default, 'compact' = sha256 + receipt_url), rank? (default true)} and receive one signed decision receipt per candidate, ordered allow / warn / require_confirmation / block, a summary (cite_now, needs_a_human, do_not_cite) and the best-source ranking over the candidates that were not blocked (up to 10). Each receipt is the same crawlcheck-decision POST /api/v1/preflight issues. */
+        post: operations["preflightBatchV1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/preflight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The same decision as POST for a client that can only fetch a URL (an assistant’s fetch tool, a browser, curl with no body). Give the domain and the action in the query; the answer is the same signed decision receipt, made by the same code path, and is never cached. A policy needs POST */
+        get: operations["preflightGetV1"];
         put?: never;
         /** The policy engine: before an action, POST {domain, action (read|cite|connect|transact|administer), agent?, template?, policy?} and receive a signed decision receipt (allow | warn | require_confirmation | block | unsupported) bound to the resolve answer it was made from. When the decision is not allow, alternatives[] names what to do instead (rescan, a machine file, a corroborated profile, an MCP endpoint that completed the handshake, human review), each from CrawlCheck’s own observations. A policy can only make the decision stricter. Templates: safe_citation, safe_data_retrieval, safe_api_connect, safe_mcp_tool, safe_commerce, safe_oauth, support_escalation */
         post: operations["preflightV1"];
@@ -643,7 +2690,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Before acting on a domain: one signed answer. Crawler policy as declared (robots.txt per crawler), delivery as observed per identity, machine files, capabilities with policy classes and certificate, entity reciprocity and the open findings (top one in full without a licence), each section declared/observed/not_measured with its time. No overall score. An unknown domain answers not_measured and a measurement is requested */
+        /** Before acting on a domain: one signed answer. Crawler policy as declared (robots.txt per crawler), delivery as observed per identity, machine files, capabilities with policy classes and certificate, entity reciprocity and the open findings (in full), each section declared/observed/not_measured with its time. No overall score. An unknown domain answers not_measured and a measurement is requested */
         get: operations["resolveDomainV1"];
         put?: never;
         /** Batch resolve: POST {domains:[..]} (1-100) and receive each domain's signed ResolveV1 answer in one response */
@@ -678,7 +2725,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The unified machine record for one observation: subject, grade, findings (top one in full without a licence), capabilities with verification, evidence roots and verifier links */
+        /** The unified machine record for one observation: subject, grade, findings (in full), capabilities with verification, evidence roots and verifier links */
         get: operations["getMachineRecordV1"];
         put?: never;
         post?: never;
@@ -746,7 +2793,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Each observer's reading of the identity-dependent findings side by side (primary Worker vs the independent second observer), with a corroboration status per finding */
+        /** Each observer's reading of the identity-dependent findings side by side (primary observer vs the independent second observer), with a corroboration status per finding */
         get: operations["getCorroboration"];
         put?: never;
         post?: never;
@@ -790,6 +2837,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/observe/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retire an enrolled observer with its own key: {request: {kind: crawlcheck-observer-retirement, v: 1, observer_id, requested_at, reason}, sig} signed over crawlcheck-observer-retire-v1 + newline + canonical JSON of request. It stops receiving tasks and its co-signatures stop counting; its readings stay listed */
+        post: operations["retireObserver"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/observe/cosig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every independent co-signature of one MCP change event (?event=<24-hex id>), each with its signed envelope, the network it arrived from and how to verify it */
+        get: operations["mcpCosignatures"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/observe/check": {
         parameters: {
             query?: never;
@@ -799,7 +2880,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Run the Worker's own checks on an observation or enrolment without storing it: shape, key against the directory entry (the live directory, or one you send), signature. The fixtures at /observer/fixtures.json run against it */
+        /** Run the service's own checks on an observation or enrolment without storing it: shape, key against the directory entry (the live directory, or one you send), signature. The fixtures at /observer/fixtures.json run against it */
         post: operations["checkObservation"];
         delete?: never;
         options?: never;
@@ -852,6 +2933,245 @@ export interface paths {
         put?: never;
         /** Delete everything held about a domain: {domain, confirm: domain, inventory_sha256} starts a job (an inventory issued in the last 24 hours is required); POST {job} continues it. Ends in a signed deletion record */
         post: operations["dataDelete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/slo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Service-level objectives for Resolve, preflight and first answers for never-measured domains: target, measured share over 30 days, error budget left, 24-hour burn rate and p95, from probes outside our hosting network and the server's own timing */
+        get: operations["slo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sbom": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Software bills of materials (CycloneDX 1.6) for every published CrawlCheck artifact: the npm SDK, the PyPI SDK and the offline verifier, each built from the registry's bytes, file-hashed, with runtime dependencies, wrapped in a signed crawlcheck-sbom document */
+        get: operations["sbomIndex"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/builds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The build log: every build CrawlCheck has served, each entry naming its build id, script digest and the previous entry's digest (append-only hash chain, head sealed daily). Every signed answer's code field names the build that produced it */
+        get: operations["buildLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/builds/{version_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One build by its build id: its log entry, the chain from it to the head, whether the chain verifies and whether that build is serving now */
+        get: operations["buildEntry"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deploy/attestation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether the code now serving came through the signed release process: attested, pending (new release, receipt expected within minutes) or unattested (the owner is alerted) */
+        get: operations["deployAttestation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether CrawlCheck is working now: each component (site, scans, signing, daily seal, backup and restore test, security self-test, observers) with its reading, open and recent incidents, and the incident log's chain check */
+        get: operations["status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/status/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed, append-only incident log: every open, update and resolve entry, each signed and naming the previous entry's digest, with the chain verified */
+        get: operations["statusLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/backup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The twice-weekly backup and its restore test: last backup (day, keys, bytes, parts, signed manifest digest), any backup in progress, and the last restore test with each check (parts re-hashed, canary deleted and restored, sample compared with live storage, a fresh signature verified with only the backed-up public keys) */
+        get: operations["backupStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/private/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Who read, exported or created a private report: each entry names the actor by kind and a masked identifier (licence cc_…last4, owner session), the masked address, country and browser family; never a key, cookie or query string. Same access as the report itself */
+        get: operations["privateReportAccess"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/holds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Holds that delay a deletion or removal: active counts by reason (abuse, legal, dispute), placed, renewed, lifted, expired, requests deferred and resumed, and the rule. Counts only; no domain is listed */
+        get: operations["holdStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/removal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The state of a removal request: verifying, review, decided, appealed, closed or done, with its deadline and decision */
+        get: operations["removalStatus"];
+        put?: never;
+        /** Ask for removal without a licence: {type: site_control|personal_data|other, domain, email, terms, report_id, details, also_opt_out}. Returns the request id and a token t shown once; site control is proven on the site, other types by a code mailed to the address */
+        post: operations["removalRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/removal/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Prove a removal request: {id, t} checks the site-control token (file or TXT record) and starts deletion at once; {id, t, code} confirms the mailed code and puts the request in review (decided within 30 days) */
+        post: operations["removalVerify"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/removal/appeal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Appeal a removal decision once, within 30 days: {id, t, reason}. Decided within 30 days; that decision is final */
+        post: operations["removalAppeal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/removal/record": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A signed removal record: what was done in counts, and the sealed digests that stay, never the removed text or the requester */
+        get: operations["removalRecord"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -997,6 +3317,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/datasets/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Count the measured sites that match a filter across the kept days, with breakdowns and up to 10 sample rows (no names, no domains). Public, cached 10 minutes */
+        get: operations["datasetPreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/datasets/sample": {
         parameters: {
             query?: never;
@@ -1006,6 +3343,40 @@ export interface paths {
         };
         /** 25 measured rows from the latest files. Public */
         get: operations["datasetSample"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasets/segments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The six ready-made lists (online stores, publishers, sites blocking AI crawlers, llms.txt sites, trades and home services, marketing and support platforms) with distinct-site counts over the newest 7 days. Public, cached 10 minutes */
+        get: operations["datasetSegments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasets/segment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One ready-made list, one row per site from the newest days, CSV or NDJSON. Needs a licence key with dataset access; the rows returned are the ones the plan covers */
+        get: operations["datasetSegment"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1089,7 +3460,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The agentic-web census: the frame (a frozen Tranco top-1,000 list), every run, the latest figures with their denominators, and the change since the first run (percentage points and sites that gained or lost each property). Public */
+        /** The agentic-web census: the frame (a frozen top-1,000 popularity list), every run, the latest figures with their denominators, and the change since the first run (percentage points and sites that gained or lost each property). Public */
         get: operations["agenticWebCensus"];
         put?: never;
         post?: never;
@@ -1123,7 +3494,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The census sampling frame: the Tranco list id and configuration, the members measured, and the counts excluded by the publish filter and by opt-out */
+        /** The census sampling frame: the list id and configuration, the members measured, and the counts excluded by the publish filter and by opt-out */
         get: operations["censusFrame"];
         put?: never;
         post?: never;
@@ -1142,6 +3513,23 @@ export interface paths {
         };
         /** The capability registry: every measured site that declares agent capabilities, with counts by invocation policy class; ?domain= returns one site's capabilities declared beside observed, its mismatches and its signed capability certificate. Public */
         get: operations["capabilityRegistry"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/registry/capabilities/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Is this capability certificate still good? good, superseded, revoked (a later measurement no longer verifies a capability it verified, or adds a mismatch), suspended (owner incident, or the domain-control claim lapsed or suspended), withdrawn, expired (14 days after the measurement) or unknown, with the rules and how to appeal. Signed (crawlcheck-capability-certificate-status). */
+        get: operations["capabilityCertificateStatus"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1328,7 +3716,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The rulebook: every finding code the scanner can raise, with what it means, its level, its fix and its share of counted scans. Public. ?code= returns one rule */
+        /** The rulebook: every finding code CrawlCheck can raise, with what it means, its level, its fix and its share of counted scans. Public. ?code= returns one rule */
         get: operations["rulebook"];
         put?: never;
         post?: never;
@@ -1430,7 +3818,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One signed second-observer observation in full: the envelope (fetches with status, headers kept, sha256 of each body), the run key's Ed25519 signature, GitHub's OIDC token binding the key to the enrolled workflow, the checks run on receipt and the readings derived from the bytes. Public */
+        /** One signed second-observer observation in full: the envelope (fetches with status, headers kept, sha256 of each body), the run key's Ed25519 signature, a signed OIDC identity token binding the key to the enrolled workflow, the checks run on receipt and the readings derived from the bytes. Public */
         get: operations["getObservation"];
         put?: never;
         post?: never;
@@ -1600,7 +3988,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** What fixing one thing changes on a record (licence or owner): per fix - robots, sitemap, llms, entitymap, edge-bots, cache, page-code, chain, hsts, host-pair - the findings and rows it clears, the ones it clears only together with another fix, the root causes it closes, the certificate criteria it flips and the score and letter after */
+        /** What fixing one thing changes on a record (no key): per fix - robots, sitemap, llms, entitymap, edge-bots, cache, page-code, chain, hsts, host-pair - the findings and rows it clears, the ones it clears only together with another fix, the root causes it closes, the certificate criteria it flips and the score and letter after */
         get: operations["fixImpact"];
         put?: never;
         /** The same with a body: {id, fix:[ids]} */
@@ -1618,7 +4006,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Recompute the score and letter for a record with any set of failing rows passing and findings cleared (licence or owner): the combined effect, which individual points cannot give, plus the least set that reaches the next letter */
+        /** Recompute the score and letter for a record with any set of failing rows passing and findings cleared (no key): the combined effect, which individual points cannot give, plus the least set that reaches the next letter */
         get: operations["whatIf"];
         put?: never;
         /** The same, with rows to fix: {id, fix:[{section_id,row}], clear:[codes]} */
@@ -1745,6 +4133,57 @@ export interface paths {
         put?: never;
         /** Scan a domain on the licensed lane (valid licence key required; 60 scans per ten minutes per key; 404 without a key) */
         post: operations["scanDomainLicensed"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/licence/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Is this licence key live, and on which plan? Send the key in x-crawlcheck-key (or Authorization: Bearer). The answer is always 200, so a status code cannot confirm a guessed key. */
+        get: operations["checkLicenceKey"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tool/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The machine-file check behind /tools: robots.txt, sitemap.xml and llms.txt fetched as a plain client and judged on whether each is the file or a page, and whether the cached homepage matches what the server generates now. Four requests to the site named; results cached ten minutes. */
+        get: operations["checkMachineFiles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/phone-reputation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether a US phone number appears in the FTC Do Not Call complaint files: reports counted over the window read, by number. Caller ID is often spoofed, so a reported number may belong to a business whose number was faked. */
+        get: operations["phoneReputation"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1880,7 +4319,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** The weekly reconstruction run, callable only by this repository's reconstruction workflow (GitHub OIDC token, audience crawlcheck-reconstruction). The 20 oldest archived reports resolved through the projections and from the permanent store alone, plus two finding-to-artifact traversals each; green only when every part is identical */
+        /** The weekly reconstruction run, callable only by this repository's reconstruction workflow (signed OIDC identity token, audience crawlcheck-reconstruction). The 20 oldest archived reports resolved through the projections and from the permanent store alone, plus two finding-to-artifact traversals each; green only when every part is identical */
         post: operations["reconstructionCi"];
         delete?: never;
         options?: never;
@@ -2111,6 +4550,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fix/ard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An ARD (Agentic Resource Discovery v0.91) manifest for any site, drafted from the agent resources it already serves (MCP server card, A2A agent card, Agent Skills index, OpenAPI) and checked with the ARD conformance rules before it is returned. A site that already serves a manifest gets that manifest back with the repairs a rule allows (renamed media types, drafted queries) and the draft beside it. A scanned site gets a CrawlCheck site-verification attestation in each entry. format=file downloads ard.json */
+        get: operations["fixArd"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fix/entitymap": {
         parameters: {
             query?: never;
@@ -2137,7 +4593,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** File a profile page as the owner's browser saw it, for the entity corroboration section. Consulted only where the scanner's own fetch was unverifiable; never overrides a live result; the row is labelled owner-browser. Licence-gated and bound to the licence's domains; the page's canonical must name the url's host. Kept 30 days */
+        /** File a profile page as the owner's browser saw it, for the entity corroboration section. Consulted only where CrawlCheck's own fetch was unverifiable; never overrides a live result; the row is labelled owner-browser. Licence-gated and bound to the licence's domains; the page's canonical must name the url's host. Kept 30 days */
         post: operations["entityObserve"];
         delete?: never;
         options?: never;
@@ -2222,7 +4678,7 @@ export interface components {
             id?: string;
             domain?: string;
             /**
-             * @description null when the origin refused the scanner or the scan could not be graded
+             * @description null when the origin refused CrawlCheck or the scan could not be graded
              * @enum {string|null}
              */
             grade?: "A" | "B" | "C" | "D" | "F" | null;
@@ -2243,8 +4699,16 @@ export interface components {
                 detail?: string;
                 evidence?: unknown;
             }[];
-            /** @description Invariants checked on this record itself; a finding here is a defect in the scanner, never in the site */
+            /** @description Invariants checked on this record itself; a finding here is a defect in CrawlCheck, never in the site */
             self_audit?: Record<string, never>;
+            /** @description robots.txt resolved per crawler: agents[] (the catalogue, each with allowed, named, rule and rule_line = the robots.txt line that decided it) and ext (the long tail of further crawler names: checked, allowed, differs[] = the ones this file names or blocks) */
+            agents?: Record<string, never>;
+            /** @description Every link in llms.txt fetched once (up to 25): checked, found, dead[] (404/410/5xx), refused[], unreachable[] */
+            llms_links?: Record<string, never>;
+            /** @description Emerging surfaces, measured and not scored: found{agents_md, api_catalog, markdown, link_header, dns_aid, ...} with evidence per surface (dns_aid lists the _index/_mcp/_a2a._agents records found) */
+            agent_surfaces?: Record<string, never>;
+            /** @description Paired re-fetches behind a delivery finding: per identity, thin_reproduced / redirect_reproduced / extra_reproduced / less_reproduced and the passages a crawler got that a visitor did not (extra.blocks) or lacked (less.blocks) */
+            av_split?: Record<string, never>;
         };
         VerifyResult: {
             tally?: {
@@ -2273,6 +4737,24 @@ export interface components {
                 capped?: boolean;
                 cap?: string | null;
                 cap_reason?: string | null;
+            };
+            /** @description Recorded initial identity comparison on this full scan, included in the report digest. An HTTP refusal can be a fully read response. Omitted on older or unmeasured reports. */
+            scanner_profile?: {
+                /** @constant */
+                version: 1;
+                /** @constant */
+                scope: "full_scan_initial_identity_comparison";
+                request_profile_sha256: string;
+                attempted: number;
+                responses_read: number;
+                incomplete: number;
+                outcomes: {
+                    id: string;
+                    crawler_token: string | null;
+                    http_status: number | null;
+                    /** @enum {unknown} */
+                    state: "response_read" | "incomplete";
+                }[];
             };
             sections: {
                 id?: string | null;
@@ -2303,6 +4785,19 @@ export interface components {
                 first_seen?: string | null;
                 scans_seen?: number | null;
                 recurrences?: number | null;
+                /** @description for an agent acting on the finding: observation (what was seen) and interpretation (what CrawlCheck reads into it) kept apart; confidence (unconfirmed for a detector still on the advisory list at /accuracy); in_grade; severity_if_confirmed; remediation.text, remediation.automatic (true only for a defect with a mechanical fix; false when a person must decide) and remediation.needs_person (why). null on a locked finding */
+                agent?: {
+                    observation?: string | null;
+                    interpretation?: string | null;
+                    confidence?: string | null;
+                    in_grade?: boolean;
+                    severity_if_confirmed?: number | null;
+                    remediation?: {
+                        text?: string | null;
+                        automatic?: boolean;
+                        needs_person?: string | null;
+                    };
+                } | null;
                 /** @description bitemporal: when the condition held on the site (valid_from / valid_to as after-by intervals between observations; null ends are unknown or still open) and when CrawlCheck recorded it (recorded_at, superseded_at) */
                 valid_time?: Record<string, never> | null;
             }[];
@@ -2387,12 +4882,18 @@ export interface components {
             evidence: Record<string, never>;
             access: Record<string, never>;
         };
+        /** @description The error envelope; every code and the rules at /spec/considerations. */
         ErrorV1: {
             error: {
                 code: string;
                 status?: number;
                 message: string;
             };
+            /** @description stable machine code; on every unsigned error answer */
+            error_code?: string;
+            retryable?: boolean;
+            trace_id?: string;
+            span_id?: string;
         };
         /** @description GET /api/bundle: one file that checks offline with /crawlcheck-verify.mjs. A field that cannot be filled (an anonymous download, an unsealed day, a record from before manifests) is null with a *_withheld / *_missing / why reason, never omitted */
         EvidenceBundleV1: {
@@ -2467,7 +4968,7 @@ export interface components {
                 recipe?: string | null;
                 why?: string | null;
             } | null;
-            /** @description sec8: every bundle is scanned before it is served; a section that matched is null and carries <section>_withheld */
+            /** @description Every bundle is scanned before it is served; a section that matched is null and carries <section>_withheld */
             publish_guard?: {
                 checked?: string[];
                 withheld?: {
@@ -2548,7 +5049,7 @@ export interface components {
                 canonical?: string | null;
             };
         };
-        /** @description tr1: one scan's trace (GET /api/trace?id=, owner; sampled by the trace CI job). W3C Trace Context ids. Every span's parent is the scan span (root_span_id) or a span of this trace; the scan span's own parent is the caller's span when the scan joined a caller's trace (parent). */
+        /** @description One scan's trace (GET /api/trace?id=, owner; sampled by the trace CI job). W3C Trace Context ids. Every span's parent is the scan span (root_span_id) or a span of this trace; the scan span's own parent is the caller's span when the scan joined a caller's trace (parent). */
         TraceV1: {
             id: string | null;
             domain?: string | null;
@@ -2588,7 +5089,7 @@ export interface components {
             decisions_with_spans?: number | null;
             note?: string | null;
         } & unknown;
-        /** @description tr1: one span: a stage of the scan, or (kind rule) one decision, started when its rule decided. */
+        /** @description One span: a stage of the scan, or (kind rule) one decision, started when its rule decided. */
         SpanV1: {
             span_id: string;
             parent_span_id: string;
@@ -2710,7 +5211,7 @@ export interface components {
                 canonical?: string;
             };
         };
-        /** @description Every finding the scanner can raise (GET /api/rules): what it means, its level, its fix and its share of counted scans. */
+        /** @description Every finding CrawlCheck can raise (GET /api/rules): what it means, its level, its fix and its share of counted scans. */
         RulebookV1: {
             ok?: boolean;
             /** @constant */
@@ -2873,6 +5374,332 @@ export interface components {
             decision_root?: string | null;
             trace_id?: string | null;
         };
+        ResolveV1_section: {
+            /** @enum {unknown} */
+            state: "declared" | "observed" | "not_measured";
+            observed_at: string | null;
+            why?: string;
+        };
+        /**
+         * CrawlCheck resolve answer (ResolveV1)
+         * @description GET /api/v1/resolve?domain=: what an agent should know before acting on a domain. Signed with Ed25519 over sha256 of the canonical JSON of every field except sha256 and signature, message prefix crawlcheck-data-v1\n; verify offline with crawlcheck-verify.mjs.
+         */
+        ResolveV1: {
+            /** @constant */
+            kind: "crawlcheck-resolve";
+            /** @constant */
+            v: 1;
+            schema?: string;
+            domain: string;
+            answered_at: string;
+            reading?: string;
+            /** @description spec 1.4.0: sources that could not be read when the answer was made: sources [{source, why}], reading, policy (the failure policy URL), policy_v. Present only when something was missing. */
+            degraded?: {
+                sources?: Record<string, never>[];
+                policy?: string;
+            };
+            /**
+             * @description Present on just-in-time answers only. Full answers carry no assurance field.
+             * @enum {unknown}
+             */
+            assurance?: "partial";
+            /** @description spec 1.4.0: open (being re-measured), filed, ledger; open > 0 adds the doubt disputed to read and cite */
+            disputes?: Record<string, never>;
+            /**
+             * @description withheld: the opt-out list could not be read, so nothing about the domain is served. partial: a domain CrawlCheck had never measured, read live the moment it was asked about; assurance is partial and upgrade says when the full scan replaces it
+             * @enum {unknown}
+             */
+            status: "measured" | "partial" | "not_measured" | "opted_out" | "withheld";
+            why?: string;
+            /** @description Present when the answer comes from the daily census or a just-in-time read rather than a full scan record: kind, run, rank, measured_at, scope; just_in_time adds budget_ms, took_ms and not_read_in_budget (paths not read in time, never reported absent) */
+            basis?: {
+                /** @enum {unknown} */
+                kind?: "census" | "just_in_time";
+                run?: number | null;
+                measured_at?: string | null;
+                scope?: string;
+                budget_ms?: number;
+                took_ms?: number;
+                not_read_in_budget?: string[];
+            };
+            /** @description Just-in-time answers: A/AAAA/CNAME from DNS over HTTPS, rcode, exists, dnssec_validated (the resolver's AD flag) */
+            dns?: Record<string, never>;
+            /** @description Just-in-time answers: whether the homepage fetch completed over HTTPS with a trusted certificate, final host, HSTS header */
+            tls?: Record<string, never>;
+            /** @description Just-in-time answers: state queued, to full; the change feed records assurance partial → full when the full scan lands */
+            upgrade?: Record<string, never>;
+            measurement?: {
+                requested?: boolean;
+                first_request?: boolean;
+                how?: string;
+            };
+            subject?: Record<string, never>;
+            /** @description observed_at, age_hours, fresh_until, stale, last_verified_at, fresh_policy (provisional), plus latest_report_id / is_latest / newer_scan_exists */
+            freshness?: Record<string, never> | null;
+            observers?: Record<string, never>;
+            /** @description One value per use (train, ground, summarize, cite, transact): allowed | denied | limited | restricted_by_terms | not_declared | unknown, each with decided_by {signal, url, evidence}, the signals considered and the conflicts between them; merged from robots.txt per agent, Content-Signal, ai.txt, TDM-Rep, robots meta, X-Robots-Tag and the terms page */
+            rights?: Record<string, never> | null;
+            /** @description Whether the main text served to AI identities (GPTBot, ClaudeBot, PerplexityBot) equals what a browser receives on the homepage: verdict equivalent|minor_differences|different|not_served|unverifiable, per-identity text_ratio, instruction_like_text; api link holds the differing sentences. The cite action warns with served_text_differs */
+            read_equivalence?: Record<string, never> | null;
+            /** @description Who this domain is and how many independent sources confirm it (state confirmed | unconfirmed | claimed | disputed | unknown, name, independent_confirmations, confirmed_by[], confirm_with); preflight names it in every receipt */
+            identity?: Record<string, never> | null;
+            /** @description The site's claims an outside source was seen to agree with, as triples {subject, predicate, value, evidence[], observed_at}; signed with the answer. not_facts counts the claims that are page-only, unverified or contradicted. */
+            facts?: Record<string, never> | null;
+            /** @description What the site says about itself (telephone, email, address, hours, prices, refund window, founded, years in business, API rate limits), claims[] each with type, value, status current|withdrawn, first_seen, last_seen; changes are in the change feed as section self_claims; api link for evidence and pages read */
+            self_claims?: Record<string, never> | null;
+            /** @description Provisional: whether an action can be undone, as the site declares it: state (declared, not_declared, no_undo_declared, not_applicable), the product return policy from schema.org hasMerchantReturnPolicy (category, days, method, fees), and how many declared capabilities are irreversible writes or financial. Copied into actions.transact.reversibility. Declarations only */
+            reversibility?: Record<string, never> | null;
+            /** @description Provisional: when the main content of the homepage (and of ?page= on the same site) last changed, from CrawlCheck's own reads: content_sha256, first_observed, main_content_last_changed {between, and}, declared dates, api link */
+            content_clock?: Record<string, never> | null;
+            /** @description What CrawlCheck looked for and did not find, each with what was requested (method, URL, status), the vantage, the time and a scope saying what the absence does and does not mean. Written only for definite answers (404/410, a finished registry import, a completed field read) */
+            absences?: Record<string, never>[];
+            /** @description Provisional: remote MCP servers the official MCP Registry lists on this domain and what each endpoint answered to the MCP handshake (listed, observed, initialized, auth_required, drifted, servers[]) */
+            mcp_registry?: Record<string, never>;
+            /** @description spec 1.2.0: whether the domain looks built to be mistaken for a known brand (state, verdict, the brand frame it was compared against, and the technique when one is found) */
+            impersonation?: Record<string, never>;
+            /** @description spec 1.3.0: whether control of the domain has been proven to CrawlCheck: state proven | unproven; proofs [{by: licence_holder | registry_claim, method: dns_txt | meta_tag | well_known_file | cloudflare_zone, how, since}]; organization {name, github, record} when its holder published one; claim (where to prove it) while unproven; why; note. Informational: it never changes a decision. */
+            control?: Record<string, never>;
+            /** @description spec 1.2.0: this answer's place in the append-only answer log: state (included or pending; pending with confirmed false means the lookup did not answer within the time budget and the proof URL settles it), log_id, leaf_hash, batch, index, the inclusion path and the signed tree head it folds to */
+            transparency?: Record<string, never>;
+            /** @description Provisional: read, cite, connect, transact, administer - each { decision: allow|warn|require_confirmation|block|unsupported, minimum_assurance, assurance_found[], needs, why, max_age_hours }, decided from this answer at signing time */
+            actions?: Record<string, never>;
+            crawl_policy?: {
+                agents?: {
+                    agent: string;
+                    allowed_homepage: boolean;
+                    allowed_path?: boolean;
+                    has_own_group?: boolean;
+                    wildcard_rules_shadowed?: boolean;
+                }[];
+            } & components["schemas"]["ResolveV1_section"];
+            delivery?: {
+                identities?: {
+                    identity: string;
+                    status: number | null;
+                    words?: number | null;
+                    blocker?: string | null;
+                    redirected_to?: string | null;
+                }[];
+            } & components["schemas"]["ResolveV1_section"];
+            machine_files?: {
+                files?: Record<string, never>[];
+            } & components["schemas"]["ResolveV1_section"];
+            capabilities?: {
+                declared?: number;
+                verified?: number;
+                mismatches?: number;
+                certificate?: Record<string, never> | null;
+            } & components["schemas"]["ResolveV1_section"];
+            entity?: {
+                links?: Record<string, never>[];
+            } & components["schemas"]["ResolveV1_section"];
+            findings?: {
+                access: string;
+                items: unknown[];
+            };
+            confidence?: Record<string, never> | null;
+            contradictions?: Record<string, never> | null;
+            evidence?: Record<string, never>;
+            sha256: string | null;
+            signature: {
+                /** @constant */
+                alg?: "Ed25519";
+                kid?: string;
+                message?: string;
+                sig?: string;
+            } | null;
+            unsigned?: string;
+        };
+        SignatureV1: {
+            /** @constant */
+            v: 1;
+            /** @constant */
+            alg: "Ed25519";
+            kid: string;
+            over: string;
+            message: string;
+            sig: string;
+            signed_at: string;
+            key?: {
+                kid?: string;
+                jwk?: Record<string, never>;
+                published_in?: string;
+            };
+            canonical?: string;
+        };
+        /**
+         * CrawlCheck decision (DecisionV1)
+         * @description POST /api/v1/preflight: the policy engine's signed answer to 'may this agent take this action on this domain under this policy'. Signed like a resolve answer (Ed25519, prefix crawlcheck-data-v1); resolve.sha256 binds it to the resolve answer it was decided from.
+         */
+        DecisionV1: {
+            /** @constant */
+            kind: "crawlcheck-decision";
+            /** @constant */
+            v: 1;
+            decided_at: string;
+            expires_at?: string | null;
+            clock_skew_s?: number;
+            nonce?: string | null;
+            issued_at?: string;
+            operation?: Record<string, never> | null;
+            operation_sha256?: string;
+            domain: string;
+            /** @enum {unknown} */
+            action: "read" | "cite" | "connect" | "transact" | "administer";
+            agent?: string | null;
+            template?: string | null;
+            policy?: {
+                max_age_hours?: number | null;
+                /** @enum {unknown} */
+                on_warn?: "warn" | "block" | "require_confirmation" | "allow";
+                require_entity?: boolean;
+                human_approval?: string[];
+                allow?: string[];
+                deny?: string[];
+            };
+            engine?: {
+                version: string;
+                rules_sha256: string;
+            };
+            /** @enum {unknown} */
+            decision: "allow" | "warn" | "require_confirmation" | "block" | "unsupported";
+            /** @enum {unknown} */
+            base_decision: "allow" | "warn" | "require_confirmation" | "block" | "unsupported";
+            human_confirmation_required: boolean;
+            reason_codes: string[];
+            steps: {
+                rule: string;
+                effect: string;
+                why?: string;
+                /** @description Outcomes reported against receipts where this rule fired with this effect, and its hit or held rate over 90 days */
+                measured?: {
+                    outcomes?: number;
+                    hit_rate?: number | null;
+                    held_rate?: number | null;
+                };
+            }[];
+            /** @description The measured accuracy of this decision kind and where the per-rule figures are */
+            accuracy?: {
+                window_days?: number;
+                outcomes_scored?: number;
+                this_decision?: Record<string, never>;
+                per_rule?: string;
+                source?: string;
+                note?: string;
+            };
+            alternatives?: unknown[];
+            evidence?: {
+                report?: string;
+                manifest_sha256?: string;
+            } | null;
+            resolve?: {
+                sha256?: string;
+                kid?: string;
+                leaf_hash?: string;
+                archive?: string;
+                /** @enum {unknown} */
+                status?: "measured" | "partial" | "not_measured" | "opted_out" | "withheld";
+                answered_at?: string;
+                observed_at?: string | null;
+                report?: string;
+                served?: string;
+            } | null;
+            /** @description Which policy produced this decision, and that the deployment's own policy decides whether its agent acts */
+            authority?: {
+                /** @description crawlcheck_default | caller_policy | template:<name> | policy_file:<id> */
+                policy_source?: string;
+                rules?: string;
+                tightened_by_policy?: boolean;
+                decides?: string;
+            };
+            /** @description What the engine read beyond the signed resolve answer, carried so the decision can be replayed */
+            inputs?: {
+                security?: Record<string, never>;
+                security_too_large?: number;
+            };
+            /** @description Three separate levels. A record integrity, B reproducible decision (POST /api/v1/preflight/replay), C corroborated reading. level is the highest with every level under it reached */
+            evidence_assurance?: {
+                /** @constant */
+                v?: 1;
+                /** @enum {unknown} */
+                level?: "A" | "B" | "C" | null;
+                A?: Record<string, never>;
+                B?: Record<string, never>;
+                C?: Record<string, never>;
+                limits?: string;
+            };
+            meaning?: string;
+            reading?: string;
+            sha256: string;
+            signature: components["schemas"]["SignatureV1"];
+        };
+        /** CrawlCheck batch resolve (ResolveBatchV1) */
+        ResolveBatchV1: {
+            /** @constant */
+            kind: "crawlcheck-resolve-batch";
+            /** @constant */
+            v: 1;
+            count: number;
+            ms?: number;
+            reading?: string;
+            answers: {
+                domain: string;
+                /** @description the HTTP status this domain's own lookup would have returned */
+                status: number;
+                served?: string;
+                answer?: components["schemas"]["ResolveV1"] | null;
+                error?: Record<string, never> | string | null;
+            }[];
+        };
+        rules: {
+            max_age_hours?: number | null;
+            /** @enum {unknown} */
+            on_warn?: "warn" | "require_confirmation" | "block";
+            require_entity?: boolean;
+            human_approval?: ("read" | "cite" | "connect" | "transact" | "administer")[];
+            allow?: string[];
+            deny?: string[];
+        };
+        /** @enum {unknown} */
+        decision: "allow" | "warn" | "require_confirmation" | "block" | "unsupported";
+        /** crawlcheck-policy v1 */
+        policy: {
+            /** @constant */
+            kind?: "crawlcheck-policy";
+            /** @constant */
+            v?: 1;
+            name?: string;
+            description?: string;
+            defaults?: components["schemas"]["rules"];
+            actions?: {
+                read?: components["schemas"]["rules"];
+                cite?: components["schemas"]["rules"];
+                connect?: components["schemas"]["rules"];
+                transact?: components["schemas"]["rules"];
+                administer?: components["schemas"]["rules"];
+            };
+            tests?: {
+                domain: string;
+                /** @enum {unknown} */
+                action?: "read" | "cite" | "connect" | "transact" | "administer";
+                agent?: string;
+                note?: string;
+                expect: components["schemas"]["decision"] | components["schemas"]["decision"][];
+            }[];
+            $defs: {
+                /** @enum {unknown} */
+                decision: "allow" | "warn" | "require_confirmation" | "block" | "unsupported";
+                rules: {
+                    max_age_hours?: number | null;
+                    /** @enum {unknown} */
+                    on_warn?: "warn" | "require_confirmation" | "block";
+                    require_entity?: boolean;
+                    human_approval?: ("read" | "cite" | "connect" | "transact" | "administer")[];
+                    allow?: string[];
+                    deny?: string[];
+                };
+            };
+        };
     };
     responses: never;
     parameters: never;
@@ -2898,7 +5725,7 @@ export interface operations {
                      */
                     domain: string;
                     /**
-                     * @description unlisted: the report is reachable only by its link; the scan is sealed and archived but enters no public registry, dataset, history or resolve answer. private: needs a licence for the domain (or the owner); the report opens only for that licence holder or the owner and is not archived or listed anywhere (default public)
+                     * @description public (default): the report is shareable, archived, and may enter the registry, datasets, history and Resolve. unlisted: reachable only by its link, sealed and archived, and left out of the registry, datasets, history and Resolve. private: not archived and not reachable by the link; opens only for the holder of the domain claim, and the operator. Owner access needs proof of control (DNS TXT at _crawlcheck.<domain>, /.well-known/crawlcheck-domain.txt, the homepage meta tag, or a Search Console property the licence owns); listing a domain only watches it. A trial and the paid licence on the same email are one party, and a proof moves the claim from whoever held it.
                      * @enum {unknown}
                      */
                     visibility?: "public" | "unlisted" | "private";
@@ -2985,7 +5812,28 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": ({
+                    domain?: string | null;
+                    action?: string | null;
+                    agent?: ({
+                        name?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                    result?: ({
+                        status?: number | null;
+                        blocked?: boolean | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                    resolve_said?: string | null;
+                } & {
+                    [key: string]: unknown;
+                }) | null;
+            };
+        };
         responses: {
             /** @description accepted */
             202: {
@@ -2993,7 +5841,21 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        accepted?: ({
+                            domain?: string | null;
+                            action?: string | null;
+                            outcome?: string | null;
+                            disagreement?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        summary?: string | null;
+                        note?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description invalid report */
@@ -3009,6 +5871,56 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    decisionsCheckedV1: {
+        parameters: {
+            query: {
+                domain: string;
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-proof-of-checking */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description domain missing */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    decisionAccuracyV1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-decision-accuracy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
             };
         };
     };
@@ -3029,7 +5941,48 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        window_days?: number | null;
+                        n?: number | null;
+                        ok?: number | null;
+                        blocked?: number | null;
+                        challenged?: number | null;
+                        error?: number | null;
+                        disagree?: number | null;
+                        reporters?: number | null;
+                        by_action?: ({
+                            fetch?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        by_agent?: ({
+                            "my-agent/1.0"?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        by_status?: ({
+                            403?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        days?: (({
+                            day?: string | null;
+                            n?: number | null;
+                            ok?: number | null;
+                            blocked?: number | null;
+                            challenged?: number | null;
+                            disagree?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        recent?: unknown[] | null;
+                        success_rate?: number | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -3051,11 +6004,112 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        engine?: string | null;
+                        checked_at?: string | null;
+                        fields?: ({
+                            phone?: ({
+                                declared?: string | null;
+                                ai?: string | null;
+                                verdict?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            address?: ({
+                                declared?: string | null;
+                                ai?: string | null;
+                                verdict?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            website?: ({
+                                declared?: string | null;
+                                ai?: string | null;
+                                verdict?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            hours?: ({
+                                ai?: string | null;
+                                verdict?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        wrong?: (string | null)[] | null;
+                        sources?: (string | null)[] | null;
+                        sha256?: string | null;
+                        seal?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description not tracked or not measured */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    domainControlLifecycle: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        state?: string | null;
+                        means?: string | null;
+                        method?: string | null;
+                        claimed_at?: string | null;
+                        last_verified_at?: string | null;
+                        last_check_at?: string | null;
+                        next_check_at?: string | null;
+                        grace_ends_at?: unknown;
+                        registry_at_claim?: ({
+                            created?: string | null;
+                            expires?: string | null;
+                            registrar?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        events?: unknown[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description claim store unreadable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3080,7 +6134,35 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        registry?: ({
+                            state?: string | null;
+                            source?: string | null;
+                            registrar?: string | null;
+                            registrar_iana_id?: string | null;
+                            created?: string | null;
+                            expires?: string | null;
+                            changed?: string | null;
+                            nameservers?: (string | null)[] | null;
+                            dnssec?: boolean | null;
+                            status?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        timeline?: (({
+                            at?: string | null;
+                            type?: string | null;
+                            detail?: string | null;
+                            source?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -3103,7 +6185,22 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        checked_at?: string | null;
+                        ranges_as_of?: string | null;
+                        reading?: string | null;
+                        spec?: string | null;
+                        claimed?: string | null;
+                        operator?: string | null;
+                        purpose?: string | null;
+                        verdict?: string | null;
+                        why?: string | null;
+                        feeds?: (string | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -3115,7 +6212,20 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": ({
+                    visitors?: (({
+                        ip?: string | null;
+                        ua?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null)[] | null;
+                } & {
+                    [key: string]: unknown;
+                }) | null;
+            };
+        };
         responses: {
             /** @description crawlcheck-visitor with results[] */
             200: {
@@ -3123,7 +6233,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        checked_at?: string | null;
+                        ranges_as_of?: string | null;
+                        spec?: string | null;
+                        count?: number | null;
+                        results?: (({
+                            claimed?: string | null;
+                            operator?: string | null;
+                            purpose?: string | null;
+                            verdict?: string | null;
+                            why?: string | null;
+                            feeds?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -3143,7 +6272,83 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        population?: string | null;
+                        thresholds?: ({
+                            min_verified_requests?: number | null;
+                            published_rate_limit?: unknown;
+                            disallowed_rules?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        agents?: (({
+                            agent?: string | null;
+                            operator?: string | null;
+                            purpose?: string | null;
+                            user_triggered?: boolean | null;
+                            conduct?: string | null;
+                            window?: ({
+                                first_seen?: string | null;
+                                last_seen?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            identity?: ({
+                                verified_requests?: number | null;
+                                forged_claims?: number | null;
+                                forgery_share?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            robots_txt?: ({
+                                verdict?: string | null;
+                                robots_txt_fetches?: number | null;
+                                disallowed_fetches?: number | null;
+                                disallowed_rules?: (string | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            rate?: ({
+                                verdict?: string | null;
+                                peak_requests_per_minute?: number | null;
+                                peak_at?: string | null;
+                                published_limit?: unknown;
+                                measured_since?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            revalidation?: ({
+                                conditional_requests?: number | null;
+                                share_of_verified_since_measured?: number | null;
+                                measured_since?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            site_checks_14d?: ({
+                                checked?: number | null;
+                                verified?: number | null;
+                                spoofed?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        not_assessed?: (({
+                            agent?: string | null;
+                            claimed_hits?: number | null;
+                            why?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -3165,7 +6370,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        agents?: (({
+                            agent?: string | null;
+                            operator?: string | null;
+                            conduct?: string | null;
+                            identity?: ({
+                                verified_requests?: number | null;
+                                forged_claims?: number | null;
+                                forgery_share?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            robots_txt?: ({
+                                verdict?: string | null;
+                                disallowed_fetches?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            rate?: ({
+                                verdict?: string | null;
+                                peak_requests_per_minute?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description not observed, or not verifiable */
@@ -3194,7 +6433,52 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        spec?: string | null;
+                        server?: ({
+                            url?: string | null;
+                            protocol_version?: string | null;
+                            info?: ({
+                                name?: string | null;
+                                version?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        approved_at?: string | null;
+                        tools_sha256?: unknown;
+                        count?: number | null;
+                        tools?: (({
+                            name?: string | null;
+                            sha256?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        descriptions?: ({
+                            create_issue?: string | null;
+                            get_issue?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        scan_at_approval?: ({
+                            severity?: string | null;
+                            kinds?: {
+                                [key: string]: unknown;
+                            } | null;
+                            findings?: unknown[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        check?: string | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no tool list returned */
@@ -3225,8 +6509,185 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        spec?: string | null;
+                        server?: ({
+                            url?: string | null;
+                            protocol_version?: string | null;
+                            info?: ({
+                                name?: string | null;
+                                version?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        approved_at?: string | null;
+                        tools_sha256?: unknown;
+                        count?: number | null;
+                        tools?: (({
+                            name?: string | null;
+                            sha256?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        descriptions?: ({
+                            create_issue?: string | null;
+                            get_issue?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        scan_at_approval?: ({
+                            severity?: string | null;
+                            kinds?: {
+                                [key: string]: unknown;
+                            } | null;
+                            findings?: unknown[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        check?: string | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
+            };
+        };
+    };
+    mcpPrecheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description the name in the MCP Registry, e.g. io.github.owner/server */
+                    server_name?: string;
+                    /** @description the remote MCP URL */
+                    endpoint?: string;
+                    /** @description the new serverInfo.version */
+                    version?: string;
+                    /** @description the new tools/list result: an array of tools, {tools: [...]} or {result: {tools: [...]}}; omit to read the endpoint live */
+                    tools?: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description crawlcheck-mcp-precheck */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        checked_at?: string | null;
+                        server?: ({
+                            name?: string | null;
+                            endpoint?: string | null;
+                            registry_version?: string | null;
+                            listed?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        proposed?: ({
+                            source?: string | null;
+                            tools?: number | null;
+                            tools_lock_sha256?: unknown;
+                            version?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        baseline?: ({
+                            source?: string | null;
+                            read_at?: string | null;
+                            tools?: number | null;
+                            version?: string | null;
+                            tools_lock_sha256?: unknown;
+                            newer_read_differs?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        version?: ({
+                            baseline?: string | null;
+                            proposed?: string | null;
+                            changed?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        changes?: ({
+                            changed?: boolean | null;
+                            severity?: string | null;
+                            added?: (string | null)[] | null;
+                            removed?: (string | null)[] | null;
+                            description_rewritten?: unknown[] | null;
+                            description_case_or_whitespace_only?: unknown[] | null;
+                            input_schema?: (({
+                                tool?: string | null;
+                                change?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            input_schema_compared?: boolean | null;
+                            annotations?: unknown[] | null;
+                            annotations_compared?: boolean | null;
+                            escalations?: unknown[] | null;
+                            write_tools_added_to_read_only_server?: unknown[] | null;
+                            other_fields_changed?: boolean | null;
+                            list_hash_same?: boolean | null;
+                            partial?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        poisoning?: unknown;
+                        verdicts?: (string | null)[] | null;
+                        change_log_will_record?: ({
+                            event?: boolean | null;
+                            severity?: string | null;
+                            summary?: string | null;
+                            version_moved?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        reading?: unknown;
+                        version_hygiene?: ({
+                            version_moves_with_tools?: string | null;
+                            tool_changes_with_versions?: number | null;
+                            version_moved?: number | null;
+                            tool_changes_without_version_record?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        badge?: string | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no server named, or tools not a tools/list result */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -3249,7 +6710,51 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        checked_at?: string | null;
+                        server?: ({
+                            url?: string | null;
+                            outcome?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        lock_approved_at?: string | null;
+                        verdict?: string | null;
+                        decision?: string | null;
+                        approved_tools_sha256?: unknown;
+                        current_tools_sha256?: unknown;
+                        added?: unknown[] | null;
+                        removed?: unknown[] | null;
+                        modified?: (string | null)[] | null;
+                        modified_detail?: (({
+                            name?: string | null;
+                            changed?: string | null;
+                            description?: ({
+                                was?: string | null;
+                                now?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        poison?: ({
+                            severity?: string | null;
+                            kinds?: ({
+                                exfiltration?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no lockfile */
@@ -3258,6 +6763,8023 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    resolveLog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description log head */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        log_id?: string | null;
+                        head?: ({
+                            kind?: string | null;
+                            v?: number | null;
+                            log_id?: string | null;
+                            batch?: number | null;
+                            first_index?: number | null;
+                            batch_size?: number | null;
+                            tree_size?: number | null;
+                            batch_root?: unknown;
+                            prev_sth_sha256?: unknown;
+                            created_at?: string | null;
+                            sha256?: unknown;
+                            signature?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        batches?: number | null;
+                        tree_size?: number | null;
+                        last_witnessed?: ({
+                            batch?: number | null;
+                            sth_sha256?: unknown;
+                            at?: string | null;
+                            witness?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    resolveLogSths: {
+        parameters: {
+            query?: {
+                to?: number;
+                n?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description sths */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        log_id?: string | null;
+                        to?: number | null;
+                        n?: number | null;
+                        head_batch?: number | null;
+                        sths?: (({
+                            kind?: string | null;
+                            batch?: number | null;
+                            sha256?: unknown;
+                            signature?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    resolveLogSth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batch: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description sth */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        sth?: ({
+                            kind?: string | null;
+                            v?: number | null;
+                            log_id?: string | null;
+                            batch?: number | null;
+                            first_index?: number | null;
+                            batch_size?: number | null;
+                            tree_size?: number | null;
+                            batch_root?: unknown;
+                            prev_sth_sha256?: unknown;
+                            created_at?: string | null;
+                            sha256?: unknown;
+                            signature?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        witnesses?: (({
+                            batch?: number | null;
+                            sth_sha256?: unknown;
+                            witness?: unknown;
+                            token?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no such batch */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    resolveLogBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batch: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description leaves */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        batch?: number | null;
+                        leaves?: unknown[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    resolveLogProof: {
+        parameters: {
+            query: {
+                leaf: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description proof */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        leaf_hash?: unknown;
+                        state?: string | null;
+                        batch?: number | null;
+                        index?: number | null;
+                        batch_size?: number | null;
+                        path?: unknown[] | null;
+                        sth?: ({
+                            kind?: string | null;
+                            v?: number | null;
+                            log_id?: string | null;
+                            batch?: number | null;
+                            first_index?: number | null;
+                            batch_size?: number | null;
+                            tree_size?: number | null;
+                            batch_root?: unknown;
+                            prev_sth_sha256?: unknown;
+                            created_at?: string | null;
+                            sha256?: unknown;
+                            signature?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description pending */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    resolveLogWitnessLatest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description witness record */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        batch?: number | null;
+                        sth_sha256?: unknown;
+                        at?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    resolveLogGossip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description gossip summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        log_id?: string | null;
+                        reports?: number | null;
+                        heads_checked?: number | null;
+                        consistent?: number | null;
+                        forks?: unknown[] | null;
+                        last_report_at?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    resolveLogGossipReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description per-head results */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        results?: (({
+                            batch?: number | null;
+                            sha256?: unknown;
+                            state?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        forks_known?: number | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no heads */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    resolveLogFork: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description fork evidence */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        id?: string | null;
+                        kind?: string | null;
+                        batch?: number | null;
+                        ours?: ({
+                            sha256?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        theirs?: ({
+                            sha256?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        reported_at?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no such fork */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    resolveLogWitness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description recorded */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        batch?: number | null;
+                        sth_sha256?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description identity not proven */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    highRiskWatch: {
+        parameters: {
+            query?: {
+                domain?: string;
+                fresh?: "1";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-high-risk */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        state?: string | null;
+                        watched_since?: string | null;
+                        read_at?: string | null;
+                        fields?: ({
+                            payment_processors?: ({
+                                value?: (string | null)[] | null;
+                                since?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            checkout_host?: ({
+                                value?: string | null;
+                                since?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            wallet_addresses?: ({
+                                value?: unknown[] | null;
+                                since?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            oauth_authorization_server?: ({
+                                value?: unknown;
+                                since?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            mx_hosts?: ({
+                                value?: (string | null)[] | null;
+                                since?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            mcp_endpoints?: ({
+                                value?: unknown[] | null;
+                                since?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        pending?: (({
+                            field?: string | null;
+                            from?: string | null;
+                            to?: string | null;
+                            changed_at?: string | null;
+                            previous_value_since?: string | null;
+                            age_days?: number | null;
+                            blocks_transact?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        unread?: unknown[] | null;
+                        reading?: string | null;
+                        history?: unknown[] | null;
+                        rule?: string | null;
+                        method?: unknown;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    highRiskConfirm: {
+        parameters: {
+            query?: never;
+            header: {
+                "x-crawlcheck-key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description crawlcheck-high-risk */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        confirmed?: (string | null)[] | null;
+                        at?: string | null;
+                        reading?: string | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description not the claim holder */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    incidentState: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        domain?: string | null;
+                        state?: string | null;
+                        incident?: ({
+                            state?: string | null;
+                            since?: string | null;
+                            blocks?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    incidentSwitch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-crawlcheck-key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description crawlcheck-incident */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        state?: string | null;
+                        at?: string | null;
+                        seq?: number | null;
+                        blocks?: (string | null)[] | null;
+                        method?: string | null;
+                        reading?: unknown;
+                        revocations?: string | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description not the claim holder */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    changeSubscription: {
+        parameters: {
+            query: {
+                id: string;
+            };
+            header: {
+                "x-subscription-token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description subscription */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        id?: string | null;
+                        webhook_host?: string | null;
+                        domains?: (string | null)[] | null;
+                        sections?: string | null;
+                        delivered?: number | null;
+                        consecutive_failures?: number | null;
+                        last_delivery?: ({
+                            at?: string | null;
+                            status?: number | null;
+                            ok?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        state?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    changeSubscribe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": ({
+                    webhook?: string | null;
+                    domains?: (string | null)[] | null;
+                    sections?: (string | null)[] | null;
+                } & {
+                    [key: string]: unknown;
+                }) | null;
+            };
+        };
+        responses: {
+            /** @description subscription id + token (shown once) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        token?: unknown;
+                        events?: (string | null)[] | null;
+                        id?: string | null;
+                        webhook_host?: string | null;
+                        domains?: (string | null)[] | null;
+                        sections?: (string | null)[] | null;
+                        delivered?: number | null;
+                        consecutive_failures?: number | null;
+                        state?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad webhook, domains or sections */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description hourly limit */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    changeSubscribeTest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": ({
+                    id?: string | null;
+                } & {
+                    [key: string]: unknown;
+                }) | null;
+            };
+        };
+        responses: {
+            /** @description delivery result and the event */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        delivery?: ({
+                            ok?: boolean | null;
+                            status?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        event?: ({
+                            kind?: string | null;
+                            event?: string | null;
+                            domain?: string | null;
+                            changes?: unknown[] | null;
+                            sha256?: unknown;
+                            signature?: ({
+                                v?: number | null;
+                                alg?: string | null;
+                                kid?: unknown;
+                                sig?: unknown;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    changeUnsubscribe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": ({
+                    id?: string | null;
+                } & {
+                    [key: string]: unknown;
+                }) | null;
+            };
+        };
+        responses: {
+            /** @description removed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        removed?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    incidentSubscription: {
+        parameters: {
+            query: {
+                id: string;
+            };
+            header: {
+                "x-subscription-token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description subscription */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        id?: unknown;
+                        webhook_host?: string | null;
+                        domains?: (string | null)[] | null;
+                        delivered?: number | null;
+                        consecutive_failures?: number | null;
+                        last_delivery?: ({
+                            at?: string | null;
+                            status?: number | null;
+                            ok?: boolean | null;
+                            event?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    incidentSubscribe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    webhook: string;
+                    domains?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description subscribed */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        id?: unknown;
+                        token?: unknown;
+                        webhook_host?: string | null;
+                        domains?: (string | null)[] | null;
+                        events?: (string | null)[] | null;
+                        delivered?: number | null;
+                        consecutive_failures?: number | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    incidentSubscribeTest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description delivery result and the event */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        delivered?: boolean | null;
+                        status?: number | null;
+                        event?: ({
+                            kind?: string | null;
+                            event?: string | null;
+                            domain?: string | null;
+                            state?: string | null;
+                            at?: string | null;
+                            seq?: number | null;
+                            blocks?: (string | null)[] | null;
+                            reason?: string | null;
+                            revocations?: string | null;
+                            resolve?: string | null;
+                            signature?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    incidentUnsubscribe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description removed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        removed?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    incidentSelftest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description runs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        domain?: string | null;
+                        runs?: (({
+                            at?: string | null;
+                            switch_status?: number | null;
+                            resolve_incident?: boolean | null;
+                            receipt_decision?: string | null;
+                            revocations_listed?: boolean | null;
+                            ok?: boolean | null;
+                            ms?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    isolationMatrix: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed run summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        at?: string | null;
+                        routes?: number | null;
+                        reads?: number | null;
+                        writes?: number | null;
+                        passed?: number | null;
+                        failed?: number | null;
+                        routes_with_owner_view?: number | null;
+                        sha256?: unknown;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                            sig?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no run yet */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    apiBudgets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description budget table */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        operations?: number | null;
+                        defaults?: ({
+                            request_body_max_bytes?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        rows?: (({
+                            method?: string | null;
+                            path?: string | null;
+                            request_schema?: boolean | null;
+                            response_schema?: boolean | null;
+                            request_body_max?: number | null;
+                            items?: string | null;
+                            rate_limit?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    mcpOperator: {
+        parameters: {
+            query: {
+                url: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed operator record */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        url?: string | null;
+                        apex?: string | null;
+                        summary?: ({
+                            done?: number | null;
+                            of?: number | null;
+                            open?: number | null;
+                            unknown?: number | null;
+                            verified?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        proofs?: (({
+                            id?: string | null;
+                            step?: string | null;
+                            status?: string | null;
+                            evidence?: string | null;
+                            next?: ({
+                                do?: string | null;
+                                url?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        readings?: ({
+                            reliability?: ({
+                                state?: string | null;
+                                observations?: number | null;
+                                availability?: number | null;
+                                p50_ms?: number | null;
+                                drift?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        badge?: ({
+                            svg?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        sha256?: unknown;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                            sig?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description not a public https URL */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the domain owner opted out */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    northStar: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-north-star */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        window_days?: number | null;
+                        funnel?: ({
+                            decisions_issued?: number | null;
+                            on_fresh_measured_answer?: number | null;
+                            receipts_checked_by_sites?: number | null;
+                            receipts_accepted_by_sites?: number | null;
+                            outcomes_reported?: number | null;
+                            outcomes_linked_to_a_receipt?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        by_action?: (({
+                            action?: string | null;
+                            decisions?: number | null;
+                            receipts_checked?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        by_decision?: ({
+                            warn?: number | null;
+                            allow?: number | null;
+                            block?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        decision_vs_outcome?: ({
+                            cells?: ({
+                                "allow|ok"?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            allowed_then_refused?: number | null;
+                            blocked_then_got_through?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        sha256?: unknown;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                            sig?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    fixRecommendations: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-fix-recommendations */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        stack?: ({
+                            platform?: string | null;
+                            cdn?: string | null;
+                            host?: unknown;
+                            bot_protection?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        findings?: (({
+                            id?: string | null;
+                            problem?: string | null;
+                            fix_label?: string | null;
+                            similar_sites_fixed?: number | null;
+                            held_now?: number | null;
+                            all_sites_fixed?: number | null;
+                            examples?: (({
+                                site?: string | null;
+                                stack?: string | null;
+                                shares?: (string | null)[] | null;
+                                fixed_at?: string | null;
+                                held_now?: boolean | null;
+                                ai_crawlers_served_now?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        sha256?: unknown;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                            sig?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no technology record yet, or opted out */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description index building or record unreadable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    failurePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-failure-policy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        decisions?: string | null;
+                        rows?: (({
+                            state?: string | null;
+                            detected_when?: string | null;
+                            answer?: string | null;
+                            read?: string | null;
+                            cite?: string | null;
+                            connect?: string | null;
+                            transact?: string | null;
+                            administer?: string | null;
+                            test?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        spec?: string | null;
+                        sha256?: unknown;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                            sig?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    revocations: {
+        parameters: {
+            query?: {
+                since?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-revocations */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        seq?: string | null;
+                        since?: unknown;
+                        revoked?: (({
+                            domain?: string | null;
+                            state?: string | null;
+                            actions?: (string | null)[] | null;
+                            decision?: string | null;
+                            since?: string | null;
+                            updated_at?: string | null;
+                            reason?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        active_total?: number | null;
+                        cleared?: unknown[] | null;
+                        reading?: unknown;
+                        poll_seconds?: number | null;
+                        scope?: unknown;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    taskCanaries: {
+        parameters: {
+            query?: {
+                domain?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-task-canaries */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        summary?: ({
+                            at?: string | null;
+                            frame?: number | null;
+                            measured?: number | null;
+                            all_tasks_ok?: number | null;
+                            no_task_ok?: number | null;
+                            by_task?: ({
+                                find_product?: ({
+                                    sites?: number | null;
+                                    ok?: number | null;
+                                    success_rate?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                read_price?: ({
+                                    sites?: number | null;
+                                    ok?: number | null;
+                                    success_rate?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                search_catalogue?: ({
+                                    sites?: number | null;
+                                    ok?: number | null;
+                                    success_rate?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                reach_cart?: ({
+                                    sites?: number | null;
+                                    ok?: number | null;
+                                    success_rate?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            candidates_checked?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        tasks?: (string | null)[] | null;
+                        method?: unknown;
+                        frame_rule?: unknown;
+                        lookup?: string | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description not in the frame */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    bestSource: {
+        parameters: {
+            query?: {
+                domains?: string;
+                trade?: string;
+                city?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-best-source */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        query?: ({
+                            trade?: unknown;
+                            city?: unknown;
+                            domains?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        action?: string | null;
+                        best?: ({
+                            domain?: string | null;
+                            score?: number | null;
+                            decision?: string | null;
+                            why?: (string | null)[] | null;
+                            cautions?: unknown[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        ranked?: (({
+                            domain?: string | null;
+                            state?: string | null;
+                            decision?: string | null;
+                            score?: number | null;
+                            for?: (string | null)[] | null;
+                            against?: (string | null)[] | null;
+                            network?: ({
+                                size?: number | null;
+                                flagged?: boolean | null;
+                                shared?: string | null;
+                                domains?: (string | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        collapsed_into_a_network?: (({
+                            domain?: string | null;
+                            score?: number | null;
+                            same_network_as?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        not_ranked?: unknown[] | null;
+                        signature?: ({
+                            kid?: unknown;
+                            alg?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no candidates or too many */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no measured market */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    siteNetwork: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-network */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        domain?: string | null;
+                        state?: string | null;
+                        phones_on_homepage?: (string | null)[] | null;
+                        fingerprinted?: boolean | null;
+                        network?: ({
+                            phones?: (({
+                                number?: string | null;
+                                other_domains?: (string | null)[] | null;
+                                count?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            template?: (({
+                                domain?: string | null;
+                                bits?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            size?: number | null;
+                            flag?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        flagged?: boolean | null;
+                        signature?: ({
+                            kid?: unknown;
+                            alg?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    impersonationCheck: {
+        parameters: {
+            query?: {
+                domain?: string;
+                fresh?: "1";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-impersonation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        state?: string | null;
+                        checked_at?: string | null;
+                        technique?: string | null;
+                        brand?: string | null;
+                        brand_rank?: number | null;
+                        label?: string | null;
+                        label_unicode?: string | null;
+                        scripts?: (string | null)[] | null;
+                        tld?: string | null;
+                        brand_frame?: string | null;
+                        registration?: ({
+                            registered_at?: string | null;
+                            rdap_status?: number | null;
+                            age_days?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        homepage?: ({
+                            status?: number | null;
+                            final_url?: string | null;
+                            title?: string | null;
+                            site_name?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        signals?: (string | null)[] | null;
+                        verdict?: string | null;
+                        doubt?: string | null;
+                        reading?: string | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    policyGet: {
+        parameters: {
+            query: {
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description policy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        id?: unknown;
+                        kind?: string | null;
+                        v?: number | null;
+                        name?: string | null;
+                        actions?: {
+                            [key: string]: unknown;
+                        } | null;
+                        tests?: unknown[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    policyPublish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["policy"];
+            };
+        };
+        responses: {
+            /** @description id and normalised document */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        stored?: boolean | null;
+                        policy?: ({
+                            id?: unknown;
+                            document?: ({
+                                kind?: string | null;
+                                v?: number | null;
+                                name?: string | null;
+                                actions?: ({
+                                    read?: ({
+                                        max_age_hours?: number | null;
+                                        on_warn?: string | null;
+                                        require_entity?: boolean | null;
+                                        human_approval?: unknown[] | null;
+                                        allow?: unknown[] | null;
+                                        deny?: unknown[] | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    transact?: ({
+                                        max_age_hours?: number | null;
+                                        on_warn?: string | null;
+                                        require_entity?: boolean | null;
+                                        human_approval?: (string | null)[] | null;
+                                        allow?: unknown[] | null;
+                                        deny?: unknown[] | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                tests?: (({
+                                    domain?: string | null;
+                                    action?: string | null;
+                                    expect?: (string | null)[] | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            url?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        use?: ({
+                            preflight?: ({
+                                domain?: string | null;
+                                action?: string | null;
+                                policy_id?: unknown;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description lint errors */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    policyTest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    policy?: Record<string, never>;
+                    policy_id?: string;
+                    cases?: unknown[];
+                };
+            };
+        };
+        responses: {
+            /** @description results */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        total?: number | null;
+                        passed?: number | null;
+                        skipped?: number | null;
+                        results?: (({
+                            domain?: string | null;
+                            action?: string | null;
+                            expect?: (string | null)[] | null;
+                            decision?: string | null;
+                            reason_codes?: (string | null)[] | null;
+                            status?: string | null;
+                            pass?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    platformFix: {
+        parameters: {
+            query: {
+                platform: string;
+                code?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description steps */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        platform?: string | null;
+                        platform_name?: string | null;
+                        code?: string | null;
+                        groups?: (({
+                            group?: string | null;
+                            title?: string | null;
+                            codes?: unknown[] | null;
+                            steps?: unknown[] | null;
+                            page?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description unknown platform */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    changesStream: {
+        parameters: {
+            query?: {
+                domain?: string;
+                section?: string;
+                since?: string;
+            };
+            header?: {
+                "Last-Event-ID"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description text/event-stream */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+        };
+    };
+    certificateStatus: {
+        parameters: {
+            query: {
+                domain: string;
+                record: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        record?: string | null;
+                        checked_at?: string | null;
+                        certified_at?: string | null;
+                        expires_at?: string | null;
+                        status?: string | null;
+                        reason?: string | null;
+                        revoked_at?: string | null;
+                        by_record?: string | null;
+                        failed?: (string | null)[] | null;
+                        next_update?: string | null;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description unknown */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    certificateRevocations: {
+        parameters: {
+            query?: {
+                since?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        logged_from?: string | null;
+                        revoked?: (({
+                            domain?: string | null;
+                            record?: string | null;
+                            revoked_at?: string | null;
+                            reason?: string | null;
+                            by_record?: string | null;
+                            failed?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        suspended?: unknown[] | null;
+                        poll_seconds?: number | null;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    disputeMetrics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signed metrics document. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        observed_at?: string | null;
+                        metrics?: ({
+                            target_h?: number | null;
+                            grace_h?: number | null;
+                            all_time?: ({
+                                filed?: number | null;
+                                resolved?: number | null;
+                                open?: number | null;
+                                verdicts?: ({
+                                    upheld?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                grounds?: ({
+                                    misread?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                corrected?: number | null;
+                                corrected_rate?: number | null;
+                                turnaround_h?: ({
+                                    n?: number | null;
+                                    median?: number | null;
+                                    p90?: number | null;
+                                    max?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                within_target?: number | null;
+                                open_oldest_h?: unknown;
+                                open_overdue?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            last_90d?: unknown;
+                            last_30d?: unknown;
+                            by_finding?: (({
+                                code?: string | null;
+                                filed?: number | null;
+                                corrected?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    organizationIdentity: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-organization (organization null when none is public) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        observed_at?: string | null;
+                        organization?: ({
+                            name?: string | null;
+                            github?: ({
+                                org?: string | null;
+                                github_verified?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            domains?: (({
+                                domain?: string | null;
+                                method?: string | null;
+                                since?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        sha256?: unknown;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessCompetitorGap: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed reading */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        read_at?: string | null;
+                        trade?: string | null;
+                        engine?: string | null;
+                        answered?: number | null;
+                        business_named?: number | null;
+                        competitors_named_count?: number | null;
+                        sources?: (({
+                            domain?: string | null;
+                            type?: string | null;
+                            cited?: number | null;
+                            url?: string | null;
+                            read?: boolean | null;
+                            business?: string | null;
+                            competitors_on_it?: number | null;
+                            by?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        gaps?: (({
+                            domain?: string | null;
+                            type?: string | null;
+                            cited_in_readings?: number | null;
+                            competitors_on_it?: number | null;
+                            basis?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        signature?: ({
+                            alg?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description not read yet */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessCompetitorGapRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    domain: string;
+                };
+            };
+        };
+        responses: {
+            /** @description signed reading */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        ran_now?: ({
+                            gaps?: number | null;
+                            baseline?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        signature?: ({
+                            alg?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description licence or owner needed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no trade or city in the business record, or the engine did not answer */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description read less than 10 minutes ago */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessNumberWatch: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed reading */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        read_at?: string | null;
+                        foreign_numbers?: number | null;
+                        by_class?: ({
+                            another_business?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        numbers?: (({
+                            class?: string | null;
+                            severity?: string | null;
+                            printed_by?: (({
+                                kind?: string | null;
+                                source?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        signature?: ({
+                            alg?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description not read yet */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessNumberWatchRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    domain: string;
+                };
+            };
+        };
+        responses: {
+            /** @description signed reading */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        ran_now?: ({
+                            foreign?: number | null;
+                            high?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        signature?: ({
+                            alg?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description licence or owner needed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no business record */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description read less than 10 minutes ago */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessAiAnswers: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed reading */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        read_at?: string | null;
+                        question?: string | null;
+                        engines?: (({
+                            engine?: string | null;
+                            label?: string | null;
+                            searches?: boolean | null;
+                            state?: string | null;
+                            phone?: ({
+                                result?: string | null;
+                                stated?: (string | null)[] | null;
+                                printed_by?: ({
+                                    "(303) 555-0199"?: (string | null)[] | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            address?: ({
+                                result?: string | null;
+                                stated?: (string | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            hours?: ({
+                                result?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            says_closed?: boolean | null;
+                            citations?: (({
+                                domain?: string | null;
+                                type?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            could_not_find?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        summary?: ({
+                            engines_asked?: number | null;
+                            answered?: number | null;
+                            phone_wrong?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        signature?: ({
+                            alg?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description not read yet */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessAiAnswersRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    domain: string;
+                };
+            };
+        };
+        responses: {
+            /** @description signed reading */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        ran_now?: ({
+                            events?: number | null;
+                            baseline?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        signature?: ({
+                            alg?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description licence or owner needed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no name or city in the business record */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description asked less than an hour ago */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessFixReceipts: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed claims or counts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        counts?: ({
+                            held?: number | null;
+                            waiting?: number | null;
+                            seen?: number | null;
+                            reverted?: number | null;
+                            not_held?: number | null;
+                            not_checkable?: number | null;
+                            retired?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        counted?: number | null;
+                        claims?: (({
+                            id?: string | null;
+                            correction?: string | null;
+                            platform?: string | null;
+                            field?: string | null;
+                            expected?: string | null;
+                            corrected_at?: string | null;
+                            state?: string | null;
+                            counts?: boolean | null;
+                            seen?: number | null;
+                            receipt?: ({
+                                kind?: string | null;
+                                held_at?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        signature?: ({
+                            alg?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessFixReceiptRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    domain: string;
+                    /** @enum {string} */
+                    action: "record" | "retire";
+                    directory?: string;
+                    code?: string;
+                    /** @enum {string} */
+                    field?: "name" | "phone" | "address" | "website" | "status";
+                    value?: string;
+                    note?: string;
+                    id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description signed claim */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        recorded?: ({
+                            id?: string | null;
+                            correction?: string | null;
+                            platform?: string | null;
+                            code?: string | null;
+                            state?: string | null;
+                            counts?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        signature?: ({
+                            alg?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description missing code or field/value */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description licence or owner needed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description unknown claim */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description directory not read for this business */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessRecord: {
+        parameters: {
+            query: {
+                domain: string;
+                version?: number;
+                versions?: "1";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed record */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        version?: number | null;
+                        latest_version?: number | null;
+                        is_latest?: boolean | null;
+                        issued_at?: string | null;
+                        record?: ({
+                            name?: string | null;
+                            phones?: (string | null)[] | null;
+                            website?: string | null;
+                            address?: ({
+                                street?: string | null;
+                                locality?: string | null;
+                                region?: string | null;
+                                postal_code?: string | null;
+                                country?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        record_sha256?: unknown;
+                        previous?: ({
+                            version?: number | null;
+                            record_sha256?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        schema_org?: ({
+                            "@type"?: string | null;
+                            name?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        transparency?: ({
+                            log_id?: string | null;
+                            state?: string | null;
+                            leaf_hash?: unknown;
+                            batch?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        signature?: ({
+                            alg?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no record (site unreadable or publishes no name or phone), unknown version, or opted out */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description new lookups per hour exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessSubmitKit: {
+        parameters: {
+            query?: {
+                domain?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed kit */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        record?: ({
+                            business_name?: string | null;
+                            phone?: string | null;
+                            website?: string | null;
+                            street?: string | null;
+                            city?: string | null;
+                            state?: string | null;
+                            zip?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        service_area_business?: boolean | null;
+                        left_for_you?: (string | null)[] | null;
+                        directories?: (({
+                            id?: string | null;
+                            name?: string | null;
+                            url?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        submissions?: unknown[] | null;
+                        signature?: ({
+                            alg?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description licence or owner needed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessSubmissionRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    domain: string;
+                    directory: string;
+                    page_host?: string;
+                    filled?: string[];
+                    /** @enum {string} */
+                    action: "submitted";
+                };
+            };
+        };
+        responses: {
+            /** @description signed submission record */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        directory?: string | null;
+                        name?: string | null;
+                        on_directory_page?: boolean | null;
+                        signature?: ({
+                            alg?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description unknown directory or action */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description licence or owner needed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessFixPlan: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed plan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        site_publishes?: ({
+                            phones?: (string | null)[] | null;
+                            websites?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        platforms?: (({
+                            platform?: string | null;
+                            name?: string | null;
+                            write?: string | null;
+                            corrections?: (({
+                                field?: string | null;
+                                profile_says?: string | null;
+                                site_says?: (string | null)[] | null;
+                                apply_value?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            needs?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        receipts?: unknown[] | null;
+                        signature?: ({
+                            alg?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description licence or owner needed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessFixApply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    domain: string;
+                    /** @enum {string} */
+                    platform?: "google";
+                    /** @enum {string} */
+                    field: "website" | "phone";
+                    value: string;
+                    /** @enum {string} */
+                    confirm?: "APPLY";
+                };
+            };
+        };
+        responses: {
+            /** @description signed receipt (dry run, already correct, applied, pending or not applied) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        platform?: string | null;
+                        field?: string | null;
+                        before?: string | null;
+                        send?: string | null;
+                        dry_run?: boolean | null;
+                        write_status?: number | null;
+                        read_back?: string | null;
+                        pending_review?: boolean | null;
+                        result?: string | null;
+                        signature?: ({
+                            alg?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad field */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description licence or owner needed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no Business Profile linked, or a platform that is not connected */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description a value the site does not publish */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Google did not answer or the link has no token */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessCanaries: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed canary record */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        canaries?: (({
+                            id?: string | null;
+                            field?: string | null;
+                            value?: string | null;
+                            supplier?: string | null;
+                            status?: string | null;
+                            planted_at?: string | null;
+                            sightings?: (({
+                                source?: string | null;
+                                first_seen?: string | null;
+                                lag_days?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        proven_paths?: (({
+                            from?: string | null;
+                            to?: string | null;
+                            proven?: string | null;
+                            canary?: string | null;
+                            lag_days?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        signature?: ({
+                            alg?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessCanaryAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    domain: string;
+                    /** @enum {string} */
+                    action: "suggest" | "create" | "planted" | "retire";
+                    /** @enum {string} */
+                    field?: "name" | "street";
+                    value?: string;
+                    supplier?: string;
+                    id?: string;
+                    /** Format: date-time */
+                    planted_at?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description signed result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        truth?: ({
+                            name?: string | null;
+                            street?: string | null;
+                            storefront?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        candidates?: (({
+                            field?: string | null;
+                            value?: string | null;
+                            kind?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        signature?: ({
+                            alg?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description licence or owner needed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description unknown canary id */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 20 live canaries per business */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description body over 4 KB */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description not a safe, unique variant */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessSupplierMap: {
+        parameters: {
+            query?: {
+                domain?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed supplier map */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        access?: string | null;
+                        profile_used?: boolean | null;
+                        compared_with?: (string | null)[] | null;
+                        listings?: (({
+                            source?: string | null;
+                            inferred?: string | null;
+                            confidence?: string | null;
+                            why?: string | null;
+                            declared?: (({
+                                what?: string | null;
+                                from?: string | null;
+                                how?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        edges?: (({
+                            from?: string | null;
+                            to?: string | null;
+                            confidence?: string | null;
+                            pair?: (string | null)[] | null;
+                            relation?: string | null;
+                            fields?: (string | null)[] | null;
+                            what?: string | null;
+                            declared?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        signature?: ({
+                            alg?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description opted out */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description new lookups per hour exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    metrics: {
+        parameters: {
+            query?: {
+                days?: number;
+                week?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-metrics */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        window_days?: number | null;
+                        days?: unknown[] | null;
+                        network?: ({
+                            sites_measured?: ({
+                                value?: number | null;
+                                unit?: string | null;
+                                source?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        developer?: ({
+                            api_calls_outside?: ({
+                                value?: number | null;
+                                unit?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            resolve_calls?: ({
+                                value?: number | null;
+                                unit?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            by_client?: ({
+                                value?: ({
+                                    script?: number | null;
+                                    python_sdk?: number | null;
+                                    ai_agent?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                unit?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            per_day?: (({
+                                day?: string | null;
+                                outside?: ({
+                                    resolve?: number | null;
+                                    preflight?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                ours?: ({
+                                    resolve?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                errors_4xx?: number | null;
+                                errors_5xx?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        trust?: ({
+                            false_positive_rate_on_appeal?: ({
+                                value?: number | null;
+                                unit?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        north_star?: ({
+                            metric?: string | null;
+                            decisions_issued?: ({
+                                value?: number | null;
+                                unit?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            goal_reached?: ({
+                                value?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad week */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no edition for that week */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mcpVerified: {
+        parameters: {
+            query: {
+                url: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-mcp-verification */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        verified?: boolean | null;
+                        url?: string | null;
+                        operator_domain?: string | null;
+                        operator_verified?: boolean | null;
+                        public?: boolean | null;
+                        monitored_since?: string | null;
+                        state?: string | null;
+                        last_check?: ({
+                            at?: string | null;
+                            outcome?: string | null;
+                            up?: boolean | null;
+                            ms?: number | null;
+                            status?: number | null;
+                            tools?: number | null;
+                            tools_sha256?: unknown;
+                            server?: ({
+                                name?: string | null;
+                                version?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            protocol_version?: string | null;
+                            poison?: unknown;
+                            error?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        availability_30d?: ({
+                            window_days?: number | null;
+                            checks?: number | null;
+                            up?: number | null;
+                            share?: number | null;
+                            interval?: ({
+                                k?: number | null;
+                                n?: number | null;
+                                share?: number | null;
+                                low?: number | null;
+                                high?: number | null;
+                                level?: number | null;
+                                method?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            mean_ms?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        tools?: ({
+                            approved_sha256?: unknown;
+                            approved_at?: string | null;
+                            approved_count?: number | null;
+                            current_sha256?: unknown;
+                            drift?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        poisoning?: ({
+                            severity?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        auth_audit?: ({
+                            at?: string | null;
+                            outcome?: string | null;
+                            findings?: unknown[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        recent_events?: unknown[] | null;
+                        badge?: string | null;
+                        signature?: ({
+                            alg?: string | null;
+                            kid?: unknown;
+                            sig?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no or bad url */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description not verified */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mcpBadge: {
+        parameters: {
+            query: {
+                url: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description image/svg+xml */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/svg+xml": string;
+                };
+            };
+        };
+    };
+    infrastructureMonitor: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-infrastructure-monitor */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        monitored?: boolean | null;
+                        cadence?: string | null;
+                        last_read?: string | null;
+                        confirmed_state?: ({
+                            at?: string | null;
+                            dns?: ({
+                                ns?: (string | null)[] | null;
+                                mx?: (string | null)[] | null;
+                                caa?: (string | null)[] | null;
+                                ds?: unknown[] | null;
+                                dmarc?: (string | null)[] | null;
+                                a?: (string | null)[] | null;
+                                aaaa?: unknown[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            tls?: ({
+                                https?: string | null;
+                                cert?: ({
+                                    issuer?: string | null;
+                                    not_before?: string | null;
+                                    not_after?: string | null;
+                                    cert_sha256?: unknown;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                ct_read?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            redirects?: ({
+                                http?: string | null;
+                                https?: string | null;
+                                www?: string | null;
+                                https_status?: number | null;
+                                http_to_https?: boolean | null;
+                                hops_https?: number | null;
+                                hsts?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            schema?: ({
+                                blocks?: number | null;
+                                invalid?: number | null;
+                                types?: (string | null)[] | null;
+                                name?: string | null;
+                                telephone?: string | null;
+                                url?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            capabilities?: ({
+                                agent_card?: ({
+                                    present?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                mcp_server_card?: ({
+                                    present?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                api_catalog?: ({
+                                    present?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                skills_index?: ({
+                                    present?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        awaiting_confirmation?: unknown;
+                        changes?: number | null;
+                        rule?: string | null;
+                        feed?: string | null;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no or bad domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    infrastructureMonitorRun: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-infrastructure-monitor with ran_now */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        monitored?: boolean | null;
+                        last_read?: string | null;
+                        changes?: number | null;
+                        history?: (({
+                            domain?: string | null;
+                            at?: string | null;
+                            section?: string | null;
+                            kind?: string | null;
+                            severity?: string | null;
+                            detail?: string | null;
+                            from?: string | null;
+                            to?: string | null;
+                            first_seen?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        ran_now?: ({
+                            domain?: string | null;
+                            at?: string | null;
+                            baseline?: boolean | null;
+                            events?: number | null;
+                            pending?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no licence for this domain */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description not on an active licence */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description read less than 10 minutes ago */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessListingMonitor: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-business-monitor */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        monitored?: boolean | null;
+                        cadence?: string | null;
+                        last_read?: string | null;
+                        changes?: number | null;
+                        history?: (({
+                            domain?: string | null;
+                            at?: string | null;
+                            section?: string | null;
+                            kind?: string | null;
+                            source?: string | null;
+                            detail?: string | null;
+                            field?: string | null;
+                            from?: string | null;
+                            to?: string | null;
+                            code?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        feed?: string | null;
+                        audit?: string | null;
+                        sha256?: unknown;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no or bad domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessListingMonitorRun: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-business-monitor with ran_now */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        monitored?: boolean | null;
+                        last_read?: string | null;
+                        changes?: number | null;
+                        history?: unknown[] | null;
+                        ran_now?: ({
+                            domain?: string | null;
+                            at?: string | null;
+                            listings?: number | null;
+                            findings?: number | null;
+                            baseline?: boolean | null;
+                            events?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no licence for this domain */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description not on an active licence */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description read less than 10 minutes ago */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessReviewCities: {
+        parameters: {
+            query: {
+                domain: string;
+                fresh?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-business-review-cities */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        access?: string | null;
+                        reviews_read?: number | null;
+                        places?: (({
+                            place?: string | null;
+                            reviews?: number | null;
+                            on_profile?: boolean | null;
+                            on_site?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        findings?: (({
+                            code?: string | null;
+                            severity?: number | null;
+                            places?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description licence or owner only */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no linked profile */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessFixCalls: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-business-fix-calls */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        access?: string | null;
+                        corrections?: number | null;
+                        rows?: (({
+                            at?: string | null;
+                            kind?: string | null;
+                            what?: string | null;
+                            window_days?: number | null;
+                            complete?: boolean | null;
+                            calls_before?: number | null;
+                            calls_after?: number | null;
+                            change_pct?: number | null;
+                            baseline_change_pct?: number | null;
+                            ahead_of_baseline_pts?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description licence or owner only */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessSearchProof: {
+        parameters: {
+            query: {
+                domain: string;
+                at?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-business-search-proof */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        access?: string | null;
+                        window_days?: number | null;
+                        rows?: (({
+                            at?: string | null;
+                            what?: string | null;
+                            complete?: boolean | null;
+                            days_each_side?: number | null;
+                            verdict?: string | null;
+                            metrics?: ({
+                                clicks?: ({
+                                    before?: number | null;
+                                    after?: number | null;
+                                    change_pct?: number | null;
+                                    p?: number | null;
+                                    verdict?: string | null;
+                                    baseline_change_pct?: number | null;
+                                    net_change_pct?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description licence or owner only */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Search Console not connected for this domain */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessSpeedProof: {
+        parameters: {
+            query: {
+                domain: string;
+                at?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-business-speed-proof */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        access?: string | null;
+                        window_days?: number | null;
+                        rows?: (({
+                            at?: string | null;
+                            what?: string | null;
+                            complete?: boolean | null;
+                            verdict?: string | null;
+                            metrics?: ({
+                                LCP?: ({
+                                    before_p75?: number | null;
+                                    after_p75?: number | null;
+                                    change_pct?: number | null;
+                                    before_n?: number | null;
+                                    after_n?: number | null;
+                                    p?: number | null;
+                                    verdict?: string | null;
+                                    baseline_change_pct?: number | null;
+                                    net_change_pct?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description licence or owner only */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessAnswerGaps: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-business-answer-gaps */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        access?: string | null;
+                        window?: ({
+                            start?: string | null;
+                            end?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        questions_read?: number | null;
+                        pages_read?: number | null;
+                        gaps?: number | null;
+                        rows?: (({
+                            q?: string | null;
+                            impressions?: number | null;
+                            clicks?: number | null;
+                            position?: number | null;
+                            google_shows?: string | null;
+                            best_page?: string | null;
+                            match?: string | null;
+                            score?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description licence or owner only */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Search Console not connected for this domain */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessClosedWatch: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-business-closed-watch */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        access?: string | null;
+                        status?: string | null;
+                        sources?: (({
+                            source?: string | null;
+                            name?: string | null;
+                            status?: string | null;
+                            says_closed?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        findings?: unknown[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessFactConsolidation: {
+        parameters: {
+            query: {
+                domain: string;
+                fresh?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signed fact-consolidation reading */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        domain?: string | null;
+                        read_at?: string | null;
+                        pages?: (({
+                            url?: string | null;
+                            status?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        statements?: ({
+                            phone?: number | null;
+                            hours?: number | null;
+                            founded?: number | null;
+                            years?: number | null;
+                            street?: number | null;
+                            email?: number | null;
+                            name?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        findings?: (({
+                            code?: string | null;
+                            severity?: number | null;
+                            field?: string | null;
+                            what?: string | null;
+                            values?: (({
+                                value?: string | null;
+                                stated?: number | null;
+                                places?: (({
+                                    page?: string | null;
+                                    where?: string | null;
+                                    context?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        consistent?: boolean | null;
+                        recommendation?: ({
+                            block_html?: string | null;
+                            schema_jsonld?: ({
+                                "@context"?: string | null;
+                                "@type"?: string | null;
+                                name?: string | null;
+                                url?: string | null;
+                                telephone?: string | null;
+                                foundingDate?: string | null;
+                                areaServed?: (({
+                                    "@type"?: string | null;
+                                    name?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            steps?: (string | null)[] | null;
+                            not_stated?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        reading?: unknown;
+                        sha256?: unknown;
+                        signature?: ({
+                            alg?: string | null;
+                            kid?: unknown;
+                            sig?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description Bad domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Hourly reading budget spent for this address */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessNapBlock: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-business-nap-block */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        looked_for?: ({
+                            name?: string | null;
+                            phone?: string | null;
+                            place?: string | null;
+                            place_kind?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        block_max_chars?: number | null;
+                        pages?: (({
+                            url?: string | null;
+                            status?: number | null;
+                            read?: boolean | null;
+                            name_found?: number | null;
+                            phone_found?: number | null;
+                            place_found?: number | null;
+                            together?: boolean | null;
+                            span_chars?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        one_block?: boolean | null;
+                        findings?: unknown[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessHours: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-business-hours */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        access?: string | null;
+                        record_from?: string | null;
+                        sources?: (({
+                            source?: string | null;
+                            stated?: string | null;
+                            readable?: boolean | null;
+                            name?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        days?: (({
+                            day?: string | null;
+                            record?: string | null;
+                            sources?: (({
+                                source?: string | null;
+                                value?: string | null;
+                                agrees?: boolean | null;
+                                name?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            disagree?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        counts?: ({
+                            sources?: number | null;
+                            readable?: number | null;
+                            differ?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        findings?: (({
+                            code?: string | null;
+                            severity?: number | null;
+                            source?: string | null;
+                            days?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessServiceAreas: {
+        parameters: {
+            query: {
+                domain: string;
+                fresh?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-business-service-areas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        access?: string | null;
+                        service_area_business?: boolean | null;
+                        radius_statements?: unknown[] | null;
+                        counts?: ({
+                            places?: number | null;
+                            in_schema?: number | null;
+                            in_text?: number | null;
+                            with_page?: number | null;
+                            on_profile?: unknown;
+                            profile_cap?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        places?: (({
+                            place?: string | null;
+                            in_schema?: boolean | null;
+                            in_text?: boolean | null;
+                            pages?: (string | null)[] | null;
+                            on_profile?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        findings?: (({
+                            code?: string | null;
+                            severity?: number | null;
+                            places?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessListingAudit: {
+        parameters: {
+            query: {
+                domain: string;
+                fresh?: "1";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-business-audit */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        access?: string | null;
+                        truth_used?: ({
+                            name?: string | null;
+                            phones?: (string | null)[] | null;
+                            street?: unknown;
+                            zip?: unknown;
+                            service_area_business?: boolean | null;
+                            places?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        listings?: (({
+                            source?: string | null;
+                            url?: string | null;
+                            matched_by?: (string | null)[] | null;
+                            prints?: ({
+                                name?: string | null;
+                                phone?: string | null;
+                                address?: string | null;
+                                website?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            verdict?: string | null;
+                            findings?: (({
+                                code?: string | null;
+                                severity?: string | null;
+                                field?: string | null;
+                                listing_says?: string | null;
+                                business_says?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        across?: ({
+                            phones?: (({
+                                value?: string | null;
+                                in?: (string | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        counts?: ({
+                            listings?: number | null;
+                            correct?: number | null;
+                            differs?: number | null;
+                            wrong?: number | null;
+                            findings?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        sha256?: unknown;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no or bad domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description opted out */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description too many new lookups from this address this hour */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessListings: {
+        parameters: {
+            query: {
+                domain: string;
+                fresh?: "1";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-business-listings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        searched_with?: ({
+                            phones?: (string | null)[] | null;
+                            names?: (string | null)[] | null;
+                            city?: string | null;
+                            region?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        sources?: (({
+                            source?: string | null;
+                            by?: string | null;
+                            status?: number | null;
+                            found?: number | null;
+                            seen?: number | null;
+                            state?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        listings?: (({
+                            source?: string | null;
+                            matched_by?: (string | null)[] | null;
+                            url?: string | null;
+                            id?: string | null;
+                            name?: string | null;
+                            phone?: string | null;
+                            address?: string | null;
+                            website?: string | null;
+                            category?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        counts?: ({
+                            listed_on?: number | null;
+                            no_listing?: number | null;
+                            not_reached?: number | null;
+                            listings?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        sha256?: unknown;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no or bad domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description opted out */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description too many new lookups from this address this hour */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessWikidataKit: {
+        parameters: {
+            query: {
+                domain: string;
+                format?: "json" | "qs";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description the kit */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        built_at?: string | null;
+                        quickstatements?: string | null;
+                        paste_into?: string | null;
+                        search_first?: string | null;
+                        left_out?: (string | null)[] | null;
+                        add_by_hand?: (string | null)[] | null;
+                        notability?: string | null;
+                        source?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    businessTruthRecord: {
+        parameters: {
+            query: {
+                domain: string;
+                fresh?: "1";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-business-truth */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        built_at?: string | null;
+                        access?: string | null;
+                        business_kind?: string | null;
+                        counts?: ({
+                            agree?: number | null;
+                            conflict?: number | null;
+                            one_source?: number | null;
+                            absent?: number | null;
+                            reported?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        fields?: ({
+                            phone?: ({
+                                status?: string | null;
+                                value?: ({
+                                    display?: string | null;
+                                    digits?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                taken_from?: string | null;
+                                distinct_values?: number | null;
+                                statements?: (({
+                                    value?: string | null;
+                                    key?: string | null;
+                                    from?: string | null;
+                                    where?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        rule?: string | null;
+                        sources?: ({
+                            site?: ({
+                                read?: boolean | null;
+                                url?: string | null;
+                                status?: number | null;
+                                business_nodes?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            profile?: ({
+                                linked?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        changes?: number | null;
+                        sha256?: unknown;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no or bad domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description opted out */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description too many new records from this address this hour */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    aiClassifierAtlas: {
+        parameters: {
+            query?: {
+                key?: string;
+                stage?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed atlas or label */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        key?: string | null;
+                        name?: string | null;
+                        stage?: string | null;
+                        stage_slug?: string | null;
+                        namespace?: string | null;
+                        record_type?: string | null;
+                        aliases?: (string | null)[] | null;
+                        definition?: unknown;
+                        what_a_business_can_do?: unknown;
+                        crawlcheck_check?: ({
+                            id?: string | null;
+                            url?: string | null;
+                            what?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        url?: string | null;
+                        observed?: ({
+                            runs?: number | null;
+                            of_runs?: number | null;
+                            share?: number | null;
+                            in_reasoning_text?: number | null;
+                            week?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no such label */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    aiClassifierCensus: {
+        parameters: {
+            query?: {
+                week?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed week */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        week?: string | null;
+                        state?: string | null;
+                        model?: string | null;
+                        runs?: number | null;
+                        parsed?: number | null;
+                        with_reasoning_text?: number | null;
+                        fields?: number | null;
+                        matched_by?: ({
+                            key?: number | null;
+                            alias?: number | null;
+                            meaning?: number | null;
+                            new?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        atlas_labels_seen?: number | null;
+                        atlas_labels_total?: number | null;
+                        labels?: (({
+                            key?: string | null;
+                            name?: string | null;
+                            stage?: string | null;
+                            namespace?: string | null;
+                            runs?: number | null;
+                            share?: ({
+                                k?: number | null;
+                                n?: number | null;
+                                share?: number | null;
+                                low?: number | null;
+                                high?: number | null;
+                                level?: number | null;
+                                method?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            occurrences?: number | null;
+                            in_reasoning_text?: number | null;
+                            examples?: (({
+                                q?: string | null;
+                                path?: string | null;
+                                value?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        labels_no_list_had?: (({
+                            key?: string | null;
+                            runs?: number | null;
+                            example?: ({
+                                q?: string | null;
+                                path?: string | null;
+                                value?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        not_proof?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad week */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tlsPosture: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description latest week and history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        licence?: string | null;
+                        page?: string | null;
+                        latest?: ({
+                            day?: string | null;
+                            summary?: ({
+                                sampled?: number | null;
+                                all?: ({
+                                    reachable?: number | null;
+                                    pq_hybrid_of_tls13?: ({
+                                        n?: number | null;
+                                        of?: number | null;
+                                        pct?: number | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    tls13?: ({
+                                        n?: number | null;
+                                        of?: number | null;
+                                        pct?: number | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    tls10?: ({
+                                        n?: number | null;
+                                        of?: number | null;
+                                        pct?: number | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    hsts?: ({
+                                        n?: number | null;
+                                        of?: number | null;
+                                        pct?: number | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    passes_all_seven?: ({
+                                        n?: number | null;
+                                        of?: number | null;
+                                        pct?: number | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        history?: (({
+                            day?: string | null;
+                            reachable?: number | null;
+                            pq_hybrid_pct?: number | null;
+                            tls13_pct?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    aiClassifierSensitivity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed results */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        model?: string | null;
+                        pairs?: number | null;
+                        facts?: (({
+                            fact?: string | null;
+                            label?: string | null;
+                            with?: string | null;
+                            without?: string | null;
+                            pairs?: number | null;
+                            ranked?: number | null;
+                            dropped?: number | null;
+                            rose?: number | null;
+                            same?: number | null;
+                            mean_rank_change?: number | null;
+                            dropped_share?: ({
+                                k?: number | null;
+                                n?: number | null;
+                                share?: number | null;
+                                low?: number | null;
+                                high?: number | null;
+                                level?: number | null;
+                                method?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            labels_that_appear_without_it?: (({
+                                label?: string | null;
+                                pairs?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            examples?: unknown[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        not_proof?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    businessAiScreening: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed reading */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        read_at?: string | null;
+                        trade?: string | null;
+                        question?: string | null;
+                        model?: string | null;
+                        evaluation_parsed?: boolean | null;
+                        fields?: number | null;
+                        named_in_answer?: boolean | null;
+                        position_in_answer?: unknown;
+                        labels_about_this_business?: unknown[] | null;
+                        atlas?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description not screened yet */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    businessAiScreeningRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    domain: string;
+                };
+            };
+        };
+        responses: {
+            /** @description signed reading */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        trade?: string | null;
+                        named_in_answer?: boolean | null;
+                        position_in_answer?: number | null;
+                        labels_about_this_business?: (({
+                            label?: string | null;
+                            matched?: string | null;
+                            path?: string | null;
+                            value?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        ran_now?: ({
+                            domain?: string | null;
+                            named?: boolean | null;
+                            labels?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description licence or owner needed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no trade or city in the business record */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description read less than 10 minutes ago */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    domainAuthorizationRead: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed authorization state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        state?: string | null;
+                        actions?: ({
+                            read?: string | null;
+                            cite?: string | null;
+                            connect?: string | null;
+                            transact?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        agents?: unknown[] | null;
+                        note?: unknown;
+                        published_at?: string | null;
+                        valid_until?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    domainAuthorizationPublish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    domain: string;
+                    actions?: Record<string, never>;
+                    agents?: string[];
+                    note?: string;
+                    valid_days?: number;
+                    revoke?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description published */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        domain?: string | null;
+                        state?: string | null;
+                        actions?: ({
+                            connect?: string | null;
+                            transact?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        agents?: unknown[] | null;
+                        valid_until?: string | null;
+                        read?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description key does not hold a proven claim */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mcpIdentity: {
+        parameters: {
+            query?: {
+                name?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed identity check or census */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        name?: string | null;
+                        version?: string | null;
+                        sources?: (string | null)[] | null;
+                        checks?: (({
+                            id?: string | null;
+                            state?: string | null;
+                            saw?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        conflicts?: unknown[] | null;
+                        gaps?: unknown[] | null;
+                        verdict?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description not checked yet */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mcpSelect: {
+        parameters: {
+            query: {
+                need: string;
+                auth?: "none" | "any";
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed shortlist */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        need?: string | null;
+                        matched_on?: (string | null)[] | null;
+                        auth?: string | null;
+                        servers_with_tool_lists?: number | null;
+                        servers_matching?: number | null;
+                        candidates?: (({
+                            rank?: number | null;
+                            server?: string | null;
+                            host?: string | null;
+                            publisher?: string | null;
+                            verified_publisher?: boolean | null;
+                            tools_matched?: (string | null)[] | null;
+                            match?: number | null;
+                            reliability?: ({
+                                state?: string | null;
+                                availability?: number | null;
+                                observations?: number | null;
+                                p50_ms?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            auth?: ({
+                                required?: boolean | null;
+                                findings?: unknown[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            doubts?: unknown[] | null;
+                            score?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        excluded?: (({
+                            server?: string | null;
+                            host?: string | null;
+                            why?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no need given */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    identityDivergence: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed crawlcheck-identity-divergence */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        report?: string | null;
+                        measured_at?: string | null;
+                        state?: string | null;
+                        url?: string | null;
+                        baseline?: ({
+                            id?: string | null;
+                            label?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        attributes?: ({
+                            title?: string | null;
+                            h1?: string | null;
+                            robots?: string | null;
+                            canonical?: string | null;
+                            words?: number | null;
+                            unique_ratio?: number | null;
+                            begin_unique_ratio?: number | null;
+                            salient?: (string | null)[] | null;
+                            top_term_share?: number | null;
+                            chrome_share?: number | null;
+                            dates?: ({
+                                byline?: string | null;
+                                byline_modified?: string | null;
+                                syntactic?: string | null;
+                                semantic?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            entities?: (string | null)[] | null;
+                            author?: string | null;
+                            bad_title?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        identities?: (({
+                            id?: string | null;
+                            label?: string | null;
+                            role?: string | null;
+                            status?: number | null;
+                            class?: string | null;
+                            fields?: (string | null)[] | null;
+                            diff?: (({
+                                field?: string | null;
+                                baseline?: string | null;
+                                this?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            looks_like?: string | null;
+                            detail?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        counts?: ({
+                            compared?: number | null;
+                            same?: number | null;
+                            differs?: number | null;
+                            error?: number | null;
+                            not_compared?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        googlebot?: ({
+                            class?: string | null;
+                            fields?: (string | null)[] | null;
+                            looks_like?: string | null;
+                            detail?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        reading?: string | null;
+                        signature?: ({
+                            kid?: unknown;
+                            alg?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no scan on record */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    indexCoverage: {
+        parameters: {
+            query: {
+                domain: string;
+                /** @description 1 starts (or restarts) the inspection run */
+                run?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed crawlcheck-index-coverage */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        property?: string | null;
+                        built_at?: string | null;
+                        url_set?: ({
+                            inspected?: number | null;
+                            failed?: number | null;
+                            total?: number | null;
+                            found?: number | null;
+                            capped?: boolean | null;
+                            sources?: ({
+                                sitemap?: number | null;
+                                search?: number | null;
+                                googlebot?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        verdicts?: ({
+                            PASS?: number | null;
+                            NEUTRAL?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        groups?: ({
+                            "Submitted and indexed"?: ({
+                                pages?: number | null;
+                                urls?: unknown[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            "Not found (404)"?: ({
+                                pages?: number | null;
+                                urls?: (({
+                                    url?: string | null;
+                                    sources?: (string | null)[] | null;
+                                    coverage?: string | null;
+                                    verdict?: string | null;
+                                    referring?: (string | null)[] | null;
+                                    in_sitemaps?: unknown[] | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null)[] | null;
+                                fix?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        facts?: (({
+                            what?: string | null;
+                            pages?: number | null;
+                            urls?: (({
+                                url?: string | null;
+                                referring?: (string | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        progress?: ({
+                            done?: number | null;
+                            of?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description run queued or running */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description not a public host */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no licence for the domain */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no run yet; progress when running */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    indexCoverageRun: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description queued */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        domain?: string | null;
+                        queued?: boolean | null;
+                        note?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no licence for the domain */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    searchEngines: {
+        parameters: {
+            query: {
+                domain: string;
+                indexnow_key?: string;
+                key_location?: string;
+                /** @description URL of the site's YML product feed (same domain) to check against Yandex's requirements */
+                yml?: string;
+                /** @description URL of the site's Yandex Business organization feed (same domain) to check */
+                business_feed?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed crawlcheck-engines */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        site?: string | null;
+                        read_at?: string | null;
+                        homepage?: ({
+                            status?: number | null;
+                            final_host?: string | null;
+                            bytes?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        robots_txt?: string | null;
+                        audience?: ({
+                            CN?: unknown[] | null;
+                            KR?: unknown[] | null;
+                            CZ?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        engines?: (({
+                            engine?: string | null;
+                            relevant?: boolean | null;
+                            audience?: ({
+                                market?: string | null;
+                                because?: (string | null)[] | null;
+                                search_share?: ({
+                                    percent?: number | null;
+                                    as_of?: string | null;
+                                    source?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            signals?: ({
+                                verification?: boolean | null;
+                                robots?: ({
+                                    read?: boolean | null;
+                                    own_group?: boolean | null;
+                                    root_allowed?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            checks?: (({
+                                check?: string | null;
+                                status?: string | null;
+                                detail?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        reading?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description not a public host */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description opted out */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description hourly limit */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    crossDomainQuery: {
+        parameters: {
+            query?: {
+                frame?: "top1k" | "top10k" | "top100k";
+                where?: string;
+                not?: string;
+                any?: string;
+                rank_max?: number;
+                run?: number;
+                offset?: number;
+                limit?: number;
+                format?: "json" | "csv";
+                fields?: "1";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-query */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        frame?: string | null;
+                        frame_label?: string | null;
+                        run?: number | null;
+                        run_complete?: boolean | null;
+                        measured?: number | null;
+                        frame_size?: number | null;
+                        question?: ({
+                            where?: (string | null)[] | null;
+                            not?: (string | null)[] | null;
+                            any?: unknown[] | null;
+                            rank_max?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        count?: number | null;
+                        of?: number | null;
+                        share?: ({
+                            k?: number | null;
+                            n?: number | null;
+                            share?: number | null;
+                            low?: number | null;
+                            high?: number | null;
+                            level?: number | null;
+                            method?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        offset?: number | null;
+                        returned?: number | null;
+                        next?: string | null;
+                        matches?: (({
+                            rank?: number | null;
+                            domain?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        records?: string | null;
+                        access?: string | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    registryFeeds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-registry-feeds */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        cadence?: string | null;
+                        sources?: ({
+                            npm?: ({
+                                source?: string | null;
+                                at?: string | null;
+                                ms?: number | null;
+                                seen?: number | null;
+                                domains?: number | null;
+                                new?: number | null;
+                                error?: unknown;
+                                sample?: (({
+                                    domain?: string | null;
+                                    via?: (string | null)[] | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null)[] | null;
+                                totals?: ({
+                                    runs?: number | null;
+                                    new?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            github?: ({
+                                state?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            apisguru?: ({
+                                state?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            ct?: ({
+                                state?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        domains_found_all_time?: number | null;
+                        waiting_for_queue?: number | null;
+                        reading?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    aiRecommends: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-ai-recommends */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        license?: string | null;
+                        grid?: ({
+                            cells?: number | null;
+                            runs_kept_per_cell?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        by_city?: (({
+                            city?: string | null;
+                            cells_answered?: number | null;
+                            mean_distinct_businesses?: number | null;
+                            mean_top_business_share?: number | null;
+                            mean_directory_share?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        cells?: (({
+                            trade?: string | null;
+                            city?: string | null;
+                            runs?: number | null;
+                            answered_runs?: number | null;
+                            distinct_businesses_cited?: number | null;
+                            business_citations?: number | null;
+                            top_business_share?: number | null;
+                            top3_business_share?: number | null;
+                            concentration_hhi?: number | null;
+                            source_mix_pct?: ({
+                                business?: number | null;
+                                directory_or_marketplace?: number | null;
+                                social?: number | null;
+                                reference?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            top_business_held_pct?: number | null;
+                            engine_agreement_latest?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        sha256?: unknown;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                            sig?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    agenticWebMap: {
+        parameters: {
+            query?: {
+                month?: string;
+                domain?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-agentic-web-map or crawlcheck-agentic-web-map-lookup */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        month?: string | null;
+                        state?: string | null;
+                        frame?: string | null;
+                        run?: number | null;
+                        sites?: number | null;
+                        mapped?: number | null;
+                        totals?: ({
+                            sites?: number | null;
+                            edge_refused?: ({
+                                any?: ({
+                                    count?: number | null;
+                                    pct?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            robots?: ({
+                                served?: number | null;
+                                block_any?: ({
+                                    count?: number | null;
+                                    pct?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            llms_txt?: ({
+                                count?: number | null;
+                                pct?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        layers?: (({
+                            id?: string | null;
+                            label?: string | null;
+                            providers_named?: number | null;
+                            nodes?: (({
+                                id?: string | null;
+                                name?: string | null;
+                                kind?: string | null;
+                                share?: number | null;
+                                sites?: number | null;
+                                edge_refused?: ({
+                                    any?: ({
+                                        count?: number | null;
+                                        pct?: number | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                robots?: ({
+                                    served?: number | null;
+                                    block_any?: ({
+                                        count?: number | null;
+                                        pct?: number | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                llms_txt?: ({
+                                    count?: number | null;
+                                    pct?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        links?: (({
+                            from?: string | null;
+                            to?: string | null;
+                            sites?: number | null;
+                            edge_refused?: number | null;
+                            robots_only?: number | null;
+                            passes?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        attribution?: ({
+                            edge_refusals_by_network?: (({
+                                node?: string | null;
+                                name?: string | null;
+                                count?: number | null;
+                                share_of_all?: number | null;
+                                rate?: number | null;
+                                overall_rate?: number | null;
+                                lift?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        sha256?: unknown;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                            sig?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad month or domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no edition for that month yet */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description live lookup limit */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    censusAsk: {
+        parameters: {
+            query: {
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description the matched measures with their values */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        q?: string | null;
+                        answers?: (({
+                            set?: string | null;
+                            id?: string | null;
+                            measure?: string | null;
+                            match?: number | null;
+                            url?: string | null;
+                            value?: ({
+                                share_of_scanned_sites_pct?: unknown;
+                                scans?: unknown;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            frame?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        reading?: string | null;
+                        vectors?: string | null;
+                        asked_at?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    censusSimilarity: {
+        parameters: {
+            query?: {
+                frame?: string;
+                run?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-census-similarity */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        frame?: string | null;
+                        run?: number | null;
+                        sites?: number | null;
+                        fingerprinted?: number | null;
+                        families?: ({
+                            families?: number | null;
+                            sites_in_families?: number | null;
+                            size_distribution?: ({
+                                2?: number | null;
+                                "3_to_9"?: number | null;
+                                "10_plus"?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            largest?: (number | null)[] | null;
+                            max_bits?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        parity?: ({
+                            gptbot?: ({
+                                compared?: number | null;
+                                same?: number | null;
+                                small?: number | null;
+                                different?: number | null;
+                                other_page?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        sha256?: unknown;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                            sig?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad frame */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no finished run */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    censusWeekly: {
+        parameters: {
+            query?: {
+                week?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-census-weekly */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        week?: string | null;
+                        state?: string | null;
+                        from?: string | null;
+                        to?: string | null;
+                        frames?: (({
+                            frame?: string | null;
+                            label?: string | null;
+                            runs_this_week?: number | null;
+                            run?: ({
+                                run?: number | null;
+                                finished_at?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            compared_with?: ({
+                                run?: number | null;
+                                finished_at?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            sites?: number | null;
+                            figures?: (({
+                                id?: string | null;
+                                group?: string | null;
+                                label?: string | null;
+                                count?: number | null;
+                                of?: number | null;
+                                pct?: number | null;
+                                pct_before?: number | null;
+                                points?: number | null;
+                                sites_gained?: number | null;
+                                sites_lost?: number | null;
+                                compared?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            movers?: (({
+                                id?: string | null;
+                                label?: string | null;
+                                points?: number | null;
+                                sites_gained?: number | null;
+                                sites_lost?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        sha256?: unknown;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                            sig?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad week */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no edition for that week */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mcpFamilies: {
+        parameters: {
+            query?: {
+                url?: string;
+                compare?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-mcp-families */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        at?: string | null;
+                        panel?: number | null;
+                        fingerprinted?: number | null;
+                        families?: number | null;
+                        servers_in_families?: number | null;
+                        size_distribution?: ({
+                            2?: number | null;
+                            "3_to_9"?: number | null;
+                            "10_to_99"?: number | null;
+                            "100_plus"?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        largest?: (({
+                            family?: string | null;
+                            servers?: number | null;
+                            publisher_domains?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        max_bits?: number | null;
+                        lookup?: ({
+                            url?: string | null;
+                            family?: string | null;
+                            family_size?: number | null;
+                            compare?: ({
+                                url?: string | null;
+                                family?: string | null;
+                                same_family?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        sha256?: unknown;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                            sig?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad url */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description first census not finished */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mcpReliabilityRanking: {
+        parameters: {
+            query?: {
+                month?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-mcp-reliability-ranking */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        month?: string | null;
+                        state?: string | null;
+                        minimum_observations?: number | null;
+                        endpoints_ranked?: number | null;
+                        truncated_to?: number | null;
+                        rows?: (({
+                            rank?: number | null;
+                            url?: string | null;
+                            name?: string | null;
+                            apex?: string | null;
+                            observations?: number | null;
+                            answered?: number | null;
+                            availability?: number | null;
+                            p50_ms?: number | null;
+                            tool_list_changes?: number | null;
+                            down_spells?: number | null;
+                            last_observed?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        report?: string | null;
+                        sha256?: unknown;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                            sig?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad month */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description not built yet, or before the panel began */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mcpReliabilityReport: {
+        parameters: {
+            query?: {
+                month?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-mcp-reliability-report */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        month?: string | null;
+                        state?: string | null;
+                        window?: ({
+                            from?: string | null;
+                            to?: string | null;
+                            partial_month?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        panel?: ({
+                            enrolled?: number | null;
+                            observed_this_month?: number | null;
+                            publishers?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        observations?: ({
+                            total?: number | null;
+                            answered?: number | null;
+                            availability?: number | null;
+                            initialized?: number | null;
+                            auth_required?: number | null;
+                            failed?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        endpoints?: ({
+                            with_enough_observations?: number | null;
+                            minimum_observations?: number | null;
+                            availability_distribution?: ({
+                                100?: number | null;
+                                "99_to_100"?: number | null;
+                                "95_to_99"?: number | null;
+                                "80_to_95"?: number | null;
+                                "50_to_80"?: number | null;
+                                under_50?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            went_down?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        latency_ms?: ({
+                            median_of_endpoint_medians?: number | null;
+                            p50_all_answers?: number | null;
+                            p95_all_answers?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        tool_lists?: ({
+                            endpoints_with_tool_list?: number | null;
+                            endpoints_whose_tool_list_changed?: number | null;
+                            changes?: number | null;
+                            changed_share?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        sha256?: unknown;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                            sig?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad month */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no data for that month yet */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mcpReliability: {
+        parameters: {
+            query?: {
+                url?: string;
+                host?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-mcp-reliability (index), crawlcheck-mcp-reliability-server or crawlcheck-mcp-reliability-host (signed) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        window_days?: number | null;
+                        url?: string | null;
+                        name?: string | null;
+                        apex?: string | null;
+                        observations?: number | null;
+                        available?: number | null;
+                        availability?: number | null;
+                        p50_ms?: number | null;
+                        p95_ms?: number | null;
+                        drift?: number | null;
+                        tools?: number | null;
+                        last_outcome?: string | null;
+                        last_at?: string | null;
+                        first_at?: string | null;
+                        outcomes?: ({
+                            initialized?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        state?: string | null;
+                        all_time_observations?: number | null;
+                        history?: (({
+                            at?: string | null;
+                            outcome?: string | null;
+                            ms?: number | null;
+                            tools?: number | null;
+                            tools_sha16?: string | null;
+                            status?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        reading?: string | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description the endpoint is not on the panel */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mcpAuthAudit: {
+        parameters: {
+            query: {
+                url: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-mcp-auth */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        audited_at?: string | null;
+                        url?: string | null;
+                        outcome?: string | null;
+                        status?: number | null;
+                        challenge?: ({
+                            header?: string | null;
+                            scheme?: string | null;
+                            scope?: unknown;
+                            resource_metadata?: string | null;
+                            error?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        protected_resource?: ({
+                            url?: string | null;
+                            resource?: string | null;
+                            authorization_servers?: (string | null)[] | null;
+                            scopes_supported?: (string | null)[] | null;
+                            bearer_methods_supported?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        authorization_server?: ({
+                            url?: string | null;
+                            issuer?: string | null;
+                            code_challenge_methods_supported?: (string | null)[] | null;
+                            registration_endpoint?: boolean | null;
+                            scopes_supported_count?: number | null;
+                            grant_types_supported?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        requested?: ({
+                            source?: string | null;
+                            scopes?: (string | null)[] | null;
+                            count?: number | null;
+                            by_class?: ({
+                                read?: (string | null)[] | null;
+                                write?: (string | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            read_only_offered?: (string | null)[] | null;
+                            reading?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        findings?: (({
+                            code?: string | null;
+                            severity?: string | null;
+                            evidence?: ({
+                                requested?: (string | null)[] | null;
+                                write_or_admin?: (string | null)[] | null;
+                                read_only_offered?: (string | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            reading?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        unmeasured?: (string | null)[] | null;
+                        severity?: string | null;
+                        reading?: unknown;
+                        method?: string | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    mcpAuthAuditPost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description crawlcheck-mcp-auth */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        audited_at?: string | null;
+                        url?: string | null;
+                        outcome?: string | null;
+                        status?: number | null;
+                        challenge?: ({
+                            header?: string | null;
+                            scheme?: string | null;
+                            scope?: unknown;
+                            resource_metadata?: string | null;
+                            error?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        protected_resource?: ({
+                            url?: string | null;
+                            resource?: string | null;
+                            authorization_servers?: (string | null)[] | null;
+                            scopes_supported?: (string | null)[] | null;
+                            bearer_methods_supported?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        authorization_server?: ({
+                            url?: string | null;
+                            issuer?: string | null;
+                            code_challenge_methods_supported?: (string | null)[] | null;
+                            registration_endpoint?: boolean | null;
+                            scopes_supported_count?: number | null;
+                            grant_types_supported?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        requested?: ({
+                            source?: string | null;
+                            scopes?: (string | null)[] | null;
+                            count?: number | null;
+                            by_class?: ({
+                                read?: (string | null)[] | null;
+                                write?: (string | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            read_only_offered?: (string | null)[] | null;
+                            reading?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        findings?: (({
+                            code?: string | null;
+                            severity?: string | null;
+                            evidence?: ({
+                                requested?: (string | null)[] | null;
+                                write_or_admin?: (string | null)[] | null;
+                                read_only_offered?: (string | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            reading?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        unmeasured?: (string | null)[] | null;
+                        severity?: string | null;
+                        reading?: unknown;
+                        method?: string | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    agentLens: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-agent-lens */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        url?: string | null;
+                        measured_at?: string | null;
+                        personas?: (({
+                            id?: string | null;
+                            claimed?: string | null;
+                            label?: string | null;
+                            kind?: string | null;
+                            status?: number | null;
+                            served?: boolean | null;
+                            blocker?: string | null;
+                            result?: string | null;
+                            words?: number | null;
+                            prices?: (string | null)[] | null;
+                            links?: ({
+                                internal?: number | null;
+                                external?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            robots?: ({
+                                allowed?: boolean | null;
+                                named?: boolean | null;
+                                why?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            operator?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        robots_only_tokens?: (({
+                            token?: string | null;
+                            operator?: string | null;
+                            fetched?: boolean | null;
+                            robots?: ({
+                                allowed?: boolean | null;
+                                named?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        name_tag_test?: ({
+                            result?: string | null;
+                            passed?: (string | null)[] | null;
+                            reading?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        summary?: ({
+                            browsers_served?: number | null;
+                            agents_served?: number | null;
+                            agents?: number | null;
+                            agents_refused?: unknown[] | null;
+                            refused_though_robots_allows?: unknown[] | null;
+                            served_under_half_the_browser_text?: unknown[] | null;
+                            prices_not_in_agent_copy?: unknown[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        from_kept_copy?: boolean | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description not a public domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description new-reading limit */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mcpChangeSubscriptions: {
+        parameters: {
+            query?: never;
+            header: {
+                "x-crawlcheck-key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-mcp-change-subscriptions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        count?: number | null;
+                        limit?: number | null;
+                        subscriptions?: (({
+                            id?: string | null;
+                            url?: string | null;
+                            servers?: (string | null)[] | null;
+                            hosts?: unknown[] | null;
+                            severity?: unknown[] | null;
+                            min_severity?: string | null;
+                            created_at?: string | null;
+                            active?: boolean | null;
+                            deliveries?: number | null;
+                            failures?: number | null;
+                            last?: ({
+                                at?: string | null;
+                                event?: string | null;
+                                attempt?: number | null;
+                                status?: number | null;
+                                ok?: boolean | null;
+                                error?: unknown;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no or invalid key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the key does not hold the Data line */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mcpChangeSubscribe: {
+        parameters: {
+            query?: never;
+            header: {
+                "x-crawlcheck-key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uri */
+                    url?: string;
+                    servers?: string[];
+                    hosts?: string[];
+                    severity?: ("high" | "medium" | "low")[];
+                    /** @enum {string} */
+                    min_severity?: "high" | "medium" | "low";
+                    unsubscribe?: string;
+                    ping?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description subscription and its secret (shown once) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        subscription?: ({
+                            id?: string | null;
+                            url?: string | null;
+                            servers?: (string | null)[] | null;
+                            hosts?: unknown[] | null;
+                            severity?: unknown[] | null;
+                            min_severity?: string | null;
+                            created_at?: string | null;
+                            active?: boolean | null;
+                            deliveries?: number | null;
+                            failures?: number | null;
+                            last?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        secret?: unknown;
+                        secret_note?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad URL */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no or invalid key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the key does not hold the Data line */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 5 subscriptions per key */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mcpDigestsGet: {
+        parameters: {
+            query: {
+                servers: string;
+            };
+            header: {
+                "x-crawlcheck-key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-mcp-digests */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        count?: number | null;
+                        servers?: (({
+                            server?: string | null;
+                            name?: string | null;
+                            state?: string | null;
+                            outcome?: string | null;
+                            read_at?: string | null;
+                            tools?: number | null;
+                            tools_lock_sha256?: unknown;
+                            server_version?: string | null;
+                            last_change?: ({
+                                id?: string | null;
+                                at?: string | null;
+                                severity?: string | null;
+                                summary?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                            document_sha256?: unknown;
+                            sig?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no or invalid key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the key does not hold the Data line */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mcpDigests: {
+        parameters: {
+            query?: never;
+            header: {
+                "x-crawlcheck-key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    servers: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description crawlcheck-mcp-digests */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        count?: number | null;
+                        servers?: (({
+                            server?: string | null;
+                            name?: string | null;
+                            state?: string | null;
+                            tools?: number | null;
+                            tools_lock_sha256?: unknown;
+                            read_at?: string | null;
+                            last_change?: unknown;
+                            note?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                            document_sha256?: unknown;
+                            sig?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no or invalid key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the key does not hold the Data line */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mcpToolChanges: {
+        parameters: {
+            query?: {
+                servers?: string;
+                cursor?: string;
+                url?: string;
+                host?: string;
+                severity?: "high" | "medium" | "low";
+                since?: string;
+                limit?: number;
+            };
+            header?: {
+                "x-crawlcheck-key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-mcp-tool-changes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        count?: number | null;
+                        events?: (({
+                            summary?: string | null;
+                            at?: string | null;
+                            server?: string | null;
+                            url?: string | null;
+                            host?: string | null;
+                            published_at?: string | null;
+                            tools_before?: number | null;
+                            tools_after?: number | null;
+                            tools_sha256_before?: string | null;
+                            tools_sha256_after?: string | null;
+                            previous_read_at?: string | null;
+                            added?: unknown[] | null;
+                            removed?: (string | null)[] | null;
+                            description_changed?: (string | null)[] | null;
+                            inputs_or_annotations_only?: boolean | null;
+                            partial?: boolean | null;
+                            severity?: string | null;
+                            poisoning_now?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        feed?: ({
+                            atom?: string | null;
+                            page?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        reading?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    mcpChangeFeedLicensed: {
+        parameters: {
+            query?: never;
+            header: {
+                "x-crawlcheck-key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description crawlcheck-mcp-change-feed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        licensed?: boolean | null;
+                        filter?: ({
+                            servers?: number | null;
+                            hosts?: number | null;
+                            severity?: unknown[] | null;
+                            min_severity?: string | null;
+                            since?: string | null;
+                            cursor?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        count?: number | null;
+                        has_more?: boolean | null;
+                        next_cursor?: string | null;
+                        retention?: ({
+                            archive_since?: string | null;
+                            public_window_from?: string | null;
+                            archive_read_from_day?: string | null;
+                            gap?: boolean | null;
+                            note?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        events?: (({
+                            id?: string | null;
+                            event?: ({
+                                at?: string | null;
+                                server?: string | null;
+                                url?: string | null;
+                                host?: string | null;
+                                tools_before?: number | null;
+                                tools_after?: number | null;
+                                tools_sha256_after?: unknown;
+                                tools_lock_sha256_after?: unknown;
+                                hash_basis?: string | null;
+                                added?: unknown[] | null;
+                                removed?: (string | null)[] | null;
+                                description_changed?: (string | null)[] | null;
+                                severity?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            summary?: string | null;
+                            event_sha256?: unknown;
+                            signature?: ({
+                                v?: number | null;
+                                alg?: string | null;
+                                kid?: unknown;
+                                message?: string | null;
+                                sig?: unknown;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        verify?: ({
+                            key_directory?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no or invalid key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the key does not hold the Data line */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mcpWorkflowDemo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-mcp-workflow-demo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        guards?: ({
+                            no_guard?: string | null;
+                            lockfile?: string | null;
+                            lockfile_crawlcheck?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        scenarios?: (({
+                            id?: string | null;
+                            title?: string | null;
+                            expect?: string | null;
+                            hazard?: boolean | null;
+                            modes?: ({
+                                no_guard?: ({
+                                    decision?: string | null;
+                                    correct?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                lockfile?: ({
+                                    decision?: string | null;
+                                    correct?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                lockfile_crawlcheck?: ({
+                                    decision?: string | null;
+                                    correct?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        score?: ({
+                            no_guard?: ({
+                                hazards_stopped?: number | null;
+                                hazards?: number | null;
+                                controls_passed?: number | null;
+                                controls?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            lockfile?: ({
+                                hazards_stopped?: number | null;
+                                hazards?: number | null;
+                                controls_passed?: number | null;
+                                controls?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            lockfile_crawlcheck?: ({
+                                hazards_stopped?: number | null;
+                                hazards?: number | null;
+                                controls_passed?: number | null;
+                                controls?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        run_it_yourself?: ({
+                            script?: string | null;
+                            command?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    mcpShadowUrl: {
+        parameters: {
+            query: {
+                url: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-mcp-shadow */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        checked_at?: string | null;
+                        servers?: (({
+                            name?: string | null;
+                            url?: string | null;
+                            outcome?: string | null;
+                            tools?: number | null;
+                            shadows?: (({
+                                server?: string | null;
+                                host?: string | null;
+                                apex?: string | null;
+                                shadows?: string | null;
+                                shadows_host?: string | null;
+                                shadows_apex?: string | null;
+                                kind?: string | null;
+                                shared_names?: number | null;
+                                identical_descriptions?: number | null;
+                                names?: (string | null)[] | null;
+                                tools_server?: number | null;
+                                tools_reference?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        collisions?: (({
+                            tool?: string | null;
+                            servers?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        verdict?: string | null;
+                        decision?: string | null;
+                        compared_with?: ({
+                            servers_with_tool_lists?: number | null;
+                            reference_servers?: number | null;
+                            roster_rev?: number | null;
+                            census_at?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        reading?: unknown;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    mcpShadowCheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description crawlcheck-mcp-shadow */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        checked_at?: string | null;
+                        servers?: (({
+                            name?: string | null;
+                            url?: string | null;
+                            outcome?: string | null;
+                            tools?: number | null;
+                            shadows?: (({
+                                server?: string | null;
+                                host?: string | null;
+                                apex?: string | null;
+                                shadows?: string | null;
+                                shadows_host?: string | null;
+                                shadows_apex?: string | null;
+                                kind?: string | null;
+                                shared_names?: number | null;
+                                identical_descriptions?: number | null;
+                                names?: (string | null)[] | null;
+                                tools_server?: number | null;
+                                tools_reference?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        collisions?: (({
+                            tool?: string | null;
+                            servers?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        verdict?: string | null;
+                        decision?: string | null;
+                        compared_with?: ({
+                            servers_with_tool_lists?: number | null;
+                            reference_servers?: number | null;
+                            roster_rev?: number | null;
+                            census_at?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        reading?: unknown;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
             };
         };
     };
@@ -3278,7 +14800,45 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        scanned_at?: string | null;
+                        target?: ({
+                            tools_supplied?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        scan?: ({
+                            tools_scanned?: number | null;
+                            flagged?: boolean | null;
+                            severity?: string | null;
+                            kinds?: ({
+                                hidden_unicode?: number | null;
+                                injected_instructions?: number | null;
+                                exfiltration?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            findings?: (({
+                                tool?: string | null;
+                                kind?: string | null;
+                                where?: string | null;
+                                evidence?: string | null;
+                                code_points?: (string | null)[] | null;
+                                count?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        rule?: string | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description read limit */
@@ -3309,7 +14869,45 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        scanned_at?: string | null;
+                        target?: ({
+                            tools_supplied?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        scan?: ({
+                            tools_scanned?: number | null;
+                            flagged?: boolean | null;
+                            severity?: string | null;
+                            kinds?: ({
+                                hidden_unicode?: number | null;
+                                injected_instructions?: number | null;
+                                exfiltration?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            findings?: (({
+                                tool?: string | null;
+                                kind?: string | null;
+                                where?: string | null;
+                                evidence?: string | null;
+                                code_points?: (string | null)[] | null;
+                                count?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        rule?: string | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description neither tools nor url */
@@ -3336,7 +14934,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        spec?: string | null;
+                        license?: string | null;
+                        latest?: ({
+                            id?: string | null;
+                            sites?: number | null;
+                            parts?: number | null;
+                            finished_at?: string | null;
+                            totals?: ({
+                                train?: ({
+                                    denied?: number | null;
+                                    not_declared?: number | null;
+                                    restricted_by_terms?: number | null;
+                                    unknown?: number | null;
+                                    allowed?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            manifest?: string | null;
+                            manifest_sha256?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        in_progress?: unknown;
+                        editions?: unknown[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -3359,7 +14990,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/gzip": unknown;
+                    "application/gzip": string;
                 };
             };
             /** @description no such edition or file */
@@ -3390,7 +15021,114 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        path?: string | null;
+                        agent?: unknown;
+                        read_at?: string | null;
+                        uses?: ({
+                            train?: ({
+                                value?: string | null;
+                                decided_by?: ({
+                                    signal?: string | null;
+                                    url?: string | null;
+                                    evidence?: string | null;
+                                    agents?: (string | null)[] | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                signals?: (({
+                                    signal?: string | null;
+                                    says?: string | null;
+                                    agents_denied?: (string | null)[] | null;
+                                    agents_allowed?: (string | null)[] | null;
+                                    evidence?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null)[] | null;
+                                conflicts?: (string | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            ground?: ({
+                                value?: string | null;
+                                decided_by?: ({
+                                    signal?: string | null;
+                                    url?: string | null;
+                                    evidence?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                signals?: unknown[] | null;
+                                conflicts?: unknown[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            summarize?: ({
+                                value?: string | null;
+                                decided_by?: ({
+                                    signal?: string | null;
+                                    url?: string | null;
+                                    evidence?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                signals?: unknown[] | null;
+                                conflicts?: unknown[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            cite?: ({
+                                value?: string | null;
+                                decided_by?: ({
+                                    signal?: string | null;
+                                    url?: string | null;
+                                    evidence?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                signals?: unknown[] | null;
+                                conflicts?: unknown[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            transact?: ({
+                                value?: string | null;
+                                decided_by?: ({
+                                    signal?: string | null;
+                                    url?: string | null;
+                                    evidence?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                signals?: unknown[] | null;
+                                conflicts?: unknown[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        terms?: ({
+                            url?: string | null;
+                            ai_clauses?: unknown[] | null;
+                            automated_access_clauses?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        sources_read?: (({
+                            url?: string | null;
+                            status?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description not a public domain */
@@ -3433,7 +15171,46 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        url?: string | null;
+                        checked_at?: string | null;
+                        read_now?: boolean | null;
+                        verdict?: string | null;
+                        why?: string | null;
+                        ai_identities_served?: string | null;
+                        browser?: ({
+                            status?: number | null;
+                            final_url?: string | null;
+                            words?: number | null;
+                            content_sha256?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        identities?: (({
+                            identity?: string | null;
+                            label?: string | null;
+                            status?: number | null;
+                            words?: number | null;
+                            same_bytes?: boolean | null;
+                            text_ratio?: number | null;
+                            verdict?: string | null;
+                            only_this_identity_received?: (string | null)[] | null;
+                            instruction_like_text?: boolean | null;
+                            why?: string | null;
+                            challenge?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        first_observed?: string | null;
+                        observations?: number | null;
+                        history?: unknown[] | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description not a public http(s) URL */
@@ -3469,7 +15246,51 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        first_read?: string | null;
+                        last_read?: string | null;
+                        reads?: number | null;
+                        read_now?: boolean | null;
+                        pages_read?: (({
+                            url?: string | null;
+                            read?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        claims?: (({
+                            type?: string | null;
+                            value?: string | null;
+                            status?: string | null;
+                            first_seen?: string | null;
+                            last_seen?: string | null;
+                            withdrawn_at?: string | null;
+                            via?: (string | null)[] | null;
+                            pages?: (string | null)[] | null;
+                            evidence?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        changes?: (({
+                            domain?: string | null;
+                            at?: string | null;
+                            section?: string | null;
+                            claim_type?: string | null;
+                            added?: (string | null)[] | null;
+                            withdrawn?: unknown[] | null;
+                            reinstated?: unknown[] | null;
+                            detail?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        feed?: string | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description not a public domain */
@@ -3512,7 +15333,50 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        decided_at?: string | null;
+                        passage?: ({
+                            sha256?: unknown;
+                            index_key?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        candidates?: (({
+                            url?: string | null;
+                            read?: boolean | null;
+                            present?: boolean | null;
+                            canonical?: string | null;
+                            canonical_elsewhere?: boolean | null;
+                            declared_published?: string | null;
+                            first_archived?: string | null;
+                            first_seen_by_crawlcheck?: string | null;
+                            added?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        origin?: ({
+                            url?: string | null;
+                            domain?: string | null;
+                            basis?: string | null;
+                            agrees?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        copies?: (({
+                            url?: string | null;
+                            domain?: string | null;
+                            declares_canonical?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        strength?: string | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -3524,7 +15388,16 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": ({
+                    text?: string | null;
+                    urls?: (string | null)[] | null;
+                } & {
+                    [key: string]: unknown;
+                }) | null;
+            };
+        };
         responses: {
             /** @description crawlcheck-origin */
             200: {
@@ -3532,8 +15405,402 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        decided_at?: string | null;
+                        passage?: ({
+                            sha256?: unknown;
+                            index_key?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        candidates?: (({
+                            url?: string | null;
+                            read?: boolean | null;
+                            present?: boolean | null;
+                            canonical?: string | null;
+                            canonical_elsewhere?: boolean | null;
+                            declared_published?: string | null;
+                            first_archived?: string | null;
+                            first_seen_by_crawlcheck?: string | null;
+                            added?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        origin?: ({
+                            url?: string | null;
+                            domain?: string | null;
+                            basis?: string | null;
+                            agrees?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        copies?: (({
+                            url?: string | null;
+                            domain?: string | null;
+                            declares_canonical?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        strength?: string | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
+            };
+        };
+    };
+    misquoteWatch: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Misquote watch for the domain */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        generated_at?: string | null;
+                        cited_answers?: number | null;
+                        counts?: ({
+                            claims?: number | null;
+                            supported?: number | null;
+                            contradicts_page?: number | null;
+                            not_on_page?: number | null;
+                            cited_but_not_named?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        misquotes?: (({
+                            at?: string | null;
+                            prompt?: string | null;
+                            cited_url?: string | null;
+                            version?: ({
+                                content_sha256?: unknown;
+                                live_from?: string | null;
+                                seal_day?: string | null;
+                                text_kept?: unknown;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            claims?: (({
+                                kind?: string | null;
+                                said?: string | null;
+                                status?: string | null;
+                                page_says?: (string | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        runs?: unknown[] | null;
+                        reading?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description Not found or not authorised */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    factLag: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-fact-lag */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        domain?: string | null;
+                        facts?: (({
+                            fact?: string | null;
+                            value?: string | null;
+                            since?: string | null;
+                            scans_seen?: number | null;
+                            previous?: (({
+                                value?: string | null;
+                                from?: string | null;
+                                until?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        changes?: (({
+                            fact?: string | null;
+                            old_value?: string | null;
+                            new_value?: string | null;
+                            last_seen_old?: string | null;
+                            first_seen_new?: string | null;
+                            crawlers?: ({
+                                Googlebot?: ({
+                                    first_verified_fetch?: string | null;
+                                    days_after_change?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                GPTBot?: ({
+                                    first_verified_fetch?: string | null;
+                                    days_after_change?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            crawlers_measured?: boolean | null;
+                            engines?: ({
+                                "Gemini with Google Search"?: ({
+                                    state?: string | null;
+                                    first_correct?: string | null;
+                                    lag_days?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                "gpt-oss-120b (no search)"?: ({
+                                    state?: string | null;
+                                    last_reading?: string | null;
+                                    last_result?: string | null;
+                                    stated?: (string | null)[] | null;
+                                    days_so_far?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        current?: (({
+                            engine?: string | null;
+                            read_at?: string | null;
+                            state?: string | null;
+                            phone?: ({
+                                result?: string | null;
+                                stated?: (string | null)[] | null;
+                                printed_by?: ({
+                                    "(303) 555-0142"?: (string | null)[] | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            address?: ({
+                                result?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            hours?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        reading?: string | null;
+                        sources?: ({
+                            facts?: string | null;
+                            crawlers?: string | null;
+                            engines?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description not yours to read */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    pageSupply: {
+        parameters: {
+            query: {
+                domain: string;
+                path?: string;
+                days?: number;
+                /** @description cited: every page a stored answer has cited on the domain, flagged first */
+                scope?: "cited";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-supply (one page, with per-answer verdicts and flags) or crawlcheck-supply-cited (scope=cited) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        domain?: string | null;
+                        path?: string | null;
+                        url?: string | null;
+                        window_days?: number | null;
+                        page?: ({
+                            observed?: boolean | null;
+                            read_now?: boolean | null;
+                            content_sha256?: unknown;
+                            content_chars?: number | null;
+                            version_since?: string | null;
+                            first_observed?: string | null;
+                            observations?: number | null;
+                            changes_observed?: number | null;
+                            seal?: ({
+                                day?: string | null;
+                                leaf_id?: unknown;
+                                sealed?: boolean | null;
+                                leaf_index?: number | null;
+                                root?: unknown;
+                                state?: string | null;
+                                lookup?: unknown;
+                                proof?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            previous_versions?: (({
+                                content_sha256?: unknown;
+                                from?: string | null;
+                                to?: string | null;
+                                seal_day?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            declared?: ({
+                                json_ld_date_modified?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            clock?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        crawlers?: ({
+                            measured?: boolean | null;
+                            bots?: ({
+                                GPTBot?: ({
+                                    hits?: number | null;
+                                    verified?: number | null;
+                                    forged?: number | null;
+                                    unverifiable?: number | null;
+                                    days?: number | null;
+                                    last_seen?: string | null;
+                                    last_verified?: string | null;
+                                    verified_days?: (string | null)[] | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                PerplexityBot?: ({
+                                    hits?: number | null;
+                                    verified?: number | null;
+                                    forged?: number | null;
+                                    unverifiable?: number | null;
+                                    days?: number | null;
+                                    last_seen?: string | null;
+                                    last_verified?: string | null;
+                                    verified_days?: (string | null)[] | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            reading?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        answers?: ({
+                            indexed_runs_for_domain?: number | null;
+                            cited_this_page?: number | null;
+                            runs?: (({
+                                at?: string | null;
+                                prompt?: string | null;
+                                model?: string | null;
+                                mode?: string | null;
+                                config?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            reading?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        verdicts?: (({
+                            at?: string | null;
+                            prompt?: string | null;
+                            model?: string | null;
+                            mode?: string | null;
+                            flags?: unknown[] | null;
+                            version?: ({
+                                content_sha256?: unknown;
+                                live_from?: string | null;
+                                still_live?: boolean | null;
+                                seal_day?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            verified_fetch_before_answer?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        flags?: unknown[] | null;
+                        reading?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description not yours to read */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -3554,7 +15821,36 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        url?: string | null;
+                        checked_at?: string | null;
+                        read_now?: boolean | null;
+                        content_sha256?: unknown;
+                        content_chars?: number | null;
+                        main_content_last_changed?: ({
+                            between?: string | null;
+                            and?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        unchanged_since_first_observed?: unknown;
+                        first_observed?: string | null;
+                        observations?: number | null;
+                        changes_observed?: number | null;
+                        declared?: ({
+                            last_modified_header?: string | null;
+                            json_ld_date_modified?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        declared_vs_observed?: string | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description page unreadable */
@@ -3584,7 +15880,39 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        url?: string | null;
+                        cited?: boolean | null;
+                        citations?: number | null;
+                        distinct_citers?: number | null;
+                        citers_floor?: number | null;
+                        citers_published?: boolean | null;
+                        by_declared_agent?: ({
+                            "ExampleResearchAgent/2.1"?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        first_cited?: string | null;
+                        last_cited?: string | null;
+                        anchors?: number | null;
+                        distinct_passages?: number | null;
+                        quoted_text?: ({
+                            still_present?: number | null;
+                            no_longer_present?: number | null;
+                            page_unreachable?: number | null;
+                            unchecked?: number | null;
+                            basis?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        anchor_ids?: (string | null)[] | null;
+                        anchor_url?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description give url or domain */
@@ -3603,7 +15931,16 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": ({
+                    url?: string | null;
+                    text?: string | null;
+                } & {
+                    [key: string]: unknown;
+                }) | null;
+            };
+        };
         responses: {
             /** @description crawlcheck-anchor */
             201: {
@@ -3611,7 +15948,49 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        id?: string | null;
+                        url?: string | null;
+                        anchored_at?: string | null;
+                        passage?: ({
+                            text?: string | null;
+                            sha256?: unknown;
+                            chars?: number | null;
+                            match?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        selector?: ({
+                            text_fragment?: string | null;
+                            prefix?: string | null;
+                            suffix?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        page?: ({
+                            status?: number | null;
+                            content_type?: string | null;
+                            bytes?: number | null;
+                            text_sha256?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        seal?: ({
+                            day?: string | null;
+                            leaf_id?: string | null;
+                            lookup?: string | null;
+                            proof?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        recheck?: string | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description page unreachable or passage not found */
@@ -3632,7 +16011,15 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": ({
+                    webhook?: string | null;
+                } & {
+                    [key: string]: unknown;
+                }) | null;
+            };
+        };
         responses: {
             /** @description watching */
             200: {
@@ -3640,7 +16027,17 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        anchor_id?: string | null;
+                        watching?: boolean | null;
+                        every?: string | null;
+                        events?: (string | null)[] | null;
+                        current_status?: string | null;
+                        ok?: boolean | null;
+                        webhooks?: number | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no such anchor */
@@ -3669,7 +16066,32 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        token?: string | null;
+                        deliveries?: (({
+                            received_at?: string | null;
+                            from?: string | null;
+                            body?: ({
+                                event?: string | null;
+                                check?: ({
+                                    kind?: string | null;
+                                    status?: string | null;
+                                    previous_status?: string | null;
+                                    sha256?: unknown;
+                                    signature?: unknown;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        note?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -3693,7 +16115,45 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        check?: ({
+                            kind?: string | null;
+                            v?: number | null;
+                            anchor_id?: string | null;
+                            url?: string | null;
+                            checked_at?: string | null;
+                            status?: string | null;
+                            why?: string | null;
+                            page?: ({
+                                status?: number | null;
+                                text_sha256?: unknown;
+                                text_changed_since_anchor?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            sha256?: unknown;
+                            signature?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        anchor?: ({
+                            kind?: string | null;
+                            id?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        seal?: ({
+                            day?: string | null;
+                            sealed?: boolean | null;
+                            leaf_index?: number | null;
+                            root?: unknown;
+                            state?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no such anchor */
@@ -3724,10 +16184,17 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        site?: string | null;
+                        recorded?: boolean | null;
+                        note?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
-            /** @description not a Worker subrequest */
+            /** @description not sent by the site's own edge code */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -3751,7 +16218,57 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        edition?: string | null;
+                        status?: string | null;
+                        generated_at?: string | null;
+                        population?: ({
+                            reporting_sites?: number | null;
+                            by_source?: ({
+                                edge?: number | null;
+                                reporter?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            days_with_data?: number | null;
+                            fetches?: number | null;
+                            floor?: number | null;
+                            publishable?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        agents?: (({
+                            agent?: string | null;
+                            operator?: string | null;
+                            purpose?: string | null;
+                            sites_visited?: number | null;
+                            share_of_reporting_sites?: number | null;
+                            published?: boolean | null;
+                            fetches?: number | null;
+                            verified?: number | null;
+                            forged_claims?: number | null;
+                            unverifiable?: number | null;
+                            verified_share?: number | null;
+                            fetches_per_site?: number | null;
+                            machine_file_share_of_verified?: number | null;
+                            verified_fetches_by_target?: ({
+                                "/"?: number | null;
+                                "/robots.txt"?: number | null;
+                                page?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            why?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -3773,7 +16290,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        edition?: string | null;
+                        status?: string | null;
+                        population?: ({
+                            reporting_sites?: number | null;
+                            publishable?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        agents?: (({
+                            agent?: string | null;
+                            operator?: string | null;
+                            published?: boolean | null;
+                            why?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no such month */
@@ -3800,7 +16340,39 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        reading?: string | null;
+                        days?: (({
+                            day?: string | null;
+                            checked?: number | null;
+                            by_verdict?: ({
+                                verified?: number | null;
+                                spoofed?: number | null;
+                                unverifiable?: number | null;
+                                not_a_known_agent?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            by_agent?: ({
+                                GPTBot?: ({
+                                    verified?: number | null;
+                                    spoofed?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        spec?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -3824,7 +16396,45 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        sha256?: string | null;
+                        found?: boolean | null;
+                        accept?: boolean | null;
+                        checks?: ({
+                            host_matches?: boolean | null;
+                            expired?: boolean | null;
+                            decision?: string | null;
+                            action?: string | null;
+                            agent?: string | null;
+                            expires_at?: string | null;
+                            decided_at?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        reason?: string | null;
+                        receipt?: ({
+                            kind?: string | null;
+                            v?: number | null;
+                            domain?: string | null;
+                            action?: string | null;
+                            decision?: string | null;
+                            sha256?: string | null;
+                            signature?: ({
+                                alg?: string | null;
+                                kid?: unknown;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        verify?: string | null;
+                        spec?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no receipt with that digest is held */
@@ -3833,6 +16443,510 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    resolveArchiveV1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sha256: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-resolve */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        actions?: ({
+                            read?: ({
+                                decision?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        transparency?: ({
+                            leaf_hash?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description not archived */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    thresholdVerdictV1: {
+        parameters: {
+            query: {
+                url: string;
+                k?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-threshold-verdict */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        statement?: ({
+                            kind?: string | null;
+                            family?: string | null;
+                            url?: string | null;
+                            values?: (({
+                                identity?: string | null;
+                                status?: number | null;
+                                final?: string | null;
+                                failed?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        threshold?: ({
+                            k?: number | null;
+                            n_networks?: number | null;
+                            agreeing_networks?: number | null;
+                            met?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        signers?: unknown[] | null;
+                        dissent?: unknown[] | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description bad url */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    observerMeshV1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-observer-mesh */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        site_observers?: number | null;
+                        customer_observers?: number | null;
+                        crawlcheck_property_observers?: number | null;
+                        networks?: ({
+                            "DigitalOcean, LLC"?: number | null;
+                            "Hetzner Online GmbH"?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        observers?: (({
+                            observer_id?: string | null;
+                            site?: string | null;
+                            relation?: string | null;
+                            network?: ({
+                                class?: string | null;
+                                as_org?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            status?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        goal?: ({
+                            customer_observers_needed?: number | null;
+                            reached?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    staple: {
+        parameters: {
+            query: {
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-staple */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        record?: unknown;
+                        fresh_until?: unknown;
+                        refresh_after?: unknown;
+                        header?: unknown;
+                        answer?: ({
+                            kind?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    resolveOverDns: {
+        parameters: {
+            query?: {
+                name?: string;
+                type?: string;
+                dns?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description application/dns-message or application/dns-json */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/dns-json": ({
+                        Status?: number | null;
+                        Question?: (({
+                            name?: string | null;
+                            type?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        Answer?: (({
+                            name?: string | null;
+                            type?: number | null;
+                            TTL?: number | null;
+                            data?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    shareOfPreflight: {
+        parameters: {
+            query?: {
+                month?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-share-of-preflight */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        state?: string | null;
+                        month?: string | null;
+                        share?: ({
+                            verified_agent_requests?: number | null;
+                            receipts_accepted?: number | null;
+                            overall?: number | null;
+                            by_agent?: (({
+                                agent?: string | null;
+                                verified_requests?: number | null;
+                                receipts_accepted?: number | null;
+                                share?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    compliancePackDigests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-compliance-pack */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        framework?: ({
+                            id?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        summary?: ({
+                            records?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    compliancePack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description crawlcheck-compliance-pack */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        framework?: ({
+                            id?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        summary?: ({
+                            records?: number | null;
+                            signature_valid?: number | null;
+                            resolve_archived?: number | null;
+                            log_included?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        mapping?: (({
+                            ref?: string | null;
+                            records_with_all_fields?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        records?: unknown[] | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    complianceFrameworks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-compliance-frameworks */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        frameworks?: ({
+                            "eu-ai-act-art12"?: ({
+                                duties?: unknown[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            "nist-ai-rmf"?: ({
+                                duties?: unknown[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    agentSafetyBenchmark: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-agent-safety-benchmark */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+        };
+    };
+    adoptionV1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-adoption */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        window_days?: number | null;
+                        goal?: ({
+                            reached?: boolean | null;
+                            verified_agent_decisions?: number | null;
+                            outside_receipt_checks?: number | null;
+                            first?: ({
+                                "decision:verified_agent"?: unknown;
+                                "receipt:outside"?: unknown;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        decisions?: ({
+                            total?: ({
+                                ours?: number | null;
+                                other?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        receipts?: ({
+                            total?: ({
+                                ours?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        verified_crawlers_on_lookup_paths?: ({
+                            bots?: {
+                                [key: string]: unknown;
+                            } | null;
+                            first?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        days?: unknown[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
             };
         };
     };
@@ -3851,8 +16965,413 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        header?: string | null;
+                        reading?: string | null;
+                        days?: (({
+                            day?: string | null;
+                            decisions_issued?: number | null;
+                            receipts_checked_by_sites?: number | null;
+                            found?: number | null;
+                            accepted?: number | null;
+                            by_decision?: ({
+                                allow?: number | null;
+                                warn?: number | null;
+                                block?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            by_action?: ({
+                                read?: number | null;
+                                connect?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        spec?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
+            };
+        };
+    };
+    evidencePacketGetV1: {
+        parameters: {
+            query: {
+                sha: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-evidence-packet */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        log?: ({
+                            sha256?: unknown;
+                            lines?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description unknown hash */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    evidencePacketCreateV1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    domain: string;
+                    lines: string;
+                    crawler?: string;
+                    /** Format: date */
+                    from?: string;
+                    /** Format: date */
+                    to?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description crawlcheck-evidence-packet-receipt */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        packet_sha256?: unknown;
+                        stored?: boolean | null;
+                        download?: unknown;
+                        seal?: ({
+                            leaf_id?: unknown;
+                            day?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        summary?: ({
+                            lines?: number | null;
+                            verified?: number | null;
+                            spoofed?: number | null;
+                            unverifiable?: number | null;
+                            matched?: number | null;
+                            by_crawler?: ({
+                                GPTBot?: ({
+                                    verified?: number | null;
+                                    spoofed?: number | null;
+                                    unverifiable?: number | null;
+                                    distinct_pages?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        packet?: ({
+                            kind?: string | null;
+                            hits?: (({
+                                at?: string | null;
+                                crawler?: string | null;
+                                verdict?: string | null;
+                                path?: string | null;
+                                status?: number | null;
+                                reading?: ({
+                                    observed_at?: string | null;
+                                    sha256?: unknown;
+                                    source?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    saidV1: {
+        parameters: {
+            query: {
+                url: string;
+                date?: string;
+                text?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-said */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description no reading held for that URL and date */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    servedV1: {
+        parameters: {
+            query: {
+                url: string;
+                date?: string;
+                identity?: string;
+                from?: string;
+                to?: string;
+                format?: "html";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-served */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        date_asked?: string | null;
+                        exact_day?: boolean | null;
+                        observed_at?: string | null;
+                        url?: string | null;
+                        identities?: (({
+                            identity?: string | null;
+                            label?: string | null;
+                            role?: string | null;
+                            status?: number | null;
+                            bytes?: number | null;
+                            sha256?: unknown;
+                            words?: number | null;
+                            blocker?: string | null;
+                            redirected_to?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        same_for_all?: boolean | null;
+                        identity?: ({
+                            identity?: string | null;
+                            status?: number | null;
+                            held?: boolean | null;
+                            text?: unknown;
+                            text_words?: number | null;
+                            vs_browser?: ({
+                                same_bytes?: boolean | null;
+                                browser_words?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        robots_txt?: ({
+                            sha256?: unknown;
+                            status?: number | null;
+                            text?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        proof?: ({
+                            said?: string | null;
+                            verify?: unknown;
+                            day_root?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        sha256?: unknown;
+                        signature?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no licence for the domain */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no reading on or before the date */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    factsV1: {
+        parameters: {
+            query: {
+                domain: string;
+                field?: "name" | "phone" | "address" | "service_area" | "hours" | "url" | "categories" | "services";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description a set of signed fact cards */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+        };
+    };
+    fieldCheckV1: {
+        parameters: {
+            query: {
+                domain: string;
+                field: "phone" | "address" | "hours" | "service_area";
+                value: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signed field verdict */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        field?: string | null;
+                        asked?: string | null;
+                        checked_at?: string | null;
+                        access?: string | null;
+                        record?: ({
+                            status?: string | null;
+                            taken_from?: string | null;
+                            statements?: (({
+                                from?: string | null;
+                                where?: string | null;
+                                value?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        basis?: ({
+                            record_built_at?: string | null;
+                            site_read?: boolean | null;
+                            sources?: string | null;
+                            fact_history?: ({
+                                scans?: number | null;
+                                first?: string | null;
+                                updated?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        ownership?: ({
+                            verdict?: string | null;
+                            business?: string | null;
+                            domain?: string | null;
+                            source?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        verdict?: string | null;
+                        current?: (string | null)[] | null;
+                        statement?: string | null;
+                        reading?: string | null;
+                        sha256?: unknown;
+                        signature?: ({
+                            alg?: string | null;
+                            kid?: unknown;
+                            sig?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description Bad field or value */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Hourly record budget spent for this address */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -3873,7 +17392,49 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        prefix?: string | null;
+                        generated_at?: string | null;
+                        reading?: string | null;
+                        hash?: string | null;
+                        in_bucket?: number | null;
+                        answered?: number | null;
+                        left_out?: number | null;
+                        k_note?: string | null;
+                        index?: ({
+                            snapshot?: string | null;
+                            built_at?: string | null;
+                            domains?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        answers?: (({
+                            domain_sha256?: string | null;
+                            answer?: ({
+                                kind?: string | null;
+                                v?: number | null;
+                                domain?: string | null;
+                                status?: string | null;
+                                sha256?: unknown;
+                                signature?: ({
+                                    alg?: string | null;
+                                    kid?: unknown;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        verify?: string | null;
+                        docs?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description more than 100 answers share the prefix; send a longer one */
@@ -3907,7 +17468,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        reading?: string | null;
+                        license?: string | null;
+                        latest?: ({
+                            id?: string | null;
+                            day?: string | null;
+                            records?: number | null;
+                            parts?: number | null;
+                            finished_at?: string | null;
+                            manifest?: string | null;
+                            manifest_sha256?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        in_progress?: unknown;
+                        snapshots?: (({
+                            id?: string | null;
+                            day?: string | null;
+                            records?: number | null;
+                            parts?: number | null;
+                            finished_at?: string | null;
+                            manifest_sha256?: string | null;
+                            manifest?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        verifier?: string | null;
+                        docs?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -3930,7 +17524,47 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        snapshot?: string | null;
+                        day?: string | null;
+                        started_at?: string | null;
+                        finished_at?: string | null;
+                        records?: number | null;
+                        read?: number | null;
+                        skipped?: ({
+                            opted_out?: number | null;
+                            not_measured?: number | null;
+                            stale?: number | null;
+                            unsigned?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        parts?: (({
+                            path?: string | null;
+                            records?: number | null;
+                            bytes?: number | null;
+                            sha256?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        record_kind?: string | null;
+                        license?: string | null;
+                        base?: string | null;
+                        sha256?: string | null;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: unknown;
+                            over?: string | null;
+                            sig?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description unknown or deleted snapshot file */
@@ -3960,7 +17594,28 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        since?: string | null;
+                        domain?: unknown;
+                        generated_at?: string | null;
+                        count?: number | null;
+                        next_since?: string | null;
+                        reading?: string | null;
+                        events?: (({
+                            domain?: string | null;
+                            at?: string | null;
+                            section?: string | null;
+                            from_state?: string | null;
+                            to_state?: string | null;
+                            detail?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -3982,7 +17637,64 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        host?: string | null;
+                        source?: string | null;
+                        import_run?: number | null;
+                        import_finished_at?: string | null;
+                        count?: number | null;
+                        observed?: number | null;
+                        initialized?: number | null;
+                        reading?: string | null;
+                        servers?: (({
+                            name?: string | null;
+                            title?: string | null;
+                            version?: string | null;
+                            description?: string | null;
+                            remotes?: (({
+                                type?: string | null;
+                                url?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            packages?: unknown[] | null;
+                            repository?: unknown;
+                            website?: unknown;
+                            status?: string | null;
+                            published_at?: string | null;
+                            updated_at?: string | null;
+                            run?: number | null;
+                            probe?: ({
+                                at?: string | null;
+                                url?: string | null;
+                                transport?: string | null;
+                                status?: number | null;
+                                ms?: number | null;
+                                outcome?: string | null;
+                                initialized?: boolean | null;
+                                protocol_version?: string | null;
+                                server?: ({
+                                    name?: string | null;
+                                    version?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                tools?: number | null;
+                                tool_names?: (string | null)[] | null;
+                                tools_sha256?: string | null;
+                                auth_header?: boolean | null;
+                                error?: unknown;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no host */
@@ -4009,8 +17721,147 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        source?: string | null;
+                        generated_at?: string | null;
+                        import?: ({
+                            run?: number | null;
+                            active?: boolean | null;
+                            started_at?: string | null;
+                            finished_at?: unknown;
+                            servers?: number | null;
+                            with_remote_endpoint?: number | null;
+                            pages?: number | null;
+                            refresh_days?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        observation?: ({
+                            cycle_started_at?: string | null;
+                            this_cycle?: ({
+                                probed?: number | null;
+                                initialized?: number | null;
+                                auth_required?: number | null;
+                                unreachable?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            last_full_cycle?: unknown;
+                            per_tick?: number | null;
+                            method?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        recent?: (({
+                            name?: string | null;
+                            url?: string | null;
+                            outcome?: string | null;
+                            tools?: number | null;
+                            at?: string | null;
+                            ms?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        reading?: string | null;
+                        lookup?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    preflightBatchV1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    domains: string[];
+                    /** @enum {unknown} */
+                    action?: "read" | "cite" | "connect" | "transact" | "administer";
+                    agent?: string;
+                    template?: string;
+                    policy?: Record<string, never>;
+                    policy_id?: string;
+                    /** @enum {unknown} */
+                    receipts?: "full" | "compact";
+                    rank?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description crawlcheck-preflight-batch (signed) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
                     "application/json": unknown;
                 };
+            };
+            /** @description no domains, or more than 100 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description quota */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    preflightGetV1: {
+        parameters: {
+            query: {
+                /** @description the bare domain you are about to act on */
+                domain: string;
+                action: "read" | "cite" | "connect" | "transact" | "administer";
+                /** @description your crawler token, e.g. ClaudeBot; when absent, the bot named in the User-Agent header is used */
+                agent?: string;
+                template?: string;
+                /** @description signed back in the receipt */
+                nonce?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-decision, signed (Ed25519, prefix crawlcheck-data-v1); verify offline with crawlcheck-verify.mjs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionV1"];
+                };
+            };
+            /** @description an IP literal or a private host */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no domain, or an unknown action or template */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -4039,6 +17890,18 @@ export interface operations {
                         allow?: string[];
                         deny?: string[];
                     };
+                    /** @description signed back in the receipt; bind a receipt to one request */
+                    nonce?: string;
+                    /** @description the exact operation the decision is for, signed back as sent; a guard rejects a receipt used for any other */
+                    operation?: {
+                        /** @enum {unknown} */
+                        method?: "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS";
+                        /** @description absolute http(s) URL on the domain asked about */
+                        url?: string;
+                        tool?: string;
+                        tool_schema_sha256?: string;
+                        scopes?: string[];
+                    };
                 };
             };
         };
@@ -4049,7 +17912,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["DecisionV1"];
                 };
             };
             /** @description no domain, an unknown action or template, or a policy that tries to loosen a decision */
@@ -4065,6 +17928,10 @@ export interface operations {
         parameters: {
             query: {
                 domain: string;
+                /** @description ISO time: the answer that was in force then, as signed then (crawlcheck-resolve-as-of), with its in-force window and log inclusion proof; history from 7 Oct 2026 */
+                as_of?: string;
+                /** @description A crawler token (GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot, Googlebot...): instead of the full answer, a small signed crawlcheck-resolve-for-agent document for that one agent: its robots.txt verdict, what was served to that identity, read-equivalence, and read/cite decisions recomputed for it, bound to the full answer by sha256 */
+                as?: string;
             };
             header?: never;
             path?: never;
@@ -4078,7 +17945,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ResolveV1"];
                 };
             };
             /** @description no domain, an IP address, or a host that resolves to a private address */
@@ -4111,7 +17978,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ResolveBatchV1"];
                 };
             };
             /** @description no domains, or more than 100 */
@@ -4138,7 +18005,350 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/schema+json": unknown;
+                    "application/schema+json": ({
+                        $schema?: string | null;
+                        $id?: string | null;
+                        title?: string | null;
+                        description?: string | null;
+                        type?: string | null;
+                        required?: (string | null)[] | null;
+                        $defs?: ({
+                            section?: ({
+                                type?: string | null;
+                                required?: (string | null)[] | null;
+                                properties?: ({
+                                    state?: ({
+                                        enum?: (string | null)[] | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    observed_at?: ({
+                                        type?: (string | null)[] | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    why?: ({
+                                        type?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        properties?: ({
+                            kind?: ({
+                                const?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            v?: ({
+                                const?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            schema?: ({
+                                type?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            domain?: ({
+                                type?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            answered_at?: ({
+                                type?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            reading?: ({
+                                type?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            status?: ({
+                                enum?: (string | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            why?: ({
+                                type?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            measurement?: ({
+                                type?: string | null;
+                                properties?: ({
+                                    requested?: ({
+                                        type?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    first_request?: ({
+                                        type?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    how?: ({
+                                        type?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            subject?: ({
+                                type?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            freshness?: ({
+                                type?: (string | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            observers?: ({
+                                type?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            crawl_policy?: ({
+                                allOf?: (({
+                                    $ref?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null)[] | null;
+                                properties?: ({
+                                    agents?: ({
+                                        type?: string | null;
+                                        items?: ({
+                                            type?: string | null;
+                                            required?: (string | null)[] | null;
+                                            properties?: ({
+                                                agent?: Record<string, never> | null;
+                                                allowed_homepage?: Record<string, never> | null;
+                                                allowed_path?: Record<string, never> | null;
+                                                has_own_group?: Record<string, never> | null;
+                                                wildcard_rules_shadowed?: Record<string, never> | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            delivery?: ({
+                                allOf?: (({
+                                    $ref?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null)[] | null;
+                                properties?: ({
+                                    identities?: ({
+                                        type?: string | null;
+                                        items?: ({
+                                            type?: string | null;
+                                            required?: (string | null)[] | null;
+                                            properties?: ({
+                                                identity?: Record<string, never> | null;
+                                                status?: Record<string, never> | null;
+                                                words?: Record<string, never> | null;
+                                                blocker?: Record<string, never> | null;
+                                                redirected_to?: Record<string, never> | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            machine_files?: ({
+                                allOf?: (({
+                                    $ref?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null)[] | null;
+                                properties?: ({
+                                    files?: ({
+                                        type?: string | null;
+                                        items?: ({
+                                            type?: string | null;
+                                            required?: (string | null)[] | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            capabilities?: ({
+                                allOf?: (({
+                                    $ref?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null)[] | null;
+                                properties?: ({
+                                    declared?: ({
+                                        type?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    verified?: ({
+                                        type?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    mismatches?: ({
+                                        type?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    certificate?: ({
+                                        type?: (string | null)[] | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            entity?: ({
+                                allOf?: (({
+                                    $ref?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null)[] | null;
+                                properties?: ({
+                                    links?: ({
+                                        type?: string | null;
+                                        items?: ({
+                                            type?: string | null;
+                                            required?: (string | null)[] | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            findings?: ({
+                                type?: string | null;
+                                required?: (string | null)[] | null;
+                                properties?: ({
+                                    access?: ({
+                                        type?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    items?: ({
+                                        type?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            confidence?: ({
+                                type?: (string | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            contradictions?: ({
+                                type?: (string | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            evidence?: ({
+                                type?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            sha256?: ({
+                                type?: (string | null)[] | null;
+                                pattern?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            signature?: ({
+                                type?: (string | null)[] | null;
+                                properties?: ({
+                                    alg?: ({
+                                        const?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    kid?: ({
+                                        type?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    message?: ({
+                                        type?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    sig?: ({
+                                        type?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            unsigned?: ({
+                                type?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -4193,7 +18403,45 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        source?: string | null;
+                        domain?: string | null;
+                        report_id?: unknown;
+                        fetched_at?: string | null;
+                        rule?: string | null;
+                        now?: ({
+                            age_seconds?: number | null;
+                            fires?: boolean | null;
+                            header_overridden?: boolean | null;
+                            cf_cache_status?: string | null;
+                            cache_control?: string | null;
+                            lifetime?: ({
+                                seconds?: number | null;
+                                from?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            layers?: (({
+                                id?: string | null;
+                                name?: string | null;
+                                kind?: string | null;
+                                purge?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            fresh_read?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        steps?: unknown[] | null;
+                        clears?: unknown;
+                        clears_at_step?: number | null;
+                        stays_clear?: unknown;
+                        verdict?: string | null;
+                        assumption?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no domain or id */
@@ -4237,7 +18485,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        source?: string | null;
+                        domain?: string | null;
+                        report_id?: string | null;
+                        scanned_at?: string | null;
+                        fetched_at?: string | null;
+                        rule?: string | null;
+                        now?: ({
+                            chain_bytes?: number | null;
+                            page_bytes?: number | null;
+                            chain_fires?: boolean | null;
+                            probe_404_avg?: number | null;
+                            probe_404_paths?: number | null;
+                            probe_404_fires?: boolean | null;
+                            files?: (({
+                                path?: string | null;
+                                bytes?: number | null;
+                                source?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        steps?: unknown[] | null;
+                        clears?: unknown;
+                        clears_at_step?: number | null;
+                        verdict?: string | null;
+                        assumption?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no domain or id */
@@ -4274,7 +18553,63 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        source?: string | null;
+                        domain?: string | null;
+                        url?: string | null;
+                        fetched_at?: string | null;
+                        ok?: boolean | null;
+                        rule?: string | null;
+                        now?: ({
+                            total_bytes?: number | null;
+                            visible_text_bytes?: number | null;
+                            ratio_pct?: number | null;
+                            fires?: boolean | null;
+                            breakdown?: ({
+                                inline_css?: number | null;
+                                inline_javascript?: number | null;
+                                json_ld?: number | null;
+                                inline_svg?: number | null;
+                                html_comments?: number | null;
+                                markup_and_attributes?: number | null;
+                                visible_text?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        steps?: (({
+                            step?: number | null;
+                            id?: string | null;
+                            action?: string | null;
+                            bytes_moved?: number | null;
+                            total_after?: number | null;
+                            ratio_after_pct?: number | null;
+                            detector_fires?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        clears?: boolean | null;
+                        clears_at_step?: number | null;
+                        minimal_plan?: unknown[] | null;
+                        assumption?: string | null;
+                        blocks?: (({
+                            kind?: string | null;
+                            bytes?: number | null;
+                            sig?: string | null;
+                            id?: string | null;
+                            cls?: string | null;
+                            opens?: string | null;
+                            action?: string | null;
+                            how?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        verdict?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no domain or id */
@@ -4311,7 +18646,106 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        subject?: ({
+                            domain?: string | null;
+                            report_id?: string | null;
+                            scanned_at?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        observers?: ({
+                            registry?: string | null;
+                            observations?: (({
+                                observer_id?: string | null;
+                                observed_at?: string | null;
+                                sha256?: string | null;
+                                vantage?: ({
+                                    provider?: string | null;
+                                    asn_org?: string | null;
+                                    region?: string | null;
+                                    country?: string | null;
+                                    ip?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                checks?: ({
+                                    signature?: boolean | null;
+                                    github_identity?: boolean | null;
+                                    clock_ok?: boolean | null;
+                                    profile_matches?: boolean | null;
+                                    bodies_verified?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        side_by_side?: ({
+                            second?: ({
+                                observer_id?: string | null;
+                                observed_at?: string | null;
+                                vantage?: ({
+                                    provider?: string | null;
+                                    asn_org?: string | null;
+                                    region?: string | null;
+                                    country?: string | null;
+                                    ip?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                observation?: string | null;
+                                checks?: ({
+                                    signature?: boolean | null;
+                                    github_identity?: boolean | null;
+                                    clock_ok?: boolean | null;
+                                    profile_matches?: boolean | null;
+                                    bodies_verified?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            primary?: ({
+                                observer_id?: string | null;
+                                observed_at?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            identities?: (({
+                                id?: string | null;
+                                label?: string | null;
+                                primary?: ({
+                                    status?: number | null;
+                                    words?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                second?: ({
+                                    status?: number | null;
+                                    words?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                same_status?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        findings?: unknown[] | null;
+                        access?: string | null;
+                        statuses?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no record */
@@ -4343,15 +18777,153 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        version?: string | null;
+                        subject?: ({
+                            domain?: string | null;
+                            host?: string | null;
+                            report_id?: string | null;
+                            scanned_at?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        finding?: ({
+                            fid?: string | null;
+                            decision_id?: string | null;
+                            code?: string | null;
+                            severity?: number | null;
+                            path?: string | null;
+                            title?: string | null;
+                            detail?: unknown;
+                            meaning?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        rule?: ({
+                            code?: string | null;
+                            revision?: number | null;
+                            revision_note?: unknown;
+                            score_version?: number | null;
+                            decided_in?: ({
+                                trace_id?: string | null;
+                                span_id?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        observed?: ({
+                            evidence?: ({
+                                shadowed_groups?: number | null;
+                                agents_affected?: number | null;
+                                search_engines_affected?: number | null;
+                                sample?: ({
+                                    [key: string]: unknown;
+                                } | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            compared_fetches?: unknown;
+                            support_scope?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        corroboration?: ({
+                            status?: string | null;
+                            reading?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        trust?: ({
+                            freshness?: ({
+                                observed_at?: string | null;
+                                last_observed?: string | null;
+                                held_since?: string | null;
+                                state?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            confidence?: ({
+                                level?: string | null;
+                                means?: string | null;
+                                basis?: (string | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            contradictions?: unknown[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        score_effect?: ({
+                            decision_id?: string | null;
+                            code?: string | null;
+                            path?: string | null;
+                            severity?: number | null;
+                            level?: string | null;
+                            points?: number | null;
+                            cap?: string | null;
+                            binding?: boolean | null;
+                            letter_now?: string | null;
+                            letter_without_it?: string | null;
+                            same_level_others?: number | null;
+                            says?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        held?: ({
+                            state?: string | null;
+                            first_seen?: string | null;
+                            scans_seen?: number | null;
+                            valid_time?: ({
+                                valid_from?: ({
+                                    after?: unknown;
+                                    by?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                valid_to?: unknown;
+                                recorded_at?: string | null;
+                                superseded_at?: unknown;
+                                superseded_by?: unknown;
+                                earlier_intervals?: number | null;
+                                before_bt1?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            history?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        proof?: ({
+                            in_signed_manifest?: boolean | null;
+                            manifest_sha256?: string | null;
+                            decision_root?: string | null;
+                            leaf?: string | null;
+                            path?: (({
+                                side?: string | null;
+                                hash?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            how?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        check?: ({
+                            verify?: string | null;
+                            bundle?: string | null;
+                            offline_verifier?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        access?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
-            };
-            /** @description locked: needs a licence for the domain */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description no record or finding */
             404: {
@@ -4391,7 +18963,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        error?: string | null;
+                        trace_id?: string | null;
+                        span_id?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description the signature does not prove the key */
@@ -4403,6 +18982,146 @@ export interface operations {
             };
             /** @description the id is bound to another key */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    retireObserver: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    request: Record<string, never>;
+                    sig: string;
+                };
+            };
+        };
+        responses: {
+            /** @description retired */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description not signed by the enrolled key */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        error?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description not enrolled */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mcpCosignatures: {
+        parameters: {
+            query: {
+                event: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-mcp-cosignatures */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        event_id?: string | null;
+                        count?: number | null;
+                        cosignatures?: (({
+                            status?: string | null;
+                            kind?: string | null;
+                            event_id?: string | null;
+                            server?: string | null;
+                            url?: string | null;
+                            recorded_digest?: unknown;
+                            agrees?: boolean | null;
+                            envelope?: ({
+                                v?: number | null;
+                                kind?: string | null;
+                                observer_id?: string | null;
+                                observed_at?: string | null;
+                                task?: ({
+                                    task_id?: unknown;
+                                    event_id?: string | null;
+                                    url?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                result?: ({
+                                    outcome?: string | null;
+                                    tools?: number | null;
+                                    tools_sha256?: unknown;
+                                    tool_hashes?: (({
+                                        name?: string | null;
+                                        sha256?: unknown;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null)[] | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                key?: ({
+                                    kty?: string | null;
+                                    crv?: string | null;
+                                    x?: unknown;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            sig?: unknown;
+                            sig_prefix?: string | null;
+                            envelope_sha256?: unknown;
+                            arrived_from?: ({
+                                asn?: number | null;
+                                as_org?: string | null;
+                                country?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        directory?: string | null;
+                        protocol?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no event id */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4429,7 +19148,18 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        type?: string | null;
+                        stored?: boolean | null;
+                        checked_against?: string | null;
+                        shape?: boolean | null;
+                        key_matches_directory?: unknown;
+                        signature?: unknown;
+                        ok?: boolean | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -4458,7 +19188,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        locked?: boolean | null;
+                        error?: string | null;
+                        trace_id?: string | null;
+                        span_id?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -4488,7 +19226,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        locked?: boolean | null;
+                        error?: string | null;
+                        trace_id?: string | null;
+                        span_id?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -4519,7 +19265,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        locked?: boolean | null;
+                        error?: string | null;
+                        trace_id?: string | null;
+                        span_id?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no recent inventory */
@@ -4528,6 +19282,689 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    slo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-slo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        window_days?: number | null;
+                        slos?: (({
+                            id?: string | null;
+                            objective?: string | null;
+                            target?: number | null;
+                            samples?: number | null;
+                            good?: number | null;
+                            measured?: number | null;
+                            status?: string | null;
+                            error_budget?: ({
+                                allowed_bad?: number | null;
+                                spent?: number | null;
+                                remaining?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            burn_rate_24h?: number | null;
+                            latency_ms?: ({
+                                p50?: number | null;
+                                p95?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    sbomIndex: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-sbom-index */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        latest?: (({
+                            ecosystem?: string | null;
+                            name?: string | null;
+                            version?: string | null;
+                            artifact?: string | null;
+                            sha256?: unknown;
+                            runtime_dependencies?: unknown[] | null;
+                            files?: number | null;
+                            sbom?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    buildLog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-build-log */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        log?: string | null;
+                        size?: number | null;
+                        head?: ({
+                            n?: number | null;
+                            hash?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        chain_verified?: boolean | null;
+                        entries?: (({
+                            log?: string | null;
+                            n?: number | null;
+                            prev?: unknown;
+                            at?: string | null;
+                            build_id?: unknown;
+                            script_sha16?: string | null;
+                            from_sha16?: string | null;
+                            hash?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        running?: ({
+                            build_id?: string | null;
+                            script_sha16?: string | null;
+                            state?: string | null;
+                            deployed?: ({
+                                at?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            build_log_entry?: number | null;
+                            score_version?: number | null;
+                            scoring_policy_sha256?: unknown;
+                            decision_rules_sha256?: unknown;
+                            check?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    buildEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-build */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        entry?: ({
+                            log?: string | null;
+                            n?: number | null;
+                            prev?: unknown;
+                            at?: string | null;
+                            build_id?: unknown;
+                            script_sha16?: string | null;
+                            from_sha16?: string | null;
+                            hash?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        chain_to_head?: unknown[] | null;
+                        head?: ({
+                            n?: number | null;
+                            hash?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        chain_verified?: boolean | null;
+                        serving_now?: boolean | null;
+                        running?: ({
+                            build_id?: string | null;
+                            script_sha16?: string | null;
+                            state?: string | null;
+                            deployed?: ({
+                                at?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            build_log_entry?: number | null;
+                            score_version?: number | null;
+                            scoring_policy_sha256?: unknown;
+                            decision_rules_sha256?: unknown;
+                            check?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description no build with that version id */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deployAttestation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-deploy-attestation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        state?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        overall?: string | null;
+                        components?: (({
+                            id?: string | null;
+                            name?: string | null;
+                            status?: string | null;
+                            detail?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        open_incidents?: unknown[] | null;
+                        recent_incidents?: unknown[] | null;
+                        log?: ({
+                            entries?: number | null;
+                            chain_intact?: boolean | null;
+                            head?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    statusLog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-status-log */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        verify?: ({
+                            entries?: number | null;
+                            chain_intact?: boolean | null;
+                            problem?: unknown;
+                            head?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        entries?: unknown[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    backupStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-backup */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        last_backup?: ({
+                            day?: string | null;
+                            keys?: number | null;
+                            bytes?: number | null;
+                            parts?: number | null;
+                            manifest_sha256?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        in_progress?: unknown;
+                        last_restore_test?: ({
+                            day?: string | null;
+                            ok?: boolean | null;
+                            checks?: (({
+                                id?: string | null;
+                                ok?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    privateReportAccess: {
+        parameters: {
+            query: {
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-private-report-access */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no private report you can read */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        error?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    holdStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-holds */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        active?: ({
+                            abuse?: number | null;
+                            legal?: number | null;
+                            dispute?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        placed?: {
+                            [key: string]: unknown;
+                        } | null;
+                        renewed?: number | null;
+                        lifted?: number | null;
+                        expired?: number | null;
+                        requests_deferred?: number | null;
+                        requests_resumed?: number | null;
+                        rule?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    removalStatus: {
+        parameters: {
+            query: {
+                id: string;
+                t: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-removal-request */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        id?: string | null;
+                        type?: string | null;
+                        domain?: string | null;
+                        state?: string | null;
+                        created_at?: string | null;
+                        verified_at?: string | null;
+                        decide_by?: string | null;
+                        decision?: unknown;
+                        appeal?: unknown;
+                        appeal_until?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description unknown id or wrong t */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    removalRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description crawlcheck-removal-request with t */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        t?: string | null;
+                        status?: string | null;
+                        kind?: string | null;
+                        id?: string | null;
+                        type?: string | null;
+                        domain?: string | null;
+                        state?: string | null;
+                        prove?: ({
+                            file?: string | null;
+                            dns_txt?: string | null;
+                            value?: string | null;
+                            then?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description missing or invalid field */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    removalVerify: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description crawlcheck-removal-request */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        id?: string | null;
+                        type?: string | null;
+                        domain?: string | null;
+                        state?: string | null;
+                        decision?: ({
+                            decision?: string | null;
+                            at?: string | null;
+                            note?: unknown;
+                            record?: unknown;
+                            final?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        deletion?: ({
+                            job?: string | null;
+                            state?: string | null;
+                            record?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description token not found or wrong code */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    removalAppeal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description crawlcheck-removal-request */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        id?: string | null;
+                        type?: string | null;
+                        domain?: string | null;
+                        state?: string | null;
+                        decide_by?: string | null;
+                        appeal?: ({
+                            at?: string | null;
+                            decide_by?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description nothing to appeal or already appealed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    removalRecord: {
+        parameters: {
+            query: {
+                sha256: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description crawlcheck-removal-record */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description unknown digest */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        error?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
             };
         };
     };
@@ -4555,7 +19992,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        error?: string | null;
+                        trace_id?: string | null;
+                        span_id?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -4577,7 +20021,68 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        scans?: number | null;
+                        complete?: number | null;
+                        findings?: ({
+                            total?: number | null;
+                            linked?: number | null;
+                            pct?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        claims?: ({
+                            total?: number | null;
+                            linked?: number | null;
+                            pct?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        broken_parent_links?: number | null;
+                        malformed_ids?: number | null;
+                        dropped_spans?: number | null;
+                        stage_errors?: ({
+                            total?: number | null;
+                            linked?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        joined_a_caller_trace?: number | null;
+                        ci?: ({
+                            at?: string | null;
+                            green?: boolean | null;
+                            traces?: number | null;
+                            failures?: unknown[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        per_scan?: (({
+                            id?: string | null;
+                            domain?: string | null;
+                            at?: string | null;
+                            spans?: number | null;
+                            findings?: number | null;
+                            linked?: number | null;
+                            claims?: number | null;
+                            claims_linked?: number | null;
+                            errors?: number | null;
+                            errors_linked?: number | null;
+                            broken?: number | null;
+                            malformed?: number | null;
+                            dropped?: number | null;
+                            joined?: boolean | null;
+                            complete?: boolean | null;
+                            coverage?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        method?: string | null;
+                        schema?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no such record */
@@ -4604,7 +20109,33 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        last?: ({
+                            v?: number | null;
+                            at?: string | null;
+                            green?: boolean | null;
+                            traces?: number | null;
+                            schema_violations?: number | null;
+                            broken_parent_links?: number | null;
+                            unlinked_findings_after_tr1?: number | null;
+                            unlinked_findings_before_tr1?: number | null;
+                            self_test?: boolean | null;
+                            failures?: unknown[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        history?: (({
+                            at?: string | null;
+                            green?: boolean | null;
+                            traces?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -4616,7 +20147,18 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    phase: "sample" | "report";
+                    /** @description phase report: the trace CI verdict */
+                    result?: Record<string, never>;
+                } & {
+                    [key: string]: unknown;
+                };
+            };
+        };
         responses: {
             /** @description sample or stored report */
             200: {
@@ -4631,7 +20173,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        error?: string | null;
+                        trace_id?: string | null;
+                        span_id?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -4654,7 +20203,59 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        domain?: unknown;
+                        count?: number | null;
+                        disputes?: (({
+                            id?: string | null;
+                            domain?: string | null;
+                            report_id?: string | null;
+                            fid?: string | null;
+                            decision_id?: string | null;
+                            code?: string | null;
+                            path?: string | null;
+                            filed_at?: string | null;
+                            state?: string | null;
+                            verdict?: string | null;
+                            effect?: string | null;
+                            resolution_id?: string | null;
+                            page?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        decision_table?: string | null;
+                        grounds?: ({
+                            misread?: string | null;
+                            fixed?: string | null;
+                            network?: string | null;
+                            rule?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        verdicts?: ({
+                            upheld?: string | null;
+                            corrected?: string | null;
+                            fixed_since?: string | null;
+                            vantage_dependent?: string | null;
+                            no_longer_observed?: string | null;
+                            inconclusive?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        effects?: ({
+                            stands?: string | null;
+                            withdrawn?: string | null;
+                            stands_for_record?: string | null;
+                            stands_with_scope?: string | null;
+                            stands_unresolved?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no such dispute */
@@ -4706,7 +20307,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        error?: string | null;
+                        trace_id?: string | null;
+                        span_id?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description already disputed */
@@ -4746,7 +20354,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        error?: string | null;
+                        trace_id?: string | null;
+                        span_id?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description token not found */
@@ -4804,7 +20419,20 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        ok?: boolean | null;
+                        resolution_id?: string | null;
+                        checks?: (({
+                            id?: string | null;
+                            ok?: boolean | null;
+                            why?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -4828,7 +20456,20 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        ok?: boolean | null;
+                        resolution_id?: string | null;
+                        checks?: (({
+                            id?: string | null;
+                            ok?: boolean | null;
+                            why?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -4848,7 +20489,334 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        v?: number | null;
+                        updated?: string | null;
+                        timezone?: string | null;
+                        totals?: ({
+                            rows?: number | null;
+                            measured?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        lanes?: (({
+                            id?: string | null;
+                            label?: string | null;
+                            rows?: number | null;
+                            measured?: number | null;
+                            days?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        days?: (({
+                            day?: string | null;
+                            lanes?: ({
+                                saas?: ({
+                                    rows?: number | null;
+                                    measured?: number | null;
+                                    bytes?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                gov?: ({
+                                    rows?: number | null;
+                                    measured?: number | null;
+                                    bytes?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                local?: ({
+                                    rows?: number | null;
+                                    measured?: number | null;
+                                    bytes?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                filler?: ({
+                                    rows?: number | null;
+                                    measured?: number | null;
+                                    bytes?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        latest?: ({
+                            day?: string | null;
+                            lanes?: ({
+                                saas?: ({
+                                    rows?: number | null;
+                                    measured?: number | null;
+                                    kind?: ({
+                                        other?: number | null;
+                                        ecommerce?: number | null;
+                                        saas?: number | null;
+                                        publisher?: number | null;
+                                        travel?: number | null;
+                                        "real-estate"?: number | null;
+                                        docs?: number | null;
+                                        "local-service"?: number | null;
+                                        food?: number | null;
+                                        "gov-edu"?: number | null;
+                                        finance?: number | null;
+                                        nonprofit?: number | null;
+                                        legal?: number | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    state?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    platform?: ({
+                                        unknown?: number | null;
+                                        wordpress?: number | null;
+                                        nextjs?: number | null;
+                                        webflow?: number | null;
+                                        drupal?: number | null;
+                                        squarespace?: number | null;
+                                        shopify?: number | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    grade?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    llms_txt?: number | null;
+                                    ai_blocking?: number | null;
+                                    top_tech?: (unknown[] | null)[] | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                gov?: ({
+                                    rows?: number | null;
+                                    measured?: number | null;
+                                    kind?: ({
+                                        "gov-edu"?: number | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    state?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    platform?: ({
+                                        webflow?: number | null;
+                                        unknown?: number | null;
+                                        wordpress?: number | null;
+                                        drupal?: number | null;
+                                        wix?: number | null;
+                                        squarespace?: number | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    grade?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    llms_txt?: number | null;
+                                    ai_blocking?: number | null;
+                                    top_tech?: (unknown[] | null)[] | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                local?: ({
+                                    rows?: number | null;
+                                    measured?: number | null;
+                                    kind?: ({
+                                        "local-service"?: number | null;
+                                        food?: number | null;
+                                        publisher?: number | null;
+                                        ecommerce?: number | null;
+                                        saas?: number | null;
+                                        "gov-edu"?: number | null;
+                                        health?: number | null;
+                                        travel?: number | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    state?: ({
+                                        colorado?: number | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    platform?: ({
+                                        squarespace?: number | null;
+                                        unknown?: number | null;
+                                        wordpress?: number | null;
+                                        wix?: number | null;
+                                        webflow?: number | null;
+                                        shopify?: number | null;
+                                        nextjs?: number | null;
+                                        drupal?: number | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    grade?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    llms_txt?: number | null;
+                                    ai_blocking?: number | null;
+                                    top_tech?: (unknown[] | null)[] | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                filler?: ({
+                                    rows?: number | null;
+                                    measured?: number | null;
+                                    kind?: ({
+                                        publisher?: number | null;
+                                        saas?: number | null;
+                                        other?: number | null;
+                                        "gov-edu"?: number | null;
+                                        finance?: number | null;
+                                        "local-service"?: number | null;
+                                        health?: number | null;
+                                        travel?: number | null;
+                                        ecommerce?: number | null;
+                                        automotive?: number | null;
+                                        nonprofit?: number | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    state?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    platform?: ({
+                                        nextjs?: number | null;
+                                        unknown?: number | null;
+                                        wordpress?: number | null;
+                                        drupal?: number | null;
+                                        squarespace?: number | null;
+                                        wix?: number | null;
+                                        webflow?: number | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    grade?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    llms_txt?: number | null;
+                                    ai_blocking?: number | null;
+                                    top_tech?: (unknown[] | null)[] | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        fields?: (({
+                            name?: unknown;
+                            meaning?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        tech_detected?: (string | null)[] | null;
+                        sample?: ({
+                            csv?: string | null;
+                            ndjson?: string | null;
+                            rows?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        files?: ({
+                            url?: string | null;
+                            filters?: (string | null)[] | null;
+                            access?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        access?: ({
+                            page?: string | null;
+                            request?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    datasetPreview: {
+        parameters: {
+            query?: {
+                lane?: "saas" | "gov" | "local";
+                state?: string;
+                category?: string;
+                /** @description A letter, or -D for D or worse */
+                grade?: string;
+                platform?: string;
+                tech?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        v?: number | null;
+                        days?: number | null;
+                        files_read?: number | null;
+                        filters?: ({
+                            state?: string | null;
+                            category?: string | null;
+                            grade?: string | null;
+                            platform?: string | null;
+                            tech?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        lanes?: (string | null)[] | null;
+                        matched?: number | null;
+                        with_llms_txt?: number | null;
+                        blocking_ai_crawlers?: number | null;
+                        by?: ({
+                            state?: (unknown[] | null)[] | null;
+                            category?: (unknown[] | null)[] | null;
+                            grade?: (unknown[] | null)[] | null;
+                            platform?: (unknown[] | null)[] | null;
+                            tech?: (unknown[] | null)[] | null;
+                            lane?: (unknown[] | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        sample?: (({
+                            day?: string | null;
+                            lane?: string | null;
+                            state?: string | null;
+                            city?: string | null;
+                            category?: string | null;
+                            kind?: string | null;
+                            grade?: string | null;
+                            platform?: string | null;
+                            cms?: string | null;
+                            tech?: (string | null)[] | null;
+                            llms_txt?: boolean | null;
+                            blocks_ai_crawlers?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        note?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -4858,6 +20826,8 @@ export interface operations {
             query?: {
                 format?: "csv" | "ndjson";
                 lane?: "saas" | "gov" | "local" | "filler";
+                /** @description a problem slug from /api/datasets/problems: up to 10 rows of that list, identities withheld */
+                problem?: string;
             };
             header?: never;
             path?: never;
@@ -4871,8 +20841,97 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        columns?: (string | null)[] | null;
+                        first_row_as_json?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
+            };
+        };
+    };
+    datasetSegments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The lists with counts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        v?: number | null;
+                        days?: number | null;
+                        updated?: string | null;
+                        segments?: (({
+                            id?: string | null;
+                            name?: string | null;
+                            for?: string | null;
+                            what?: string | null;
+                            sites?: number | null;
+                            lanes?: ({
+                                filler?: number | null;
+                                local?: number | null;
+                                saas?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            platform?: (unknown[] | null)[] | null;
+                            with_llms_txt?: number | null;
+                            blocking_ai_crawlers?: number | null;
+                            download?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        access?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    datasetSegment: {
+        parameters: {
+            query: {
+                id: "stores" | "publishers" | "ai-blocking" | "llms-txt" | "home-services" | "martech";
+                days?: number;
+                format?: "csv" | "ndjson";
+                state?: string;
+                tech?: string;
+                platform?: string;
+                kind?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The list as CSV or NDJSON */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            /** @description No key with dataset access */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -4907,7 +20966,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        error?: string | null;
+                        catalogue?: string | null;
+                        sample?: string | null;
+                        request?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -4937,7 +21004,13 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        error?: string | null;
+                        buy?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -4966,7 +21039,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        received?: boolean | null;
+                        email?: string | null;
+                        lanes?: (string | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -4989,7 +21069,95 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        day?: string | null;
+                        timezone?: string | null;
+                        lanes?: (({
+                            id?: string | null;
+                            label?: string | null;
+                            quota?: number | null;
+                            measured?: number | null;
+                            unmeasured?: number | null;
+                            skipped_seen?: number | null;
+                            confirmed_kind?: number | null;
+                            kinds?: ({
+                                other?: number | null;
+                                ecommerce?: number | null;
+                                saas?: number | null;
+                                publisher?: number | null;
+                                docs?: number | null;
+                                finance?: number | null;
+                                "gov-edu"?: number | null;
+                                "local-service"?: number | null;
+                                food?: number | null;
+                                travel?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            list_used?: number | null;
+                            candidates_found_today?: number | null;
+                            list_size?: number | null;
+                            pool_size?: number | null;
+                            from_discovery?: number | null;
+                            pool_days_left?: number | null;
+                            pct?: number | null;
+                            state?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        lanes_measured?: number | null;
+                        states?: ({
+                            today?: string | null;
+                            tomorrow?: string | null;
+                            after?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        pools?: ({
+                            saas?: ({
+                                bytes?: number | null;
+                                uploaded?: string | null;
+                                items?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            gov?: ({
+                                bytes?: number | null;
+                                uploaded?: string | null;
+                                items?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        state_lists?: ({
+                            colorado?: ({
+                                items?: number | null;
+                                uploaded?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            texas?: ({
+                                items?: number | null;
+                                uploaded?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            california?: ({
+                                items?: number | null;
+                                uploaded?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -5009,7 +21177,79 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        v?: number | null;
+                        at?: string | null;
+                        frame?: ({
+                            source?: string | null;
+                            list_id?: string | null;
+                            list_url?: string | null;
+                            list_created_on?: string | null;
+                            requested?: number | null;
+                            members?: number | null;
+                            excluded?: ({
+                                publish_filter?: number | null;
+                                opted_out?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            frozen_at?: string | null;
+                            rule?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        runs?: (({
+                            run?: number | null;
+                            started_at?: string | null;
+                            finished_at?: string | null;
+                            measured?: number | null;
+                            of?: number | null;
+                            records?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        running?: unknown;
+                        latest?: ({
+                            run?: number | null;
+                            started_at?: string | null;
+                            finished_at?: string | null;
+                            sites?: number | null;
+                            figures?: (({
+                                id?: string | null;
+                                group?: string | null;
+                                label?: string | null;
+                                count?: number | null;
+                                of?: number | null;
+                                pct?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        first?: unknown;
+                        change?: unknown;
+                        method?: ({
+                            identities?: string | null;
+                            robots?: string | null;
+                            files?: string | null;
+                            denominators?: string | null;
+                            recompute?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        api?: ({
+                            summary?: string | null;
+                            records?: string | null;
+                            frame?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -5033,7 +21273,248 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        run?: number | null;
+                        complete?: boolean | null;
+                        measured?: number | null;
+                        of?: number | null;
+                        offset?: number | null;
+                        returned?: number | null;
+                        next?: string | null;
+                        records?: (({
+                            v?: number | null;
+                            kind?: string | null;
+                            run?: number | null;
+                            domain?: string | null;
+                            rank?: number | null;
+                            measured_at?: string | null;
+                            home?: ({
+                                browser?: ({
+                                    status?: number | null;
+                                    content_type?: string | null;
+                                    bytes?: number | null;
+                                    sha256?: string | null;
+                                    final_host?: string | null;
+                                    ms?: number | null;
+                                    identity?: string | null;
+                                    html?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                gptbot?: ({
+                                    status?: number | null;
+                                    content_type?: string | null;
+                                    bytes?: number | null;
+                                    sha256?: string | null;
+                                    final_host?: string | null;
+                                    ms?: number | null;
+                                    identity?: string | null;
+                                    html?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                claudebot?: ({
+                                    status?: number | null;
+                                    content_type?: string | null;
+                                    bytes?: number | null;
+                                    sha256?: string | null;
+                                    final_host?: string | null;
+                                    ms?: number | null;
+                                    identity?: string | null;
+                                    html?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                oaisearch?: ({
+                                    status?: number | null;
+                                    content_type?: string | null;
+                                    bytes?: number | null;
+                                    sha256?: string | null;
+                                    final_host?: string | null;
+                                    ms?: number | null;
+                                    identity?: string | null;
+                                    html?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                perplexity?: ({
+                                    status?: number | null;
+                                    content_type?: string | null;
+                                    bytes?: number | null;
+                                    sha256?: string | null;
+                                    final_host?: string | null;
+                                    ms?: number | null;
+                                    identity?: string | null;
+                                    html?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            robots?: ({
+                                status?: number | null;
+                                content_type?: string | null;
+                                bytes?: number | null;
+                                sha256?: string | null;
+                                final_host?: string | null;
+                                ms?: number | null;
+                                html?: boolean | null;
+                                text?: unknown;
+                                agents?: ({
+                                    GPTBot?: boolean | null;
+                                    "OAI-SearchBot"?: boolean | null;
+                                    "ChatGPT-User"?: boolean | null;
+                                    ClaudeBot?: boolean | null;
+                                    "Claude-SearchBot"?: boolean | null;
+                                    PerplexityBot?: boolean | null;
+                                    "Google-Extended"?: boolean | null;
+                                    "Applebot-Extended"?: boolean | null;
+                                    CCBot?: boolean | null;
+                                    Bytespider?: boolean | null;
+                                    "Meta-ExternalAgent"?: boolean | null;
+                                    Amazonbot?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            sitemap?: ({
+                                status?: number | null;
+                                content_type?: string | null;
+                                bytes?: number | null;
+                                sha256?: string | null;
+                                final_host?: string | null;
+                                ms?: number | null;
+                                url?: string | null;
+                                declared?: boolean | null;
+                                xml?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            files?: ({
+                                llms_txt?: ({
+                                    status?: number | null;
+                                    content_type?: string | null;
+                                    bytes?: number | null;
+                                    sha256?: string | null;
+                                    final_host?: string | null;
+                                    ms?: number | null;
+                                    path?: string | null;
+                                    html?: boolean | null;
+                                    json?: unknown;
+                                    present?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                agents_md?: ({
+                                    status?: number | null;
+                                    content_type?: string | null;
+                                    bytes?: number | null;
+                                    sha256?: string | null;
+                                    final_host?: string | null;
+                                    ms?: number | null;
+                                    path?: string | null;
+                                    html?: boolean | null;
+                                    json?: unknown;
+                                    present?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                agent_skills?: ({
+                                    status?: number | null;
+                                    content_type?: string | null;
+                                    bytes?: number | null;
+                                    sha256?: string | null;
+                                    final_host?: string | null;
+                                    ms?: number | null;
+                                    path?: string | null;
+                                    html?: boolean | null;
+                                    json?: boolean | null;
+                                    present?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                mcp_card?: ({
+                                    status?: number | null;
+                                    content_type?: string | null;
+                                    bytes?: number | null;
+                                    sha256?: string | null;
+                                    final_host?: string | null;
+                                    ms?: number | null;
+                                    path?: string | null;
+                                    html?: boolean | null;
+                                    json?: boolean | null;
+                                    present?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                api_catalog?: ({
+                                    status?: number | null;
+                                    content_type?: string | null;
+                                    bytes?: number | null;
+                                    sha256?: string | null;
+                                    final_host?: string | null;
+                                    ms?: number | null;
+                                    path?: string | null;
+                                    html?: boolean | null;
+                                    json?: unknown;
+                                    present?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                a2a_card?: ({
+                                    status?: number | null;
+                                    content_type?: string | null;
+                                    bytes?: number | null;
+                                    sha256?: string | null;
+                                    final_host?: string | null;
+                                    ms?: number | null;
+                                    path?: string | null;
+                                    html?: boolean | null;
+                                    json?: unknown;
+                                    present?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            derived?: ({
+                                reachable?: boolean | null;
+                                robots_served?: boolean | null;
+                                robots_sitemap?: boolean | null;
+                                content_signal?: boolean | null;
+                                cs_ai_train_no?: boolean | null;
+                                cs_ai_input_no?: boolean | null;
+                                blocks?: unknown[] | null;
+                                blocks_any_ai?: boolean | null;
+                                files?: ({
+                                    llms_txt?: boolean | null;
+                                    agents_md?: boolean | null;
+                                    agent_skills?: boolean | null;
+                                    mcp_card?: boolean | null;
+                                    api_catalog?: boolean | null;
+                                    a2a_card?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                any_capability?: boolean | null;
+                                ai_refused?: unknown[] | null;
+                                ai_thin?: unknown[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            derive_v?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -5053,7 +21534,44 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        v?: number | null;
+                        kind?: string | null;
+                        source?: string | null;
+                        list_id?: string | null;
+                        list_url?: string | null;
+                        list_created_on?: string | null;
+                        list_configuration?: ({
+                            listPrefix?: string | null;
+                            combinationMethod?: string | null;
+                            isDailyList?: boolean | null;
+                            providers?: (string | null)[] | null;
+                            filterTLD?: string | null;
+                            startDate?: string | null;
+                            endDate?: string | null;
+                            filterPLD?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        requested?: number | null;
+                        members?: (({
+                            rank?: number | null;
+                            domain?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        excluded?: ({
+                            publish_filter?: number | null;
+                            opted_out?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        frozen_at?: string | null;
+                        rule?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -5075,10 +21593,99 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        page?: string | null;
+                        feed?: string | null;
+                        invocation_rule?: string | null;
+                        policy_classes?: (({
+                            id?: string | null;
+                            safety?: string | null;
+                            label?: string | null;
+                            automatic?: boolean | null;
+                            invoke?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        sites?: number | null;
+                        rows?: (({
+                            page?: string | null;
+                            api?: string | null;
+                            domain?: string | null;
+                            scanned_at?: string | null;
+                            declared?: number | null;
+                            verified?: number | null;
+                            mismatches?: number | null;
+                            protocols?: (string | null)[] | null;
+                            by_policy?: ({
+                                metadata?: number | null;
+                                external_communication?: number | null;
+                                identity?: number | null;
+                                authenticated_read_only?: number | null;
+                                unknown?: number | null;
+                                financial?: number | null;
+                                irreversible_write?: number | null;
+                                public_read_only?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            report_id?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no declared capabilities on record for that domain */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    capabilityCertificateStatus: {
+        parameters: {
+            query: {
+                domain: string;
+                record: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        domain?: string | null;
+                        record?: string | null;
+                        checked_at?: string | null;
+                        measured_at?: string | null;
+                        valid_until?: string | null;
+                        status?: string | null;
+                        superseded_by?: unknown;
+                        why?: string | null;
+                        reading?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description unknown measurement */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -5104,7 +21711,22 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        ok?: boolean | null;
+                        certificate_id?: string | null;
+                        checks?: (({
+                            id?: string | null;
+                            ok?: boolean | null;
+                            why?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        domain?: string | null;
+                        recomputed_from?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -5128,7 +21750,20 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        ok?: boolean | null;
+                        certificate_id?: string | null;
+                        checks?: (({
+                            id?: string | null;
+                            ok?: boolean | null;
+                            why?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -5148,7 +21783,46 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/feed+json": unknown;
+                    "application/feed+json": ({
+                        version?: string | null;
+                        title?: string | null;
+                        home_page_url?: string | null;
+                        feed_url?: string | null;
+                        description?: string | null;
+                        items?: (({
+                            id?: string | null;
+                            url?: string | null;
+                            title?: string | null;
+                            content_text?: string | null;
+                            date_modified?: string | null;
+                            tags?: (string | null)[] | null;
+                            _crawlcheck?: ({
+                                declared?: number | null;
+                                verified?: number | null;
+                                mismatches?: number | null;
+                                by_policy?: ({
+                                    metadata?: number | null;
+                                    external_communication?: number | null;
+                                    identity?: number | null;
+                                    authenticated_read_only?: number | null;
+                                    unknown?: number | null;
+                                    financial?: number | null;
+                                    irreversible_write?: number | null;
+                                    public_read_only?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                report?: string | null;
+                                api?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -5171,7 +21845,106 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        version?: string | null;
+                        subject?: ({
+                            domain?: string | null;
+                            host?: string | null;
+                            report_id?: string | null;
+                            scanned_at?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        observed?: boolean | null;
+                        sources?: (({
+                            kind?: string | null;
+                            url?: string | null;
+                            status?: number | null;
+                            bytes?: number | null;
+                            sha256?: string | null;
+                            parsed?: boolean | null;
+                            why?: unknown;
+                            captured?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        declared?: number | null;
+                        by_safety_class?: ({
+                            unknown?: number | null;
+                            read_only_public?: number | null;
+                            read_only_authenticated?: number | null;
+                            identity_or_account?: number | null;
+                            irreversible_write?: number | null;
+                            metadata_only?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        by_verification?: ({
+                            not_attempted?: number | null;
+                            auth_mismatch?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        verified?: unknown[] | null;
+                        mismatches?: (({
+                            capability_id?: string | null;
+                            operation?: string | null;
+                            kind?: string | null;
+                            declared?: string | null;
+                            observed?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        verification?: ({
+                            checked_at?: string | null;
+                            policy?: unknown;
+                            counts?: ({
+                                probes?: number | null;
+                                verified?: number | null;
+                                mismatches?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            error?: unknown;
+                            mcp?: ({
+                                endpoint?: string | null;
+                                initialized?: boolean | null;
+                                listed_tools?: unknown;
+                                called?: unknown;
+                                call_ok?: unknown;
+                                note?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            probes?: ({
+                                [key: string]: unknown;
+                            } | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        items?: (({
+                            capability_id?: string | null;
+                            protocol?: string | null;
+                            operation?: string | null;
+                            method?: string | null;
+                            endpoint?: string | null;
+                            source?: string | null;
+                            safety_class?: string | null;
+                            authentication?: string | null;
+                            params_required?: number | null;
+                            verification?: string | null;
+                            verified?: boolean | null;
+                            verified_at?: unknown;
+                            not_attempted_because?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        reading?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no record */
@@ -5228,7 +22001,7 @@ export interface operations {
                 domain?: string;
                 /** @description one fact, e.g. title or telephone */
                 field?: string;
-                /** @description a finding code; without a licence only the top finding */
+                /** @description a finding code from the record; no key needed */
                 finding?: string;
                 /** @description name, phone, locality, experience or all: both sides of a claim (what the structured data asserts, where the visible page says it) cut from the stored page, plus the rule that judged it, the inputs it read, the row it decided, and that rule rerun over the stored page (replay.reproduces); points per row with a licence or the owner's session */
                 claim?: string;
@@ -5245,7 +22018,49 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        report_id?: string | null;
+                        domain?: string | null;
+                        page?: ({
+                            experience_id?: string | null;
+                            sha256?: string | null;
+                            bytes?: number | null;
+                            artifact?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        statements?: number | null;
+                        located?: number | null;
+                        read_back?: number | null;
+                        rows?: (({
+                            field?: string | null;
+                            value?: string | null;
+                            source?: ({
+                                kind?: string | null;
+                                via?: string | null;
+                                name?: string | null;
+                                node?: string | null;
+                                id?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            located?: boolean | null;
+                            bytes?: (number | null)[] | null;
+                            line?: number | null;
+                            col?: number | null;
+                            scope?: string | null;
+                            match?: string | null;
+                            cut?: string | null;
+                            reads_back?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        method?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no locators or no stored page on this record */
@@ -5272,7 +22087,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        name?: string | null;
+                        latest?: string | null;
+                        versions?: (({
+                            url?: string | null;
+                            install?: string | null;
+                            version?: string | null;
+                            file?: string | null;
+                            bytes?: number | null;
+                            sha256?: string | null;
+                            integrity?: string | null;
+                            released?: string | null;
+                            verifier_sha256?: string | null;
+                            openapi_paths?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -5292,7 +22126,69 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        version?: string | null;
+                        built_at?: string | null;
+                        domain?: string | null;
+                        verifier?: ({
+                            url?: string | null;
+                            sha256?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        runner?: string | null;
+                        bundle_checks?: (string | null)[] | null;
+                        receipt_checks?: (string | null)[] | null;
+                        rule?: string | null;
+                        fixtures?: (({
+                            name?: string | null;
+                            group?: string | null;
+                            kind?: string | null;
+                            what?: string | null;
+                            file?: string | null;
+                            sha256?: string | null;
+                            bytes?: number | null;
+                            expected?: ({
+                                verified?: boolean | null;
+                                checks?: ({
+                                    manifest_hash?: boolean | null;
+                                    key_id?: boolean | null;
+                                    signature?: boolean | null;
+                                    subject_hash?: boolean | null;
+                                    subject_binds?: boolean | null;
+                                    merkle_path?: boolean | null;
+                                    ots_commits_root?: boolean | null;
+                                    ots_attestations?: boolean | null;
+                                    experience_root?: boolean | null;
+                                    decision_root?: boolean | null;
+                                    lineage_root?: boolean | null;
+                                    receipt_hash?: boolean | null;
+                                    key_published?: unknown;
+                                    order?: boolean | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            published_kid?: string | null;
+                            must_reject?: string | null;
+                            with_key_directory?: ({
+                                integrity_valid?: boolean | null;
+                                issuer_trusted?: boolean | null;
+                                accepted?: boolean | null;
+                                accepted_strict?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            note?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -5319,7 +22215,7 @@ export interface operations {
                         ok: boolean;
                         receipt: components["schemas"]["RemediationReceiptV1"];
                         verification: Record<string, never>;
-                        /** @description out1: for the domain's owner, FixOutcomesV1 with available:true; for anyone else {available:false, why, url}. Outside the signed receipt, so it never affects verification */
+                        /** @description For the domain's owner, FixOutcomesV1 with available:true; for anyone else {available:false, why, url}. Outside the signed receipt, so it never affects verification */
                         outcomes?: Record<string, never>;
                         offline?: Record<string, never>;
                     };
@@ -5384,7 +22280,22 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        domain?: string | null;
+                        receipts?: (({
+                            id?: string | null;
+                            at?: string | null;
+                            before?: string | null;
+                            after?: string | null;
+                            verdict?: string | null;
+                            url?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no licence */
@@ -5440,7 +22351,413 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/schema+json": unknown;
+                    "application/schema+json": ({
+                        $schema?: string | null;
+                        $id?: string | null;
+                        title?: string | null;
+                        description?: string | null;
+                        $ref?: string | null;
+                        $defs?: ({
+                            RulebookV1?: ({
+                                type?: string | null;
+                                required?: (string | null)[] | null;
+                                description?: string | null;
+                                properties?: ({
+                                    ok?: ({
+                                        type?: string | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    kind?: ({
+                                        const?: string | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    v?: ({
+                                        const?: number | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    generated_at?: ({
+                                        type?: string | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    score_version?: ({
+                                        type?: (string | null)[] | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    schema?: ({
+                                        type?: (string | null)[] | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    counts?: ({
+                                        type?: string | null;
+                                        required?: (string | null)[] | null;
+                                        properties?: ({
+                                            rules?: ({
+                                                type?: string | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                            by_kind?: ({
+                                                type?: string | null;
+                                                additionalProperties?: Record<string, never> | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                            by_family?: ({
+                                                type?: string | null;
+                                                additionalProperties?: Record<string, never> | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                            revised?: ({
+                                                type?: string | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                            scored?: ({
+                                                type?: string | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    scans_counted?: ({
+                                        type?: (string | null)[] | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    severity_scale?: ({
+                                        type?: string | null;
+                                        items?: ({
+                                            type?: string | null;
+                                            properties?: ({
+                                                level?: Record<string, never> | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    method?: ({
+                                        type?: string | null;
+                                        properties?: ({
+                                            revisions?: ({
+                                                type?: unknown[] | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                            share?: ({
+                                                type?: unknown[] | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                            grade?: ({
+                                                type?: unknown[] | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    rules?: ({
+                                        type?: string | null;
+                                        items?: ({
+                                            $ref?: string | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        description?: string | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    filter?: ({
+                                        type?: (string | null)[] | null;
+                                        properties?: ({
+                                            code?: ({
+                                                type?: unknown[] | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                "x-stability"?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            RuleV1?: ({
+                                type?: string | null;
+                                required?: (string | null)[] | null;
+                                description?: string | null;
+                                properties?: ({
+                                    code?: ({
+                                        type?: string | null;
+                                        pattern?: string | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    kind?: ({
+                                        enum?: (string | null)[] | null;
+                                        description?: string | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    family?: ({
+                                        type?: string | null;
+                                        required?: (string | null)[] | null;
+                                        properties?: ({
+                                            id?: ({
+                                                type?: string | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                            label?: ({
+                                                type?: string | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    title?: ({
+                                        type?: (string | null)[] | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    meaning?: ({
+                                        type?: (string | null)[] | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    severity?: ({
+                                        type?: string | null;
+                                        properties?: ({
+                                            level?: ({
+                                                type?: unknown[] | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    scored?: ({
+                                        type?: string | null;
+                                        description?: string | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    measured_on?: ({
+                                        type?: (string | null)[] | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    revision?: ({
+                                        type?: string | null;
+                                        required?: (string | null)[] | null;
+                                        properties?: ({
+                                            current?: ({
+                                                type?: string | null;
+                                                minimum?: number | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                            revised_at?: ({
+                                                type?: unknown[] | null;
+                                                description?: string | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    fix?: ({
+                                        type?: string | null;
+                                        properties?: ({
+                                            advice?: ({
+                                                type?: unknown[] | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                            effort?: ({
+                                                type?: unknown[] | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                            endpoint?: ({
+                                                type?: unknown[] | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    share_of_scans?: ({
+                                        type?: string | null;
+                                        required?: (string | null)[] | null;
+                                        properties?: ({
+                                            pct?: ({
+                                                type?: unknown[] | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                            scans?: ({
+                                                type?: unknown[] | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                            of_scans?: ({
+                                                type?: unknown[] | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                            basis?: ({
+                                                type?: string | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    links?: ({
+                                        type?: string | null;
+                                        properties?: ({
+                                            self?: ({
+                                                type?: unknown[] | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                            api?: ({
+                                                type?: unknown[] | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                            glossary?: ({
+                                                type?: string | null;
+                                                items?: Record<string, never> | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                            workflow?: ({
+                                                type?: unknown[] | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                            lineage?: ({
+                                                type?: unknown[] | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                            explain_template?: ({
+                                                type?: unknown[] | null;
+                                                "x-stability"?: string | null;
+                                            } & {
+                                                [key: string]: unknown;
+                                            }) | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        "x-stability"?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                "x-stability"?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -5463,7 +22780,159 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        sample?: ({
+                            records_listed?: number | null;
+                            records_read?: number | null;
+                            per_family_cap?: number | null;
+                            verified_per_family_cap?: number | null;
+                            how?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        columns?: (({
+                            id?: string | null;
+                            label?: string | null;
+                            test?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        families?: (({
+                            id?: string | null;
+                            label?: string | null;
+                            revenue_relevant?: boolean | null;
+                            findings?: number | null;
+                            records?: number | null;
+                            codes?: ({
+                                NAP_NAME_DRIFT?: number | null;
+                                NAP_UNDECLARED_LISTING?: number | null;
+                                ROBOTS_NO_SITEMAP?: number | null;
+                                RENDER_RESOURCE_BLOCKED?: number | null;
+                                ROBOTS_IS_CATCHALL?: number | null;
+                                ANSWER_ENGINE_REFUSED?: number | null;
+                                NO_LLMS_TXT?: number | null;
+                                MACHINE_CHAIN_HEAVY?: number | null;
+                                NO_SITEMAP_FOUND?: number | null;
+                                ENTITY_NO_COORDINATES?: number | null;
+                                STALE_CACHE_SERVED?: number | null;
+                                HSTS_MISSING?: number | null;
+                                PAGE_IS_MOSTLY_CODE?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            columns?: ({
+                                locator?: ({
+                                    pct?: number | null;
+                                    measured?: number | null;
+                                    yes?: number | null;
+                                    recorded?: number | null;
+                                    no?: number | null;
+                                    unmeasured?: number | null;
+                                    why?: ({
+                                        "no locator on this finding"?: number | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                extraction?: ({
+                                    pct?: number | null;
+                                    measured?: number | null;
+                                    yes?: number | null;
+                                    recorded?: number | null;
+                                    no?: number | null;
+                                    unmeasured?: number | null;
+                                    why?: ({
+                                        "no evidence field"?: number | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                claim?: ({
+                                    pct?: number | null;
+                                    measured?: number | null;
+                                    yes?: number | null;
+                                    recorded?: number | null;
+                                    no?: number | null;
+                                    unmeasured?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                rule_input?: ({
+                                    pct?: number | null;
+                                    measured?: number | null;
+                                    yes?: number | null;
+                                    recorded?: number | null;
+                                    no?: number | null;
+                                    unmeasured?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                decision?: ({
+                                    pct?: number | null;
+                                    measured?: number | null;
+                                    yes?: number | null;
+                                    recorded?: number | null;
+                                    no?: number | null;
+                                    unmeasured?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                score?: ({
+                                    pct?: number | null;
+                                    measured?: number | null;
+                                    yes?: number | null;
+                                    recorded?: number | null;
+                                    no?: number | null;
+                                    unmeasured?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                verified?: ({
+                                    pct?: number | null;
+                                    measured?: number | null;
+                                    yes?: number | null;
+                                    recorded?: number | null;
+                                    no?: number | null;
+                                    unmeasured?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            gaps?: (string | null)[] | null;
+                            replay?: ({
+                                run?: number | null;
+                                reproduced?: number | null;
+                                not_replayable?: number | null;
+                                reasons?: ({
+                                    "the entity rules read the page's JSON-LD plus outside probes (listings, geocoding) that the manifest does not keep; the page bytes are sealed, the probe answers"?: number | null;
+                                    "no replay is written for RENDER_RESOURCE_BLOCKED yet; its locator still cuts the deciding line from the stored file"?: number | null;
+                                    "the rule reads every machine file's size and the 404 probes together; the per-file sizes are in the manifest but the probe set is not, so it is not replayed her"?: number | null;
+                                    "the rule reads a response header; the sealed manifest keeps bodies by hash, not headers, so this decision replays from the finding's own recorded value only"?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            complete?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        reading?: string | null;
+                        not_claimed?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -5487,7 +22956,71 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        subject?: ({
+                            domain?: string | null;
+                            host?: string | null;
+                            report_id?: string | null;
+                            scanned_at?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        finding?: ({
+                            fid?: string | null;
+                            decision_id?: string | null;
+                            code?: string | null;
+                            severity?: number | null;
+                            path?: string | null;
+                            title?: string | null;
+                            detail?: string | null;
+                            meaning?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        family?: string | null;
+                        path?: ({
+                            locator?: boolean | null;
+                            extraction?: boolean | null;
+                            claim?: boolean | null;
+                            rule_input?: boolean | null;
+                            decision?: boolean | null;
+                            score?: boolean | null;
+                            verified?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        why?: {
+                            [key: string]: unknown;
+                        } | null;
+                        replay?: ({
+                            code?: string | null;
+                            reproduces?: boolean | null;
+                            rule?: string | null;
+                            read?: ({
+                                status?: number | null;
+                                content_type?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            why?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        columns?: (({
+                            id?: string | null;
+                            test?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        explain?: string | null;
+                        locate?: string | null;
+                        matrix?: string | null;
+                        access?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description locked */
@@ -5527,7 +23060,128 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        domain?: string | null;
+                        code?: string | null;
+                        title?: string | null;
+                        share_of_scans?: unknown;
+                        state?: string | null;
+                        steps?: (({
+                            n?: number | null;
+                            id?: string | null;
+                            label?: string | null;
+                            done?: boolean | null;
+                            at?: string | null;
+                            record?: string | null;
+                            report_id?: string | null;
+                            grade?: string | null;
+                            score?: number | null;
+                            finding?: ({
+                                code?: string | null;
+                                path?: string | null;
+                                severity?: number | null;
+                                title?: string | null;
+                                detail?: string | null;
+                                decision_id?: unknown;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            explain?: string | null;
+                            machine_record?: string | null;
+                            locate?: string | null;
+                            bundle?: string | null;
+                            verify?: string | null;
+                            evidence?: unknown[] | null;
+                            note?: string | null;
+                            generator?: string | null;
+                            artifact?: string | null;
+                            plan?: string | null;
+                            guide?: string | null;
+                            impact?: string | null;
+                            what_if?: string | null;
+                            declared_fix?: ({
+                                kind?: string | null;
+                                declared_by?: string | null;
+                                declared_at?: string | null;
+                                fixes?: (string | null)[] | null;
+                                deployed_at?: unknown;
+                                deployed_basis?: unknown;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            in?: string | null;
+                            rollback?: string | null;
+                            finding_absent?: boolean | null;
+                            corroboration?: string | null;
+                            registry?: string | null;
+                            path?: string | null;
+                            status?: string | null;
+                            observer?: string | null;
+                            observed_at?: string | null;
+                            holds?: boolean | null;
+                            reading?: string | null;
+                            observation?: string | null;
+                            readings?: (({
+                                identity?: string | null;
+                                status?: number | null;
+                                bytes?: number | null;
+                                content_type?: string | null;
+                                file_present?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            vantage?: ({
+                                provider?: string | null;
+                                asn_org?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            run?: ({
+                                run_id?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            receipt_id?: string | null;
+                            receipt?: string | null;
+                            verifies?: boolean | null;
+                            verify_offline?: string | null;
+                            download?: string | null;
+                            certificate?: string | null;
+                            history?: string | null;
+                            watched?: boolean | null;
+                            cadence?: string | null;
+                            readings_since?: number | null;
+                            days_since?: number | null;
+                            reappeared?: boolean | null;
+                            newest?: ({
+                                id?: string | null;
+                                day?: string | null;
+                                grade?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            days_with_code_since?: number | null;
+                            outcomes?: string | null;
+                            owner_only?: boolean | null;
+                            connected?: number | null;
+                            usable?: number | null;
+                            series_total?: number | null;
+                            window_days?: number | null;
+                            after_days_elapsed?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        done?: number | null;
+                        complete?: boolean | null;
+                        receipt_id?: string | null;
+                        reading?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description not the domain's owner */
@@ -5574,7 +23228,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        state?: string | null;
+                        domain?: string | null;
+                        code?: string | null;
+                        receipt?: ({
+                            id?: string | null;
+                            url?: string | null;
+                            existing?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        before?: ({
+                            id?: string | null;
+                            at?: string | null;
+                            grade?: string | null;
+                            score?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        after?: ({
+                            id?: string | null;
+                            at?: string | null;
+                            grade?: string | null;
+                            score?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        corroboration_queued?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description not the domain's owner */
@@ -5611,7 +23296,36 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        v?: number | null;
+                        kind?: string | null;
+                        sha256?: string | null;
+                        envelope?: ({
+                            fetches?: (({
+                                identity?: string | null;
+                                status?: number | null;
+                                headers?: ({
+                                    "content-type"?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                bytes?: number | null;
+                                sha256?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        checks?: ({
+                            signature?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description unknown */
@@ -5685,7 +23399,148 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        domain?: string | null;
+                        window?: ({
+                            from?: string | null;
+                            to?: string | null;
+                            days?: number | null;
+                            clipped?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        observer?: ({
+                            name?: string | null;
+                            version_id?: unknown;
+                            version_tag?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        counts?: ({
+                            records?: number | null;
+                            missing?: number | null;
+                            receipts?: number | null;
+                            seal_days?: number | null;
+                            archived_records_in_window?: string | null;
+                            truncated?: boolean | null;
+                            next_from?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        records?: (({
+                            id?: string | null;
+                            scanned_at?: string | null;
+                            grade?: string | null;
+                            overall?: number | null;
+                            score_version?: number | null;
+                            refused?: boolean | null;
+                            findings?: number | null;
+                            manifest_sha256?: string | null;
+                            digest?: string | null;
+                            seal?: ({
+                                state?: string | null;
+                                day?: string | null;
+                                root?: unknown;
+                                bitcoin_block?: unknown;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            bundle?: ({
+                                kind?: string | null;
+                                version?: number | null;
+                                generated_at?: string | null;
+                                report?: {
+                                    [key: string]: unknown;
+                                } | null;
+                                verifier?: {
+                                    [key: string]: unknown;
+                                } | null;
+                                proves?: unknown[] | null;
+                                does_not_prove?: unknown[] | null;
+                                manifest?: {
+                                    [key: string]: unknown;
+                                } | null;
+                                record?: {
+                                    [key: string]: unknown;
+                                } | null;
+                                seal?: {
+                                    [key: string]: unknown;
+                                } | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        receipts?: unknown[] | null;
+                        certificate?: ({
+                            since?: string | null;
+                            from?: string | null;
+                            measurements?: number | null;
+                            days_tracked?: number | null;
+                            days_certified?: number | null;
+                            days_not_certified?: number | null;
+                            days_unmeasured?: number | null;
+                            streak_days?: number | null;
+                            recent?: (({
+                                day?: string | null;
+                                state?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        seals?: (({
+                            day?: string | null;
+                            state?: string | null;
+                            why?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        verifier?: ({
+                            url?: string | null;
+                            sha256?: string | null;
+                            run?: string | null;
+                            page?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        proves?: unknown[] | null;
+                        does_not_prove?: (string | null)[] | null;
+                        export_sha256?: string | null;
+                        signature?: ({
+                            v?: number | null;
+                            alg?: string | null;
+                            kid?: string | null;
+                            over?: string | null;
+                            export_sha256?: string | null;
+                            message?: string | null;
+                            sig?: string | null;
+                            signed_at?: string | null;
+                            key?: ({
+                                kid?: string | null;
+                                jwk?: ({
+                                    kty?: string | null;
+                                    crv?: string | null;
+                                    x?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                published_in?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            canonical?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no Evidence add-on, or the licence does not cover the domain */
@@ -5716,7 +23571,89 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        domain?: string | null;
+                        window?: ({
+                            from?: string | null;
+                            to?: string | null;
+                            days?: number | null;
+                            clipped?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        counts?: ({
+                            days_measured?: number | null;
+                            records?: number | null;
+                            anchored?: number | null;
+                            sealed?: number | null;
+                            pending?: number | null;
+                            unsealed?: number | null;
+                            receipts?: number | null;
+                            archived_records_all_time?: number | null;
+                            truncated?: boolean | null;
+                            next_from?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        days?: (({
+                            date?: string | null;
+                            measured?: boolean | null;
+                            grade?: string | null;
+                            overall?: number | null;
+                            findings?: number | null;
+                            readings?: number | null;
+                            flaps?: number | null;
+                            records?: (({
+                                id?: string | null;
+                                at?: string | null;
+                                bundle?: string | null;
+                                verify?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            seal?: ({
+                                state?: string | null;
+                                why?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        receipts?: unknown[] | null;
+                        certificate?: ({
+                            since?: string | null;
+                            from?: string | null;
+                            measurements?: number | null;
+                            days_tracked?: number | null;
+                            days_certified?: number | null;
+                            days_not_certified?: number | null;
+                            days_unmeasured?: number | null;
+                            streak_days?: number | null;
+                            recent?: (({
+                                day?: string | null;
+                                state?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        export?: string | null;
+                        verifier?: ({
+                            url?: string | null;
+                            sha256?: string | null;
+                            run?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        note?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no Evidence add-on */
@@ -5743,7 +23680,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        domains?: number | null;
+                        receipts?: (({
+                            domain?: string | null;
+                            id?: string | null;
+                            at?: string | null;
+                            before?: string | null;
+                            after?: string | null;
+                            verdict?: string | null;
+                            url?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        verify_offline?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no Evidence add-on */
@@ -5773,7 +23728,69 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        subject?: ({
+                            domain?: string | null;
+                            host?: string | null;
+                            report_id?: string | null;
+                            scanned_at?: string | null;
+                            grade?: string | null;
+                            overall?: number | null;
+                            score_version?: number | null;
+                            certified?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        corpus?: ({
+                            sites?: number | null;
+                            percentile?: number | null;
+                            higher_than?: number | null;
+                            note?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        cohort?: ({
+                            name?: string | null;
+                            peers?: number | null;
+                            scope?: string | null;
+                            early?: boolean | null;
+                            reference?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        metrics?: unknown[] | null;
+                        next_band?: ({
+                            percentile_now?: number | null;
+                            next_band?: number | null;
+                            score_at_band?: number | null;
+                            points_short?: number | null;
+                            sites_above?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        best_single_fix?: unknown;
+                        best_single_fix_withheld?: unknown;
+                        findings?: ({
+                            visible?: unknown[] | null;
+                            withheld?: number | null;
+                            shares?: ({
+                                corpus_scans?: number | null;
+                                watched_domains?: number | null;
+                                as_of?: string | null;
+                                note?: unknown;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        method?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no Intelligence add-on */
@@ -5810,7 +23827,74 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        domains?: number | null;
+                        measured?: number | null;
+                        spread?: ({
+                            best?: ({
+                                domain?: string | null;
+                                overall?: number | null;
+                                grade?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            worst?: ({
+                                domain?: string | null;
+                                overall?: number | null;
+                                grade?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            median?: number | null;
+                            certified?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        shared_findings?: unknown[] | null;
+                        rows?: (({
+                            domain?: string | null;
+                            measured?: boolean | null;
+                            report_id?: string | null;
+                            scanned_at?: string | null;
+                            grade?: string | null;
+                            overall?: number | null;
+                            score_version?: number | null;
+                            stages?: (({
+                                stage?: string | null;
+                                score?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            findings?: ({
+                                total?: number | null;
+                                by_severity?: ({
+                                    1?: number | null;
+                                    2?: number | null;
+                                    3?: number | null;
+                                    4?: number | null;
+                                    5?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                codes?: (string | null)[] | null;
+                                withheld?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            certified?: boolean | null;
+                            cohort_percentile?: unknown;
+                            full_detail?: boolean | null;
+                            report?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        note?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no Intelligence add-on */
@@ -5843,7 +23927,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        generated_at?: string | null;
+                        asked?: number | null;
+                        found?: number | null;
+                        verified?: number | null;
+                        failed?: number | null;
+                        results?: (({
+                            id?: string | null;
+                            report_id?: string | null;
+                            domain?: string | null;
+                            scanned_at?: string | null;
+                            served_from?: string | null;
+                            ok?: boolean | null;
+                            found?: boolean | null;
+                            failed?: unknown[] | null;
+                            ran?: number | null;
+                            checks?: number | null;
+                            bundle?: string | null;
+                            why?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        note?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no Intelligence add-on */
@@ -5877,7 +23988,122 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        domain?: string | null;
+                        before?: ({
+                            id?: string | null;
+                            at?: string | null;
+                            grade?: string | null;
+                            score?: number | null;
+                            score_version?: number | null;
+                            refused?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        after?: ({
+                            id?: string | null;
+                            at?: string | null;
+                            grade?: string | null;
+                            score?: number | null;
+                            score_version?: number | null;
+                            refused?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        comparable?: boolean | null;
+                        verdict?: string | null;
+                        findings?: ({
+                            cleared?: (({
+                                code?: string | null;
+                                path?: string | null;
+                                severity?: number | null;
+                                title?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            new?: (({
+                                code?: string | null;
+                                path?: string | null;
+                                severity?: number | null;
+                                title?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            kept?: (({
+                                code?: string | null;
+                                path?: string | null;
+                                severity?: number | null;
+                                title?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        rows?: ({
+                            now_passing?: unknown[] | null;
+                            now_failing?: unknown[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        files?: (({
+                            path?: string | null;
+                            state?: string | null;
+                            before?: ({
+                                status?: number | null;
+                                sha256?: string | null;
+                                bytes?: number | null;
+                                real_file?: boolean | null;
+                                stored?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            after?: ({
+                                status?: number | null;
+                                sha256?: string | null;
+                                bytes?: number | null;
+                                real_file?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        regressions?: (({
+                            kind?: string | null;
+                            code?: string | null;
+                            path?: string | null;
+                            severity?: number | null;
+                            caused_by_files?: (string | null)[] | null;
+                            reads_settings?: unknown[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        rollback?: ({
+                            needed?: boolean | null;
+                            steps?: (({
+                                kind?: string | null;
+                                path?: string | null;
+                                regressions?: (string | null)[] | null;
+                                would_also_undo?: unknown[] | null;
+                                what?: string | null;
+                                before_sha256?: string | null;
+                                bytes?: number | null;
+                                content_type?: string | null;
+                                file?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            note?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        summary?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description no pair of records named */
@@ -5922,7 +24148,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "text/plain": unknown;
+                    "text/plain": string;
                 };
             };
             /** @description needs a licence or the owner's session */
@@ -5961,7 +24187,133 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        subject?: ({
+                            domain?: string | null;
+                            report_id?: string | null;
+                            scanned_at?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        fixes?: (string | null)[] | null;
+                        each?: (({
+                            fix?: string | null;
+                            label?: string | null;
+                            generator?: string | null;
+                            findings_cleared?: number | null;
+                            rows_cleared?: number | null;
+                            clears_only_with?: (string | null)[] | null;
+                            score_after?: number | null;
+                            letter_after?: string | null;
+                            points?: number | null;
+                            root_causes_closed?: unknown[] | null;
+                            certificate_newly_passing?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        asked?: (string | null)[] | null;
+                        result?: ({
+                            ok?: boolean | null;
+                            fix?: (({
+                                id?: string | null;
+                                label?: string | null;
+                                file?: string | null;
+                                generator?: string | null;
+                                failing_now?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            unknown?: unknown[] | null;
+                            nothing_to_fix?: unknown[] | null;
+                            clears?: ({
+                                findings?: (({
+                                    code?: string | null;
+                                    path?: string | null;
+                                    severity?: number | null;
+                                    caps_letter_at?: unknown;
+                                    decision_id?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null)[] | null;
+                                rows?: (({
+                                    section?: string | null;
+                                    id?: string | null;
+                                    row?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            clears_only_with?: (({
+                                also_needs?: (string | null)[] | null;
+                                findings?: (({
+                                    code?: string | null;
+                                    path?: string | null;
+                                    severity?: number | null;
+                                    caps_letter_at?: string | null;
+                                    decision_id?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null)[] | null;
+                                rows?: unknown[] | null;
+                                why?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            policy_rows?: unknown[] | null;
+                            root_causes?: (({
+                                id?: string | null;
+                                relation?: string | null;
+                                members?: number | null;
+                                cleared?: number | null;
+                                closed?: boolean | null;
+                                still_open?: (string | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            certificate?: ({
+                                passing_now?: number | null;
+                                passing_after?: number | null;
+                                of?: number | null;
+                                newly_passing?: (string | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            score?: ({
+                                now?: ({
+                                    score?: number | null;
+                                    letter?: string | null;
+                                    cap?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                after?: ({
+                                    score?: number | null;
+                                    letter?: string | null;
+                                    cap?: string | null;
+                                    capped?: boolean | null;
+                                    held_at_reach?: boolean | null;
+                                    rows_applied?: number | null;
+                                    findings_cleared?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                after_if_policy_also_allows?: unknown;
+                                method?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            policy_note?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        method?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description needs a licence or the owner's session */
@@ -6003,7 +24355,118 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        subject?: ({
+                            domain?: string | null;
+                            report_id?: string | null;
+                            scanned_at?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        fixes?: (string | null)[] | null;
+                        each?: (({
+                            fix?: string | null;
+                            label?: string | null;
+                            generator?: string | null;
+                            findings_cleared?: number | null;
+                            rows_cleared?: number | null;
+                            clears_only_with?: (string | null)[] | null;
+                            score_after?: number | null;
+                            letter_after?: string | null;
+                            points?: number | null;
+                            root_causes_closed?: unknown[] | null;
+                            certificate_newly_passing?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        asked?: (string | null)[] | null;
+                        result?: ({
+                            ok?: boolean | null;
+                            fix?: (({
+                                id?: string | null;
+                                label?: string | null;
+                                file?: string | null;
+                                generator?: string | null;
+                                failing_now?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            unknown?: unknown[] | null;
+                            nothing_to_fix?: unknown[] | null;
+                            clears?: ({
+                                findings?: (({
+                                    code?: string | null;
+                                    path?: string | null;
+                                    severity?: number | null;
+                                    caps_letter_at?: string | null;
+                                    decision_id?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null)[] | null;
+                                rows?: (({
+                                    section?: string | null;
+                                    id?: string | null;
+                                    row?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            clears_only_with?: unknown[] | null;
+                            policy_rows?: unknown[] | null;
+                            root_causes?: (({
+                                id?: string | null;
+                                relation?: string | null;
+                                members?: number | null;
+                                cleared?: number | null;
+                                closed?: boolean | null;
+                                still_open?: unknown[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            certificate?: ({
+                                passing_now?: number | null;
+                                passing_after?: number | null;
+                                of?: number | null;
+                                newly_passing?: (string | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            score?: ({
+                                now?: ({
+                                    score?: number | null;
+                                    letter?: string | null;
+                                    cap?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                after?: ({
+                                    score?: number | null;
+                                    letter?: string | null;
+                                    cap?: unknown;
+                                    capped?: boolean | null;
+                                    held_at_reach?: boolean | null;
+                                    rows_applied?: number | null;
+                                    findings_cleared?: number | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                after_if_policy_also_allows?: unknown;
+                                method?: unknown;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            policy_note?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        method?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description needs a licence or the owner's session */
@@ -6035,7 +24498,101 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        subject?: ({
+                            domain?: string | null;
+                            report_id?: string | null;
+                            scanned_at?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        now?: ({
+                            score?: number | null;
+                            letter?: string | null;
+                            cap?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        asked?: ({
+                            fix?: unknown[] | null;
+                            clear?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        result?: ({
+                            score?: number | null;
+                            letter?: string | null;
+                            cap?: unknown;
+                            capped?: boolean | null;
+                            held_at_reach?: boolean | null;
+                            rows_applied?: number | null;
+                            findings_cleared?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        not_applied?: ({
+                            rows?: unknown[] | null;
+                            findings?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        next_letter?: ({
+                            target?: unknown;
+                            why?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        combined?: ({
+                            all_rows_fixed?: ({
+                                score?: number | null;
+                                letter?: string | null;
+                                cap?: unknown;
+                                capped?: boolean | null;
+                                held_at_reach?: boolean | null;
+                                rows_applied?: number | null;
+                                findings_cleared?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            all_findings_cleared?: ({
+                                score?: number | null;
+                                letter?: string | null;
+                                cap?: unknown;
+                                capped?: boolean | null;
+                                held_at_reach?: boolean | null;
+                                rows_applied?: number | null;
+                                findings_cleared?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            both?: ({
+                                score?: number | null;
+                                letter?: string | null;
+                                cap?: unknown;
+                                capped?: boolean | null;
+                                held_at_reach?: boolean | null;
+                                rows_applied?: number | null;
+                                findings_cleared?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        rows?: (({
+                            section_id?: string | null;
+                            row?: string | null;
+                            points?: number | null;
+                            why?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        method?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description needs a licence or the owner's session */
@@ -6081,7 +24638,106 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        subject?: ({
+                            domain?: string | null;
+                            report_id?: string | null;
+                            scanned_at?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        now?: ({
+                            score?: number | null;
+                            letter?: string | null;
+                            cap?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        asked?: ({
+                            fix?: (({
+                                id?: string | null;
+                                k?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            clear?: unknown[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        result?: ({
+                            score?: number | null;
+                            letter?: string | null;
+                            cap?: unknown;
+                            capped?: boolean | null;
+                            held_at_reach?: boolean | null;
+                            rows_applied?: number | null;
+                            findings_cleared?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        not_applied?: ({
+                            rows?: unknown[] | null;
+                            findings?: unknown[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        next_letter?: ({
+                            target?: unknown;
+                            why?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        combined?: ({
+                            all_rows_fixed?: ({
+                                score?: number | null;
+                                letter?: string | null;
+                                cap?: unknown;
+                                capped?: boolean | null;
+                                held_at_reach?: boolean | null;
+                                rows_applied?: number | null;
+                                findings_cleared?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            all_findings_cleared?: ({
+                                score?: number | null;
+                                letter?: string | null;
+                                cap?: unknown;
+                                capped?: boolean | null;
+                                held_at_reach?: boolean | null;
+                                rows_applied?: number | null;
+                                findings_cleared?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            both?: ({
+                                score?: number | null;
+                                letter?: string | null;
+                                cap?: unknown;
+                                capped?: boolean | null;
+                                held_at_reach?: boolean | null;
+                                rows_applied?: number | null;
+                                findings_cleared?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        rows?: (({
+                            section_id?: string | null;
+                            row?: string | null;
+                            points?: number | null;
+                            why?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        method?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description needs a licence or the owner's session */
@@ -6108,7 +24764,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/ld+json": unknown;
+                    "application/ld+json": ({
+                        "@context"?: ({
+                            rdfs?: string | null;
+                            owl?: string | null;
+                            prov?: string | null;
+                            cc?: string | null;
+                            "rdfs:subClassOf"?: ({
+                                "@type"?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            "rdfs:isDefinedBy"?: ({
+                                "@type"?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        "@graph"?: (({
+                            "@id"?: string | null;
+                            "@type"?: string | null;
+                            "rdfs:label"?: string | null;
+                            "rdfs:comment"?: string | null;
+                            "rdfs:isDefinedBy"?: string | null;
+                            "rdfs:subClassOf"?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -6128,7 +24815,163 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/schema+json": unknown;
+                    "application/schema+json": ({
+                        $schema?: string | null;
+                        $id?: string | null;
+                        title?: string | null;
+                        $defs?: ({
+                            CrawlCheckRunFacet?: ({
+                                allOf?: (({
+                                    $ref?: string | null;
+                                    type?: string | null;
+                                    properties?: ({
+                                        report_id?: ({
+                                            type?: string | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        trace_id?: ({
+                                            type?: string | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        score_version?: ({
+                                            type?: unknown[] | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        observer?: ({
+                                            type?: string | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    required?: (string | null)[] | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            CrawlCheckFetchFacet?: ({
+                                allOf?: (({
+                                    $ref?: string | null;
+                                    type?: string | null;
+                                    properties?: ({
+                                        experience_id?: ({
+                                            type?: string | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        url?: ({
+                                            type?: string | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        identity?: ({
+                                            type?: string | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        role?: ({
+                                            type?: string | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        status?: ({
+                                            type?: unknown[] | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        bytes?: ({
+                                            type?: unknown[] | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        sha256?: ({
+                                            type?: unknown[] | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        stored?: ({
+                                            type?: unknown[] | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        observed_at?: ({
+                                            type?: unknown[] | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        artifact?: ({
+                                            type?: unknown[] | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    required?: (string | null)[] | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            CrawlCheckReportFacet?: ({
+                                allOf?: (({
+                                    $ref?: string | null;
+                                    type?: string | null;
+                                    properties?: ({
+                                        grade?: ({
+                                            type?: unknown[] | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        overall?: ({
+                                            type?: unknown[] | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        findings?: ({
+                                            type?: string | null;
+                                            items?: Record<string, never> | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        findings_withheld?: ({
+                                            type?: string | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        manifest_sha256?: ({
+                                            type?: unknown[] | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                        verify?: ({
+                                            type?: string | null;
+                                        } & {
+                                            [key: string]: unknown;
+                                        }) | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    required?: (string | null)[] | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null)[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -6148,7 +24991,253 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        $schema?: string | null;
+                        $id?: string | null;
+                        title?: string | null;
+                        description?: unknown;
+                        type?: string | null;
+                        additionalProperties?: boolean | null;
+                        required?: (string | null)[] | null;
+                        properties?: ({
+                            v?: ({
+                                type?: string | null;
+                                enum?: (number | null)[] | null;
+                                description?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            scanned_at?: ({
+                                type?: (string | null)[] | null;
+                                format?: string | null;
+                                description?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            recorded_at?: ({
+                                type?: string | null;
+                                format?: string | null;
+                                description?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            observer?: ({
+                                type?: string | null;
+                                additionalProperties?: boolean | null;
+                                required?: (string | null)[] | null;
+                                properties?: ({
+                                    version_id?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    version_tag?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    score_version?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    meg_v?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    vantage?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            identity_basis?: ({
+                                description?: string | null;
+                                type?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            representation?: ({
+                                description?: string | null;
+                                type?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            stored_means?: ({
+                                description?: string | null;
+                                type?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            request_profiles?: ({
+                                type?: string | null;
+                                description?: string | null;
+                                propertyNames?: ({
+                                    pattern?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                additionalProperties?: ({
+                                    type?: string | null;
+                                    additionalProperties?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            experiences?: ({
+                                type?: string | null;
+                                items?: ({
+                                    $ref?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            roots?: ({
+                                type?: string | null;
+                                additionalProperties?: boolean | null;
+                                required?: (string | null)[] | null;
+                                description?: unknown;
+                                properties?: ({
+                                    v?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    recipe?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    experiences?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    decisions?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    lineage?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        allOf?: (({
+                            if?: ({
+                                properties?: {
+                                    [key: string]: unknown;
+                                } | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            then?: ({
+                                required?: unknown[] | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        $defs?: ({
+                            ExperienceV1?: ({
+                                type?: string | null;
+                                additionalProperties?: boolean | null;
+                                required?: (string | null)[] | null;
+                                properties?: ({
+                                    experience_id?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    role?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    identity?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    url?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    final_url?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    status?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    content_type?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    bytes?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    sha256?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    stored?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    request_profile?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    observed_at?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    error?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            ManifestSignatureV1?: ({
+                                type?: string | null;
+                                required?: (string | null)[] | null;
+                                description?: string | null;
+                                properties?: ({
+                                    v?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    alg?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    kid?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    key_storage?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    over?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    message?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    sig?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    signed_at?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    key_directory?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                    verify?: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -6168,7 +25257,272 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        $schema?: string | null;
+                        $id?: string | null;
+                        title?: string | null;
+                        description?: unknown;
+                        $defs?: ({
+                            PublicReportV1?: ({
+                                type?: string | null;
+                                additionalProperties?: boolean | null;
+                                required?: (string | null)[] | null;
+                                properties?: ({
+                                    schema?: ({
+                                        type?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    version?: ({
+                                        const?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    id?: ({
+                                        type?: unknown[] | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    domain?: ({
+                                        type?: unknown[] | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    path?: ({
+                                        type?: unknown[] | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    scanned_host?: ({
+                                        type?: unknown[] | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    scanned_at?: ({
+                                        type?: unknown[] | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    score_version?: ({
+                                        type?: unknown[] | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    grade?: ({
+                                        type?: unknown[] | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    overall?: ({
+                                        type?: unknown[] | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    grade_detail?: ({
+                                        type?: string | null;
+                                        properties?: {
+                                            [key: string]: unknown;
+                                        } | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    sections?: ({
+                                        type?: string | null;
+                                        items?: {
+                                            [key: string]: unknown;
+                                        } | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    findings?: ({
+                                        type?: string | null;
+                                        items?: {
+                                            [key: string]: unknown;
+                                        } | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    findings_withheld?: ({
+                                        type?: unknown[] | null;
+                                        description?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    findings_summary?: ({
+                                        type?: unknown[] | null;
+                                        properties?: {
+                                            [key: string]: unknown;
+                                        } | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    provenance?: ({
+                                        type?: unknown[] | null;
+                                        description?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    checks?: ({
+                                        type?: string | null;
+                                        items?: {
+                                            [key: string]: unknown;
+                                        } | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    agentview?: ({
+                                        type?: string | null;
+                                        items?: {
+                                            [key: string]: unknown;
+                                        } | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    nap?: ({
+                                        type?: unknown[] | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    headroom?: ({
+                                        type?: unknown[] | null;
+                                        properties?: {
+                                            [key: string]: unknown;
+                                        } | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    history?: ({
+                                        type?: string | null;
+                                        items?: {
+                                            [key: string]: unknown;
+                                        } | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    proof?: ({
+                                        type?: string | null;
+                                        properties?: {
+                                            [key: string]: unknown;
+                                        } | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    links?: ({
+                                        type?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            MachineRecordV1?: ({
+                                type?: string | null;
+                                required?: (string | null)[] | null;
+                                description?: unknown;
+                                properties?: ({
+                                    kind?: ({
+                                        const?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    version?: ({
+                                        type?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    subject?: ({
+                                        type?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    observation?: ({
+                                        type?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    findings?: ({
+                                        type?: string | null;
+                                        description?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    freshness?: ({
+                                        type?: string | null;
+                                        description?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    confidence?: ({
+                                        type?: string | null;
+                                        description?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    contradictions?: ({
+                                        type?: string | null;
+                                        description?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    findings_summary?: ({
+                                        type?: unknown[] | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    findings_withheld?: ({
+                                        type?: unknown[] | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    capabilities?: ({
+                                        type?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    evidence?: ({
+                                        type?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    access?: ({
+                                        type?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            ErrorV1?: ({
+                                type?: string | null;
+                                required?: (string | null)[] | null;
+                                properties?: ({
+                                    error?: ({
+                                        type?: string | null;
+                                        required?: unknown[] | null;
+                                        properties?: {
+                                            [key: string]: unknown;
+                                        } | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -6190,7 +25544,22 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        keys?: (({
+                            id?: string | null;
+                            name?: string | null;
+                            scopes?: (string | null)[] | null;
+                            domains?: (string | null)[] | null;
+                            created?: string | null;
+                            expires?: string | null;
+                            last_used?: unknown;
+                            revoked?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description No valid licence key */
@@ -6228,7 +25597,18 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        key?: string | null;
+                        id?: string | null;
+                        name?: string | null;
+                        scopes?: (string | null)[] | null;
+                        domains?: (string | null)[] | null;
+                        expires?: string | null;
+                        note?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description No usable scope */
@@ -6280,7 +25660,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        revoked?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description No such key on this licence */
@@ -6318,7 +25703,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        url?: string | null;
+                        rid?: string | null;
+                        expires?: string | null;
+                        revoke?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description No usable report id */
@@ -6370,7 +25763,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        revoked?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description No usable token */
@@ -6419,7 +25817,129 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        id?: string | null;
+                        domain?: string | null;
+                        scanned_host?: string | null;
+                        scannedAt?: string | null;
+                        score_version?: number | null;
+                        grade?: string | null;
+                        overall?: number | null;
+                        grade_detail?: ({
+                            capped?: boolean | null;
+                            cap?: unknown;
+                            cap_reason?: unknown;
+                            unscored_affects_grade?: boolean | null;
+                            unscored?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        section_scores?: (({
+                            id?: string | null;
+                            title?: string | null;
+                            score?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        findings?: unknown[] | null;
+                        checks?: (({
+                            path?: string | null;
+                            status?: number | null;
+                            contentType?: string | null;
+                            bytes?: number | null;
+                            cacheControl?: string | null;
+                            cfCacheStatus?: string | null;
+                            ms?: number | null;
+                            excerpt?: string | null;
+                            sitemap_lines?: string | null;
+                            verdict?: string | null;
+                            cacheSplit?: ({
+                                bare_status?: number | null;
+                                fresh_status?: number | null;
+                                bare_html?: boolean | null;
+                                fresh_html?: boolean | null;
+                                bare_cf?: string | null;
+                                diverged?: boolean | null;
+                                bare_bytes?: number | null;
+                                fresh_bytes?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        agentview?: ({
+                            rows?: (({
+                                id?: string | null;
+                                label?: string | null;
+                                role?: string | null;
+                                status?: number | null;
+                                words?: number | null;
+                                xrobots?: string | null;
+                                redirected_to?: string | null;
+                                blocker?: string | null;
+                                vendor?: string | null;
+                                repro?: string | null;
+                                similarity?: number | null;
+                                cause?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            deterministic?: boolean | null;
+                            self_similarity?: number | null;
+                            split?: string | null;
+                            split_evidence?: unknown;
+                            all_refused?: boolean | null;
+                            answer_word_share?: number | null;
+                            claims_unverified?: boolean | null;
+                            evidence?: unknown[] | null;
+                            conflicts?: unknown[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        confidence?: ({
+                            v?: number | null;
+                            sections_scored?: ({
+                                n?: number | null;
+                                of?: number | null;
+                                ratio?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            identities_answered?: ({
+                                n?: number | null;
+                                of?: number | null;
+                                ratio?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            fetches_kept?: ({
+                                n?: number | null;
+                                of?: number | null;
+                                ratio?: unknown;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            stage_failures?: number | null;
+                            non_observations?: number | null;
+                            non_observations_attempted?: number | null;
+                            vantages?: number | null;
+                            refused?: boolean | null;
+                            note?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        self_audit?: ({
+                            checked?: number | null;
+                            findings?: number | null;
+                            worst?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        proof_overall?: number | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description No valid licence key */
@@ -6431,6 +25951,149 @@ export interface operations {
             };
             /** @description Key allowance used for this ten-minute window */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    checkLicenceKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description valid (true or false), the plan when valid, and the reason when not */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        valid?: boolean | null;
+                        plan?: unknown;
+                        reason?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+        };
+    };
+    checkMachineFiles: {
+        parameters: {
+            query: {
+                /** @description A public hostname, e.g. crawlcheck.io */
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One row per file, the cache comparison and the cache age */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        host?: string | null;
+                        at?: string | null;
+                        files?: (({
+                            path?: string | null;
+                            state?: string | null;
+                            ok?: boolean | null;
+                            text?: string | null;
+                            why?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        cache?: ({
+                            state?: string | null;
+                            text?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        age?: string | null;
+                        xcache?: unknown;
+                        age_row?: ({
+                            state?: string | null;
+                            text?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description No domain given */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    phoneReputation: {
+        parameters: {
+            query: {
+                /** @description A US phone number, ten digits */
+                number: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The source, the window of complaint files read, and the reports for that number */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        ok?: boolean | null;
+                        source?: string | null;
+                        note?: string | null;
+                        links?: ({
+                            report_scam_or_spoofed_calls?: string | null;
+                            register_personal_number?: string | null;
+                            registry_faq?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        registry_note?: string | null;
+                        window?: ({
+                            from?: string | null;
+                            to?: string | null;
+                            files?: number | null;
+                            complaints?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        result?: ({
+                            number?: string | null;
+                            reports?: number | null;
+                            read?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
+                };
+            };
+            /** @description No usable number given */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6456,7 +26119,59 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        mode?: string | null;
+                        agent?: string | null;
+                        directory?: ({
+                            url?: string | null;
+                            status?: number | null;
+                            redirected?: boolean | null;
+                            content_type?: string | null;
+                            content_type_ok?: boolean | null;
+                            keys?: (({
+                                kid?: string | null;
+                                kty?: string | null;
+                                crv?: string | null;
+                                thumbprint?: string | null;
+                                x?: string | null;
+                                usable?: boolean | null;
+                                bound?: boolean | null;
+                                why?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            signatures?: (({
+                                label?: string | null;
+                                keyid?: string | null;
+                                tag?: string | null;
+                                alg?: string | null;
+                                created?: number | null;
+                                expires?: number | null;
+                                components?: (string | null)[] | null;
+                                window?: string | null;
+                                verified?: boolean | null;
+                                why?: string | null;
+                                signature_valid?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            content_digest?: ({
+                                present?: boolean | null;
+                                matches?: boolean | null;
+                                algorithm?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            verdict?: string | null;
+                            reasons?: unknown[] | null;
+                            bound_keys?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description No usable agent named */
@@ -6492,7 +26207,59 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        mode?: string | null;
+                        agent?: string | null;
+                        directory?: ({
+                            url?: string | null;
+                            status?: number | null;
+                            redirected?: boolean | null;
+                            content_type?: string | null;
+                            content_type_ok?: boolean | null;
+                            keys?: (({
+                                kid?: string | null;
+                                kty?: string | null;
+                                crv?: string | null;
+                                thumbprint?: string | null;
+                                x?: string | null;
+                                usable?: boolean | null;
+                                bound?: boolean | null;
+                                why?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            signatures?: (({
+                                label?: string | null;
+                                keyid?: string | null;
+                                tag?: string | null;
+                                alg?: string | null;
+                                created?: number | null;
+                                expires?: number | null;
+                                components?: (string | null)[] | null;
+                                window?: string | null;
+                                verified?: boolean | null;
+                                why?: string | null;
+                                signature_valid?: boolean | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            content_digest?: ({
+                                present?: boolean | null;
+                                matches?: boolean | null;
+                                algorithm?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            verdict?: string | null;
+                            reasons?: unknown[] | null;
+                            bound_keys?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description Nothing to check */
@@ -6563,7 +26330,18 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        id?: string | null;
+                        domain?: string | null;
+                        state?: string | null;
+                        pages?: number | null;
+                        job?: boolean | null;
+                        url?: string | null;
+                        json?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description No domain */
@@ -6628,7 +26406,28 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        plan?: string | null;
+                        month?: string | null;
+                        used?: number | null;
+                        limit?: number | null;
+                        remaining?: number | null;
+                        resets_at?: string | null;
+                        lookups?: ({
+                            limit?: number | null;
+                            used?: number | null;
+                            remaining?: number | null;
+                            resets_at?: string | null;
+                            counts?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        counts?: string | null;
+                        burst?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description No valid licence key */
@@ -6658,7 +26457,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        served_from?: string | null;
+                        bundle?: string | null;
+                        ok?: boolean | null;
+                        id?: string | null;
+                        domain?: string | null;
+                        scanned_at?: string | null;
+                        report?: string | null;
+                        checks?: (({
+                            name?: string | null;
+                            ok?: boolean | null;
+                            why?: string | null;
+                            digest?: string | null;
+                            recorded?: string | null;
+                            date?: string | null;
+                            manifest?: string | null;
+                            kid?: string | null;
+                            key_directory?: string | null;
+                            bytes?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        summary?: ({
+                            passed?: number | null;
+                            failed?: number | null;
+                            unverifiable?: number | null;
+                            total?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        note?: unknown;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description No record for that id */
@@ -6717,7 +26549,46 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        v?: number | null;
+                        at?: string | null;
+                        green?: boolean | null;
+                        records?: number | null;
+                        identical?: number | null;
+                        mismatched?: number | null;
+                        decisions_compared?: number | null;
+                        traversals_compared?: number | null;
+                        ages_days?: ({
+                            min?: number | null;
+                            max?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        ids?: (string | null)[] | null;
+                        failures?: (({
+                            id?: string | null;
+                            why?: unknown;
+                            first_difference?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        results?: (({
+                            id?: string | null;
+                            domain?: string | null;
+                            age_days?: number | null;
+                            projection?: string | null;
+                            parts?: number | null;
+                            decisions?: number | null;
+                            bytes?: number | null;
+                            ms?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description identity not proven */
@@ -6744,7 +26615,33 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        kind?: string | null;
+                        detail?: string | null;
+                        v?: number | null;
+                        at?: string | null;
+                        records?: number | null;
+                        identical?: number | null;
+                        mismatched?: number | null;
+                        min_age_days?: number | null;
+                        oldest_archived?: string | null;
+                        archived_total?: number | null;
+                        ms?: number | null;
+                        method?: unknown;
+                        results?: (({
+                            age_days?: number | null;
+                            projection?: string | null;
+                            parts?: number | null;
+                            decisions?: number | null;
+                            bytes?: number | null;
+                            ms?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description not run yet */
@@ -6775,7 +26672,89 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        id?: string | null;
+                        resolved_at?: string | null;
+                        type?: string | null;
+                        domain?: string | null;
+                        scanned_at?: string | null;
+                        grade?: string | null;
+                        overall?: number | null;
+                        refused?: boolean | null;
+                        report?: ({
+                            id?: string | null;
+                            report?: string | null;
+                            json?: string | null;
+                            graph?: string | null;
+                            archived?: boolean | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        provenance?: ({
+                            v?: number | null;
+                            observer?: string | null;
+                            observer_release?: string | null;
+                            vantage?: ({
+                                kind?: string | null;
+                                colo?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            rulepack?: string | null;
+                            audit_version?: number | null;
+                            meg_v?: number | null;
+                            scope?: string | null;
+                            observed_at?: string | null;
+                            stored_at?: string | null;
+                            artifacts?: string | null;
+                            findings?: number | null;
+                            decisions?: number | null;
+                            manifest_signature?: ({
+                                alg?: string | null;
+                                kid?: string | null;
+                                sig?: string | null;
+                                message?: string | null;
+                                key_directory?: string | null;
+                                verify?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        decisions?: unknown[] | null;
+                        experiences?: (({
+                            id?: string | null;
+                            role?: string | null;
+                            identity?: string | null;
+                            url?: string | null;
+                            status?: number | null;
+                            bytes?: number | null;
+                            sha256?: string | null;
+                            stored?: string | null;
+                            request_profile?: string | null;
+                            artifact?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        manifest?: string | null;
+                        sealed?: ({
+                            digest?: string | null;
+                            sealed?: boolean | null;
+                            pending?: boolean | null;
+                            unverifiable?: boolean | null;
+                            why?: unknown;
+                            date?: unknown;
+                            root?: unknown;
+                            score_version?: number | null;
+                            bitcoin_block?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description Unknown id or no licence */
@@ -6815,7 +26794,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        id?: string | null;
+                        state?: string | null;
+                        counts?: ({
+                            total?: number | null;
+                            queued?: number | null;
+                            done?: number | null;
+                            failed?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        rejected?: unknown[] | null;
+                        charged?: number | null;
+                        next_window?: string | null;
+                        url?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description No valid domains or bad webhook */
@@ -6867,7 +26864,47 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        id?: string | null;
+                        state?: string | null;
+                        created?: string | null;
+                        started?: unknown;
+                        finished?: unknown;
+                        counts?: ({
+                            total?: number | null;
+                            queued?: number | null;
+                            done?: number | null;
+                            failed?: number | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        next_window?: string | null;
+                        windows_utc_minutes?: (number | null)[] | null;
+                        webhook?: ({
+                            url?: string | null;
+                            status?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        rejected?: unknown[] | null;
+                        items?: (({
+                            domain?: string | null;
+                            state?: string | null;
+                            id?: unknown;
+                            grade?: unknown;
+                            overall?: unknown;
+                            refused?: boolean | null;
+                            report?: unknown;
+                            json?: unknown;
+                            error?: unknown;
+                            at?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                        limits?: (string | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description Unknown id or not your batch */
@@ -6931,7 +26968,19 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        pass?: boolean | null;
+                        domain?: string | null;
+                        scanned_at?: string | null;
+                        report_url?: string | null;
+                        baseline?: unknown;
+                        broke?: unknown[] | null;
+                        declared_violations?: unknown[] | null;
+                        declared?: boolean | null;
+                        summary?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description No licence covering the domain */
@@ -6976,7 +27025,53 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        declared?: ({
+                            flowdecl?: string | null;
+                            domain?: string | null;
+                            agents?: ({
+                                anon?: string | null;
+                                gptbot?: string | null;
+                                claudebot?: string | null;
+                                oaisearch?: string | null;
+                                claudesearch?: string | null;
+                                perplexity?: string | null;
+                                googlebot?: string | null;
+                                browser?: string | null;
+                                bingbot?: string | null;
+                                applebot?: string | null;
+                                amazonbot?: string | null;
+                                bytespider?: string | null;
+                                metaexternal?: string | null;
+                                ccbot?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            stores?: ({
+                                "s:entitymap"?: string | null;
+                                "s:jsonld"?: string | null;
+                                "s:lead"?: string | null;
+                                "s:llms"?: string | null;
+                                "s:nap"?: string | null;
+                                "s:page"?: string | null;
+                                "s:quote"?: string | null;
+                                "s:robots"?: string | null;
+                                "s:sitemap"?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            note?: string | null;
+                            set_at?: string | null;
+                            by?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        parity?: unknown[] | null;
+                        in_parity?: boolean | null;
+                        observed_at?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description No licence covering the domain, or no declaration */
@@ -7011,7 +27106,55 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        declared?: ({
+                            flowdecl?: string | null;
+                            domain?: string | null;
+                            agents?: ({
+                                anon?: string | null;
+                                gptbot?: string | null;
+                                claudebot?: string | null;
+                                oaisearch?: string | null;
+                                claudesearch?: string | null;
+                                perplexity?: string | null;
+                                googlebot?: string | null;
+                                browser?: string | null;
+                                bingbot?: string | null;
+                                applebot?: string | null;
+                                amazonbot?: string | null;
+                                bytespider?: string | null;
+                                metaexternal?: string | null;
+                                ccbot?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            stores?: ({
+                                "s:entitymap"?: string | null;
+                                "s:jsonld"?: string | null;
+                                "s:lead"?: string | null;
+                                "s:llms"?: string | null;
+                                "s:nap"?: string | null;
+                                "s:page"?: string | null;
+                                "s:quote"?: string | null;
+                                "s:robots"?: string | null;
+                                "s:sitemap"?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            note?: string | null;
+                            set_at?: string | null;
+                            by?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        parity?: unknown[] | null;
+                        in_parity?: boolean | null;
+                        observed_at?: string | null;
+                        note?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description Invalid entries */
@@ -7056,7 +27199,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        deleted?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
         };
@@ -7110,7 +27258,20 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        domain?: string | null;
+                        site?: string | null;
+                        description?: string | null;
+                        sitemap_declared?: number | null;
+                        pages_read?: number | null;
+                        pages_with_description?: number | null;
+                        text?: unknown;
+                        at?: string | null;
+                        note?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description No domain */
@@ -7237,7 +27398,102 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "text/plain": unknown;
+                    "text/plain": string;
+                };
+            };
+            /** @description No domain */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fixArd: {
+        parameters: {
+            query: {
+                domain: string;
+                format?: "file";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description application/json: { found, entries, validation, existing, notes, manifest, draft } */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": ({
+                        kind?: string | null;
+                        v?: number | null;
+                        host?: string | null;
+                        built_at?: string | null;
+                        found?: ({
+                            skills?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        entries?: number | null;
+                        validation?: ({
+                            errors?: unknown[] | null;
+                            warnings?: unknown[] | null;
+                            infos?: unknown[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        existing?: unknown;
+                        notes?: (string | null)[] | null;
+                        manifest?: ({
+                            "@context"?: string | null;
+                            specVersion?: string | null;
+                            host?: ({
+                                displayName?: string | null;
+                                identifier?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            entries?: (({
+                                identifier?: string | null;
+                                displayName?: string | null;
+                                type?: string | null;
+                                url?: string | null;
+                                description?: string | null;
+                                capabilities?: (string | null)[] | null;
+                                representativeQueries?: (string | null)[] | null;
+                                trustManifest?: ({
+                                    identity?: string | null;
+                                    identityType?: string | null;
+                                    trustSchema?: ({
+                                        identifier?: string | null;
+                                        governanceUri?: string | null;
+                                        verificationMethods?: (string | null)[] | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null;
+                                    attestations?: (({
+                                        type?: string | null;
+                                        uri?: string | null;
+                                        mediaType?: string | null;
+                                    } & {
+                                        [key: string]: unknown;
+                                    }) | null)[] | null;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description No domain */
@@ -7266,7 +27522,50 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        version?: string | null;
+                        schema?: string | null;
+                        publisher?: ({
+                            name?: string | null;
+                            url?: string | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        generated?: string | null;
+                        verificationStatus?: string | null;
+                        "x-crawlcheck"?: ({
+                            starter?: boolean | null;
+                            notes?: (string | null)[] | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
+                        entities?: (({
+                            entityId?: string | null;
+                            "@type"?: string | null;
+                            name?: string | null;
+                            url?: string | null;
+                            description?: string | null;
+                            relations?: (({
+                                predicate?: string | null;
+                                targetId?: string | null;
+                                targetName?: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null)[] | null;
+                            telephone?: string | null;
+                            geo?: ({
+                                latitude?: number | null;
+                                longitude?: number | null;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            sameAs?: unknown;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null)[] | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description No prior scan for this domain */
@@ -7310,7 +27609,18 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": ({
+                        ok?: boolean | null;
+                        key?: string | null;
+                        sha?: string | null;
+                        bytes?: number | null;
+                        at?: string | null;
+                        expires_days?: number | null;
+                        bound_to?: (string | null)[] | null;
+                        note?: string | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                 };
             };
             /** @description No url or html, page under 512 bytes, or the page's canonical names another host */

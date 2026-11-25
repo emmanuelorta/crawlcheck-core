@@ -31,3 +31,21 @@ async function frameworks(lock: McpLock, server: { listTools: () => Promise<any[
   const e = new ContinuityRefused("why");
   return [n, recs, gate.paused, e.why];
 }
+void frameworks;
+// failure_class on guard results, and observe mode for guard() / guardedFetch()
+import { GUARD_FAILURE_CLASSES, guardFailureClassOf, type GuardFailureClass, type GuardMode, type GuardResult } from "../dist/index.js";
+async function guardClasses() {
+  const kept: GuardResult[] = [];
+  const g = await c.guard("example.com", "read", { mode: "observe", onRecord: (r) => { kept.push(r); } });
+  const cls: GuardFailureClass | null | undefined = g.failure_class;
+  const would: boolean | undefined = g.would_proceed, m: GuardMode | undefined = g.mode;
+  const same: GuardFailureClass = guardFailureClassOf(g), all: GuardFailureClass[] = GUARD_FAILURE_CLASSES;
+  const f = await c.guardedFetch("https://example.com/", { mode: "enforce" });
+  const hop: GuardFailureClass | null | undefined = f.hops[0]?.failure_class, fc: GuardFailureClass | null | undefined = f.failure_class;
+  // @ts-expect-error  not a guard mode (review is the MCP gate's)
+  await c.guard("example.com", "read", { mode: "review" });
+  // @ts-expect-error  not a failure class
+  const bad: GuardFailureClass = "operation_mismatched";
+  return [cls, would, m, same, all, hop, fc, bad, kept];
+}
+void guardClasses;

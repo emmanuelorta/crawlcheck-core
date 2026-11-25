@@ -9,19 +9,25 @@
 //      OIDC token whose audience is that head's digest. GitHub's key, not CrawlCheck's. A client that walks the chain
 //      from the witnessed head back to its own heads detects any head the witness never saw.
 // A fork comes with both signed heads: two documents carrying CrawlCheck's own signature that cannot both be true.
+// That holds only for heads checked against CrawlCheck's keys: pass publishedKids or keyPolicy to every call (the
+// CrawlCheck client does). A head that is not signed by a published key is ignored: never kept, never part of a fork.
 // Zero dependencies; WebCrypto only.
-import { verifyDataDoc } from "./verify.js";
+import { verifyDataDoc, applyKeyPolicy } from "./verify.js";
 export const LOG_ID = "crawlcheck-resolve-log-v1";
 export const GITHUB_OIDC_ISSUER = "https://token.actions.githubusercontent.com";
-export const WITNESS_REPOSITORY = "emmanuelorta/crawlcheck";
-export const WITNESS_WORKFLOW_PREFIX = "emmanuelorta/crawlcheck/.github/workflows/log-witness.yml@refs/heads/";
+// The witness is recognised by the SHA-256 of two claims GitHub signs into its token: the repository, and the workflow
+// file (job_workflow_ref up to "@refs/heads/"). The token states both in clear; a verifier only has to recognise them.
+const WITNESS_REPOSITORY_SHA256 = "588fecf96f4ed7df3792e369a5cfd3310eda480924112a9f0b5d9ddb4fe5be75";
+const WITNESS_WORKFLOW_SHA256 = "60870f2d47396bd2e01b7587b03a35a0a0c1fe8e634500fba61a1ddd9d833378";
+const sha256Hex = async (s) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(s)))), (b) => b.toString(16).padStart(2, "0")).join("");
 const MAX_HEADS = 2000;
-/** A new, empty store. It is plain JSON: keep it across runs (a file, a KV value) so later heads are checked against earlier ones. */
+/** A new, empty store. It is plain JSON: keep it across runs (a file, any key-value store) so later heads are checked against earlier ones. */
 export function newLogStore() { return { v: 1, log_id: LOG_ID, heads: {}, forks: [], witnessed: null }; }
 function brief(s) { return { batch: s.batch, sha256: s.sha256, first_index: s.first_index, batch_size: s.batch_size, tree_size: s.tree_size, prev_sth_sha256: s.prev_sth_sha256 ?? null, created_at: s.created_at ?? null }; }
-function forkOf(store, kind, batch, a, b, why) {
-    const f = { kind, batch, why, a: a, b: b, detected_at: new Date().toISOString(),
-        proof: "both documents carry CrawlCheck's own signature and cannot both belong to one append-only log; publish them or send them to " + "https://crawlcheck.io/api/v1/log/gossip" };
+function forkOf(store, kind, batch, a, b, why, checked) {
+    const f = { kind, batch, why, a: a, b: b, detected_at: new Date().toISOString(), issuer_checked: checked === true,
+        proof: checked === true ? "both documents carry CrawlCheck's own signature and cannot both belong to one append-only log; publish them or send them to " + "https://crawlcheck.io/api/v1/log/gossip"
+            : "NOT checked against CrawlCheck's published keys: these two heads contradict each other, but either may be signed by anyone. Observe them again with publishedKids or keyPolicy before concluding anything" };
     const key = kind + ":" + (a && a.sha256) + ":" + (b && b.sha256);
     if (!store.forks.some((x) => x.kind + ":" + (x.a && x.a.sha256) + ":" + (x.b && x.b.sha256) === key))
         store.forks.push(f);
@@ -30,51 +36,118 @@ function forkOf(store, kind, batch, a, b, why) {
 /**
  * Check one signed tree head (kind crawlcheck-log-sth) against everything the store already holds, then keep it.
  * Returns { state: "new" | "known" | "fork" | "invalid", why?, fork? }. invalid means the document is not a head
- * CrawlCheck signed (it proves nothing either way); fork means two signed heads that contradict each other.
+ * CrawlCheck signed (it proves nothing either way, and it is not kept); fork means two signed heads that contradict
+ * each other.
  * opts.publishedKids: key ids from the published directory; a head signed by another key is invalid.
+ * opts.keyPolicy: keyPolicyFrom(directory, rotation) / publishedKeyPolicy(); the head must also be signed by a key the
+ *   signing policy allows for log heads at its time. Pass one of the two: without either, the head is checked against
+ *   its own key only, anyone can make one, and it is kept marked issuer_checked: false. Such a head never forms a fork
+ *   with a checked head (the checked one replaces it), and a fork between two of them says so in its proof text.
  */
 export async function logObserve(store, sth, opts = {}) {
     if (!store || typeof store !== "object" || !store.heads)
         throw new Error("pass a store from newLogStore()");
     if (!sth || sth.kind !== "crawlcheck-log-sth" || !Number.isInteger(sth.batch) || sth.batch < 0)
         return { state: "invalid", why: "not a signed tree head" };
+    const kids = Array.isArray(opts.publishedKids) ? opts.publishedKids : null, checked = !!(opts.keyPolicy || kids);
     let v = null;
     try {
-        v = await verifyDataDoc(sth, opts.publishedKids ? { publishedKids: opts.publishedKids } : undefined);
+        v = opts.keyPolicy ? applyKeyPolicy(await verifyDataDoc(sth), sth, opts.keyPolicy) : await verifyDataDoc(sth, kids ? { publishedKids: kids } : undefined);
     }
     catch (e) {
         v = null;
     }
     if (!v || !v.verified)
         return { state: "invalid", why: "the head does not verify" + (v ? ": " + v.summary : "") };
-    if (opts.publishedKids && !opts.publishedKids.includes(sth.signature && sth.signature.kid))
-        return { state: "invalid", why: "signed by a key CrawlCheck does not publish" };
+    if (checked && !v.accepted)
+        return { state: "invalid", why: "not signed by a key CrawlCheck publishes for log heads" };
+    if (checked && v.key_policy_code === "purpose_unknown")
+        return { state: "invalid", why: "signed by a listed key whose purpose this release does not know: pass keyPolicy, which says which key signs log heads" };
     if (sth.log_id !== (store.log_id || LOG_ID))
         return { state: "invalid", why: "a head of another log (" + sth.log_id + ")" };
     // A head CrawlCheck signed whose own numbers do not add up is itself misbehaviour.
     const arith = Number.isInteger(sth.batch_size) && sth.batch_size > 0 && sth.tree_size === sth.first_index + sth.batch_size && (sth.batch > 0 || (sth.first_index === 0 && sth.prev_sth_sha256 == null)) && (sth.batch === 0 || /^[0-9a-f]{64}$/.test(String(sth.prev_sth_sha256)));
     if (!arith)
-        return forkOf(store, "inconsistent_head", sth.batch, sth, sth, "batch " + sth.batch + ": a signed head whose sizes or chain link are malformed");
-    const k = sth.batch, have = store.heads[k];
-    if (have) {
-        if (have.sha256 === sth.sha256)
-            return { state: "known" };
-        return forkOf(store, "two_heads_for_one_batch", k, have.sth, sth, "batch " + k + " has two signed heads: " + have.sha256.slice(0, 16) + "… and " + sth.sha256.slice(0, 16) + "…");
+        return forkOf(store, "inconsistent_head", sth.batch, sth, sth, "batch " + sth.batch + ": a signed head whose sizes or chain link are malformed", checked);
+    const k = sth.batch;
+    // A head kept without a key check has no standing against one that was checked: the checked head replaces it, and
+    // an unchecked head that contradicts a checked one is ignored.
+    const was = (h) => !!h && h.issuer_checked === true;
+    const clash = (h, bad) => { if (!h || !bad)
+        return null; if (checked && !was(h)) {
+        delete store.heads[h.batch];
+        return null;
+    } return h; };
+    const same = store.heads[k];
+    if (same && same.sha256 === sth.sha256) {
+        if (checked)
+            same.issuer_checked = true;
+        return { state: "known" };
     }
-    const prev = store.heads[k - 1], next = store.heads[k + 1];
+    const have = clash(same, true);
+    const p0 = store.heads[k - 1], n0 = store.heads[k + 1];
+    const prev = clash(p0, !!p0 && (sth.prev_sth_sha256 !== p0.sha256 || sth.first_index !== p0.tree_size));
+    const next = clash(n0, !!n0 && (n0.prev_sth_sha256 !== sth.sha256 || n0.first_index !== sth.tree_size));
+    if (!checked && [have, prev, next].some(was))
+        return { state: "invalid", why: "contradicts a head this store checked against CrawlCheck's keys, and was not itself checked against them: ignored" };
+    if (have)
+        return forkOf(store, "two_heads_for_one_batch", k, have.sth, sth, "batch " + k + " has two signed heads: " + have.sha256.slice(0, 16) + "… and " + sth.sha256.slice(0, 16) + "…", checked);
     if (prev && sth.prev_sth_sha256 !== prev.sha256)
-        return forkOf(store, "chain_break", k, prev.sth, sth, "batch " + k + " does not chain to the batch " + (k - 1) + " head this client holds");
-    if (prev && sth.first_index !== prev.tree_size)
-        return forkOf(store, "size_mismatch", k, prev.sth, sth, "batch " + k + " starts at " + sth.first_index + ", batch " + (k - 1) + " ended at " + prev.tree_size);
+        return forkOf(store, "chain_break", k, prev.sth, sth, "batch " + k + " does not chain to the batch " + (k - 1) + " head this client holds", checked);
+    if (prev)
+        return forkOf(store, "size_mismatch", k, prev.sth, sth, "batch " + k + " starts at " + sth.first_index + ", batch " + (k - 1) + " ended at " + prev.tree_size, checked);
     if (next && next.prev_sth_sha256 !== sth.sha256)
-        return forkOf(store, "chain_break", k + 1, sth, next.sth, "the batch " + (k + 1) + " head this client holds does not chain to this batch " + k + " head");
-    if (next && next.first_index !== sth.tree_size)
-        return forkOf(store, "size_mismatch", k + 1, sth, next.sth, "batch " + (k + 1) + " starts at " + next.first_index + ", this head ends at " + sth.tree_size);
-    store.heads[k] = Object.assign(brief(sth), { sth });
+        return forkOf(store, "chain_break", k + 1, sth, next.sth, "the batch " + (k + 1) + " head this client holds does not chain to this batch " + k + " head", checked);
+    if (next)
+        return forkOf(store, "size_mismatch", k + 1, sth, next.sth, "batch " + (k + 1) + " starts at " + next.first_index + ", this head ends at " + sth.tree_size, checked);
+    store.heads[k] = Object.assign(brief(sth), { sth }, checked ? { issuer_checked: true } : {});
     const ks = Object.keys(store.heads).map(Number).sort((a, b) => a - b);
     while (ks.length > (opts.maxHeads || MAX_HEADS))
         delete store.heads[ks.shift()];
     return { state: "new" };
+}
+/**
+ * Re-check what a store holds against CrawlCheck's keys (opts.publishedKids or opts.keyPolicy, one is required): a
+ * fork that carries its two heads is kept only when both are signed by a published key, and a head only when it is. Use it on a
+ * store saved by an earlier release, or after heads were observed without a key list.
+ * Returns { forks_dropped, heads_dropped }.
+ */
+export async function logPrune(store, opts = {}) {
+    if (!opts.keyPolicy && !Array.isArray(opts.publishedKids))
+        throw new Error("logPrune needs publishedKids or keyPolicy");
+    const ok = async (sth) => { const t = newLogStore(); t.log_id = store.log_id || LOG_ID; const r = await logObserve(t, sth, opts).catch(() => null); return !!r && r.state !== "invalid"; };
+    const keep = [];
+    let forks_dropped = 0, heads_dropped = 0;
+    for (const f of store.forks || []) {
+        if (f && f.issuer_checked === true) {
+            keep.push(f);
+            continue;
+        }
+        if (!f || !f.a || typeof f.a !== "object" || !f.b || typeof f.b !== "object") {
+            keep.push(f);
+            continue;
+        } // no head documents to re-check: left as it is
+        if (f && await ok(f.a) && (f.b === f.a || await ok(f.b))) {
+            f.issuer_checked = true;
+            f.proof = "both documents carry CrawlCheck's own signature and cannot both belong to one append-only log; publish them or send them to " + "https://crawlcheck.io/api/v1/log/gossip";
+            keep.push(f);
+        }
+        else
+            forks_dropped++;
+    }
+    store.forks = keep;
+    for (const k of Object.keys(store.heads)) {
+        const h = store.heads[k];
+        if (h && h.issuer_checked === true)
+            continue;
+        if (h && await ok(h.sth))
+            h.issuer_checked = true;
+        else {
+            delete store.heads[k];
+            heads_dropped++;
+        }
+    }
+    return { forks_dropped, heads_dropped };
 }
 /** Observe the head inside a Resolve answer (transparency.sth), if it has one. */
 export async function logObserveAnswer(store, answer, opts = {}) {
@@ -130,14 +203,15 @@ export async function verifyWitnessToken(token, sthSha256, jwks) {
         return { ok: false, why: "GitHub's signature does NOT verify", claims: c };
     if (c.iss !== GITHUB_OIDC_ISSUER)
         return { ok: false, why: "issuer is " + c.iss, claims: c };
-    if (c.repository !== WITNESS_REPOSITORY || String(c.job_workflow_ref || "").indexOf(WITNESS_WORKFLOW_PREFIX) !== 0)
-        return { ok: false, why: "issued to " + c.job_workflow_ref + ", not the log-witness workflow", claims: c };
+    const ref = String(c.job_workflow_ref || ""), cut = ref.indexOf("@refs/heads/");
+    if (cut < 1 || await sha256Hex(c.repository) !== WITNESS_REPOSITORY_SHA256 || await sha256Hex(ref.slice(0, cut)) !== WITNESS_WORKFLOW_SHA256)
+        return { ok: false, why: "issued to " + c.job_workflow_ref + ", not the witness workflow", claims: c };
     if (c.runner_environment && c.runner_environment !== "github-hosted")
         return { ok: false, why: "not a GitHub-hosted runner", claims: c };
     const aud = Array.isArray(c.aud) ? c.aud : [c.aud];
     if (!aud.includes("crawlcheck-sth:" + sthSha256))
         return { ok: false, why: "the token's audience does not name this head", claims: c };
-    return { ok: true, why: "GitHub signed a token for run " + c.run_id + " of the log-witness workflow, audience this head's digest", claims: c };
+    return { ok: true, why: "GitHub signed a token for run " + c.run_id + " of the witness workflow, audience this head's digest", claims: c };
 }
 /**
  * Online check of a store against the log and its outside witness. get(path) must return parsed JSON from
@@ -173,7 +247,7 @@ export async function walkHeads(get, hi, lo) {
     return out;
 }
 export async function logCheck(store, get, opts = {}) {
-    const before = store.forks.length, o = { publishedKids: opts.publishedKids };
+    const before = store.forks.length, o = { publishedKids: opts.publishedKids, keyPolicy: opts.keyPolicy };
     const log = await get("/api/v1/log");
     if (log && log.head)
         await logObserve(store, log.head, o);

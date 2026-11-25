@@ -5,18 +5,27 @@ not chain to the one before. A store keeps every signed tree head a client sees 
 neighbours; clients swap heads (log_heads / log_gossip); and log_check walks the chain from the head an outside witness
 co-signed (a GitHub Actions OIDC token whose audience is the head's digest, signed by GitHub's key) down to the heads
 this client holds. A fork carries both signed heads: two documents with CrawlCheck's own signature that cannot both be true.
+That holds only for heads checked against CrawlCheck's keys: pass published_kids or key_policy to every call (the
+CrawlCheck client does). A head that is not signed by a published key is ignored: never kept, never part of a fork.
 Standard library only; the store is plain JSON (persist it between runs)."""
 import base64
 import datetime
 import hashlib
 import json
 
-from .verify import verify_document, LOG_ID
+from .verify import verify_document, apply_key_policy, LOG_ID
 
 GITHUB_OIDC_ISSUER = "https://token.actions.githubusercontent.com"
 GITHUB_OIDC_JWKS = GITHUB_OIDC_ISSUER + "/.well-known/jwks"
-WITNESS_REPOSITORY = "emmanuelorta/crawlcheck"
-WITNESS_WORKFLOW_PREFIX = "emmanuelorta/crawlcheck/.github/workflows/log-witness.yml@refs/heads/"
+# The witness is recognised by the SHA-256 of two claims GitHub signs into its token: the repository, and the workflow
+# file (job_workflow_ref up to "@refs/heads/"). The token states both in clear; a verifier only has to recognise them.
+_WITNESS_REPOSITORY_SHA256 = "588fecf96f4ed7df3792e369a5cfd3310eda480924112a9f0b5d9ddb4fe5be75"
+_WITNESS_WORKFLOW_SHA256 = "60870f2d47396bd2e01b7587b03a35a0a0c1fe8e634500fba61a1ddd9d833378"
+_CHECKED_PROOF = "both documents carry CrawlCheck's own signature and cannot both belong to one append-only log; publish them or send them to https://crawlcheck.io/api/v1/log/gossip"
+
+
+def _sha256_hex(v):
+    return hashlib.sha256(str(v).encode("utf-8")).hexdigest()
 MAX_HEADS = 2000
 
 
@@ -28,9 +37,9 @@ def new_log_store():
     return {"v": 1, "log_id": LOG_ID, "heads": {}, "forks": [], "witnessed": None}
 
 
-def _fork(store, kind, batch, a, b, why):
-    f = {"kind": kind, "batch": batch, "why": why, "a": a, "b": b, "detected_at": _now(),
-         "proof": "both documents carry CrawlCheck's own signature and cannot both belong to one append-only log; publish them or send them to https://crawlcheck.io/api/v1/log/gossip"}
+def _fork(store, kind, batch, a, b, why, checked=False):
+    f = {"kind": kind, "batch": batch, "why": why, "a": a, "b": b, "detected_at": _now(), "issuer_checked": checked is True,
+         "proof": _CHECKED_PROOF if checked is True else "NOT checked against CrawlCheck's published keys: these two heads contradict each other, but either may be signed by anyone. Observe them again with published_kids or key_policy before concluding anything"}
     key = (kind, (a or {}).get("sha256"), (b or {}).get("sha256"))
     if not any((x["kind"], (x.get("a") or {}).get("sha256"), (x.get("b") or {}).get("sha256")) == key for x in store["forks"]):
         store["forks"].append(f)
@@ -41,49 +50,120 @@ def _is_int(v):
     return isinstance(v, int) and not isinstance(v, bool)
 
 
-def log_observe(store, sth, published_kids=None, max_heads=MAX_HEADS):
-    """Check one signed tree head against the store and keep it. Returns {"state": "new"|"known"|"fork"|"invalid", ...}."""
+def log_observe(store, sth, published_kids=None, max_heads=MAX_HEADS, key_policy=None):
+    """Check one signed tree head against the store and keep it. Returns {"state": "new"|"known"|"fork"|"invalid", ...}.
+    invalid: not a head CrawlCheck signed (it proves nothing either way, and it is not kept).
+    published_kids: key ids from the published directory. key_policy: key_policy_from(directory, rotation) /
+    client.published_key_policy(); the head must also be signed by a key the signing policy allows for log heads at
+    its time. Pass one of the two: without either, the head is checked against its own key only, anyone can make one,
+    and it is kept marked issuer_checked False. Such a head never forms a fork with a checked head (the checked one
+    replaces it), and a fork between two of them says so in its proof text."""
     if not isinstance(sth, dict) or sth.get("kind") != "crawlcheck-log-sth" or not _is_int(sth.get("batch")) or sth["batch"] < 0:
         return {"state": "invalid", "why": "not a signed tree head"}
+    checked = key_policy is not None or published_kids is not None
     try:
-        v = verify_document(sth, published_kids)
-    except ValueError:
+        v = apply_key_policy(verify_document(sth), sth, key_policy) if key_policy is not None else verify_document(sth, published_kids)
+    except Exception:  # noqa: BLE001 - a head that cannot be read is not a head
         v = None
     if not v or not v["verified"]:
         return {"state": "invalid", "why": "the head does not verify"}
+    if checked and not v.get("accepted"):
+        return {"state": "invalid", "why": "not signed by a key CrawlCheck publishes for log heads"}
+    if checked and v.get("key_policy_code") == "purpose_unknown":
+        return {"state": "invalid", "why": "signed by a listed key whose purpose this release does not know: pass key_policy, which says which key signs log heads"}
     if sth.get("log_id") != store.get("log_id", LOG_ID):
         return {"state": "invalid", "why": "a head of another log"}
     k = sth["batch"]
     bs, fi, ts, pv = sth.get("batch_size"), sth.get("first_index"), sth.get("tree_size"), sth.get("prev_sth_sha256")
     arith = _is_int(bs) and bs > 0 and _is_int(fi) and _is_int(ts) and ts == fi + bs and (k > 0 or (fi == 0 and pv is None)) and (k == 0 or (isinstance(pv, str) and len(pv) == 64))
     if not arith:
-        return _fork(store, "inconsistent_head", k, sth, sth, "batch %d: a signed head whose sizes or chain link are malformed" % k)
+        return _fork(store, "inconsistent_head", k, sth, sth, "batch %d: a signed head whose sizes or chain link are malformed" % k, checked)
     heads = store["heads"]
-    have = heads.get(str(k))
+
+    def was(h):
+        return bool(h) and h.get("issuer_checked") is True
+
+    def clash(h, bad):
+        # A head kept without a key check has no standing against one that was checked: the checked head replaces it.
+        if not h or not bad:
+            return None
+        if checked and not was(h):
+            heads.pop(str(h["batch"]), None)
+            return None
+        return h
+
+    same = heads.get(str(k))
+    if same and same["sha256"] == sth.get("sha256"):
+        if checked:
+            same["issuer_checked"] = True
+        return {"state": "known"}
+    have = clash(same, True)
+    p0, n0 = heads.get(str(k - 1)), heads.get(str(k + 1))
+    prev = clash(p0, bool(p0) and (pv != p0["sha256"] or fi != p0["tree_size"]))
+    nxt = clash(n0, bool(n0) and (n0["prev_sth_sha256"] != sth.get("sha256") or n0["first_index"] != ts))
+    if not checked and any(was(h) for h in (have, prev, nxt)):
+        return {"state": "invalid", "why": "contradicts a head this store checked against CrawlCheck's keys, and was not itself checked against them: ignored"}
     if have:
-        if have["sha256"] == sth["sha256"]:
-            return {"state": "known"}
-        return _fork(store, "two_heads_for_one_batch", k, have["sth"], sth, "batch %d has two signed heads: %s… and %s…" % (k, have["sha256"][:16], sth["sha256"][:16]))
-    prev, nxt = heads.get(str(k - 1)), heads.get(str(k + 1))
+        return _fork(store, "two_heads_for_one_batch", k, have["sth"], sth, "batch %d has two signed heads: %s… and %s…" % (k, have["sha256"][:16], str(sth.get("sha256"))[:16]), checked)
     if prev and pv != prev["sha256"]:
-        return _fork(store, "chain_break", k, prev["sth"], sth, "batch %d does not chain to the batch %d head this client holds" % (k, k - 1))
-    if prev and fi != prev["tree_size"]:
-        return _fork(store, "size_mismatch", k, prev["sth"], sth, "batch %d starts at %d, batch %d ended at %d" % (k, fi, k - 1, prev["tree_size"]))
-    if nxt and nxt["prev_sth_sha256"] != sth["sha256"]:
-        return _fork(store, "chain_break", k + 1, sth, nxt["sth"], "the batch %d head this client holds does not chain to this batch %d head" % (k + 1, k))
-    if nxt and nxt["first_index"] != ts:
-        return _fork(store, "size_mismatch", k + 1, sth, nxt["sth"], "batch %d starts at %d, this head ends at %d" % (k + 1, nxt["first_index"], ts))
+        return _fork(store, "chain_break", k, prev["sth"], sth, "batch %d does not chain to the batch %d head this client holds" % (k, k - 1), checked)
+    if prev:
+        return _fork(store, "size_mismatch", k, prev["sth"], sth, "batch %d starts at %d, batch %d ended at %d" % (k, fi, k - 1, prev["tree_size"]), checked)
+    if nxt and nxt["prev_sth_sha256"] != sth.get("sha256"):
+        return _fork(store, "chain_break", k + 1, sth, nxt["sth"], "the batch %d head this client holds does not chain to this batch %d head" % (k + 1, k), checked)
+    if nxt:
+        return _fork(store, "size_mismatch", k + 1, sth, nxt["sth"], "batch %d starts at %d, this head ends at %d" % (k + 1, nxt["first_index"], ts), checked)
     heads[str(k)] = {"batch": k, "sha256": sth["sha256"], "first_index": fi, "batch_size": bs, "tree_size": ts, "prev_sth_sha256": pv, "created_at": sth.get("created_at"), "sth": sth}
+    if checked:
+        heads[str(k)]["issuer_checked"] = True
     ks = sorted(int(x) for x in heads)
     while len(ks) > max_heads:
         del heads[str(ks.pop(0))]
     return {"state": "new"}
 
 
-def log_observe_answer(store, answer, published_kids=None):
+def log_prune(store, published_kids=None, key_policy=None):
+    """Re-check what a store holds against CrawlCheck's keys (published_kids or key_policy, one is required): a fork
+    that carries its two heads is kept only when both are signed by a published key, and a head only when it is. Use
+    it on a store saved by an earlier release, or after heads were observed without a key list.
+    Returns {"forks_dropped": n, "heads_dropped": n}."""
+    if published_kids is None and key_policy is None:
+        raise ValueError("log_prune needs published_kids or key_policy")
+
+    def ok(sth):
+        t = new_log_store()
+        t["log_id"] = store.get("log_id", LOG_ID)
+        try:
+            return log_observe(t, sth, published_kids, key_policy=key_policy)["state"] != "invalid"
+        except Exception:  # noqa: BLE001
+            return False
+    keep, fd, hd = [], 0, 0
+    for f in store.get("forks") or []:
+        if not isinstance(f, dict) or f.get("issuer_checked") is True or not isinstance(f.get("a"), dict) or not isinstance(f.get("b"), dict):
+            keep.append(f)   # already checked, or no head documents to re-check: left as it is
+            continue
+        if ok(f["a"]) and (f["b"] is f["a"] or f["b"] == f["a"] or ok(f["b"])):
+            f["issuer_checked"], f["proof"] = True, _CHECKED_PROOF
+            keep.append(f)
+        else:
+            fd += 1
+    store["forks"] = keep
+    for k in list(store["heads"]):
+        h = store["heads"][k]
+        if isinstance(h, dict) and h.get("issuer_checked") is True:
+            continue
+        if isinstance(h, dict) and ok(h.get("sth")):
+            h["issuer_checked"] = True
+        else:
+            del store["heads"][k]
+            hd += 1
+    return {"forks_dropped": fd, "heads_dropped": hd}
+
+
+def log_observe_answer(store, answer, published_kids=None, key_policy=None):
     t = (answer or {}).get("transparency") if isinstance(answer, dict) else None
     if t and t.get("state") == "included" and t.get("sth"):
-        return log_observe(store, t["sth"], published_kids)
+        return log_observe(store, t["sth"], published_kids, key_policy=key_policy)
     return {"state": "none"}
 
 
@@ -91,11 +171,11 @@ def log_heads(store, limit=50):
     return [store["heads"][str(k)]["sth"] for k in sorted((int(x) for x in store["heads"]), reverse=True)[:limit]]
 
 
-def log_gossip(store, sths, published_kids=None):
+def log_gossip(store, sths, published_kids=None, key_policy=None):
     before = len(store["forks"])
     results = []
     for s in sths or []:
-        r = log_observe(store, s, published_kids)
+        r = log_observe(store, s, published_kids, key_policy=key_policy)
         r.update({"batch": (s or {}).get("batch") if isinstance(s, dict) else None, "sha256": (s or {}).get("sha256") if isinstance(s, dict) else None})
         results.append(r)
     return {"forks": store["forks"][before:], "results": results}
@@ -141,14 +221,16 @@ def verify_witness_token(token, sth_sha256, jwks):
         return {"ok": False, "why": "GitHub's signature does NOT verify", "claims": c}
     if c.get("iss") != GITHUB_OIDC_ISSUER:
         return {"ok": False, "why": "issuer is %s" % c.get("iss"), "claims": c}
-    if c.get("repository") != WITNESS_REPOSITORY or not str(c.get("job_workflow_ref") or "").startswith(WITNESS_WORKFLOW_PREFIX):
-        return {"ok": False, "why": "issued to %s, not the log-witness workflow" % c.get("job_workflow_ref"), "claims": c}
+    ref = str(c.get("job_workflow_ref") or "")
+    cut = ref.find("@refs/heads/")
+    if cut < 1 or _sha256_hex(c.get("repository")) != _WITNESS_REPOSITORY_SHA256 or _sha256_hex(ref[:cut]) != _WITNESS_WORKFLOW_SHA256:
+        return {"ok": False, "why": "issued to %s, not the witness workflow" % c.get("job_workflow_ref"), "claims": c}
     if c.get("runner_environment") and c.get("runner_environment") != "github-hosted":
         return {"ok": False, "why": "not a GitHub-hosted runner", "claims": c}
     aud = c.get("aud") if isinstance(c.get("aud"), list) else [c.get("aud")]
     if "crawlcheck-sth:" + str(sth_sha256) not in aud:
         return {"ok": False, "why": "the token's audience does not name this head", "claims": c}
-    return {"ok": True, "why": "GitHub signed a token for run %s of the log-witness workflow, audience this head's digest" % c.get("run_id"), "claims": c}
+    return {"ok": True, "why": "GitHub signed a token for run %s of the witness workflow, audience this head's digest" % c.get("run_id"), "claims": c}
 
 
 def _age_minutes(iso):
@@ -191,13 +273,13 @@ def _walk_heads(get, hi, lo):
     return out
 
 
-def log_check(store, get, published_kids=None, jwks=None, fetch_jwks=None, post=None, max_walk=200, max_unwitnessed_minutes=120):
+def log_check(store, get, published_kids=None, jwks=None, fetch_jwks=None, post=None, max_walk=200, max_unwitnessed_minutes=120, key_policy=None):
     """Online split-view check. get(path) returns parsed JSON from crawlcheck.io; post(path, body) reports heads to
     /api/v1/log/gossip (optional). Same steps as the JavaScript logCheck."""
     before = len(store["forks"])
     lg = get("/api/v1/log")
     if lg and lg.get("head"):
-        log_observe(store, lg["head"], published_kids)
+        log_observe(store, lg["head"], published_kids, key_policy=key_policy)
     witnessed = None
     try:
         w = get("/api/v1/log/witness/latest")
@@ -209,7 +291,7 @@ def log_check(store, get, published_kids=None, jwks=None, fetch_jwks=None, post=
         rec = (doc.get("witnesses") or [w])[0]
         keys = jwks if jwks is not None else (fetch_jwks() if fetch_jwks else None)
         tv = verify_witness_token(rec.get("token"), (sth or {}).get("sha256"), keys) if keys else {"ok": None, "why": "no GitHub key set given"}
-        r = log_observe(store, sth, published_kids) if sth else {"state": "invalid"}
+        r = log_observe(store, sth, published_kids, key_policy=key_policy) if sth else {"state": "invalid"}
         claims = tv.get("claims") or {}
         witnessed = {"batch": w["batch"], "sha256": (sth or {}).get("sha256"), "at": rec.get("at"), "run_id": claims.get("run_id") or (rec.get("run") or {}).get("run_id"), "token": tv["ok"], "why": tv["why"], "observed": r["state"]}
         if tv["ok"] is False:
@@ -219,7 +301,7 @@ def log_check(store, get, published_kids=None, jwks=None, fetch_jwks=None, post=
         held = [int(k) for k in store["heads"] if int(k) < w["batch"]]
         lo = max(min(held), w["batch"] - max_walk) if held else w["batch"]
         for sth_k in _walk_heads(get, w["batch"] - 1, lo):
-            log_observe(store, sth_k, published_kids)
+            log_observe(store, sth_k, published_kids, key_policy=key_policy)
     wb = store["witnessed"]["batch"] if store.get("witnessed") else -1
     unw = [{"batch": int(k), "sha256": store["heads"][k]["sha256"], "created_at": store["heads"][k]["created_at"]} for k in sorted(store["heads"], key=int) if int(k) > wb]
     stale = [u for u in unw if u["created_at"] and (_age_minutes(u["created_at"]) or 0) > max_unwitnessed_minutes]

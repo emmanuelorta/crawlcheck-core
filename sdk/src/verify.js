@@ -1,5 +1,7 @@
 // crawlcheck-verify.mjs — verifies a CrawlCheck evidence bundle with no call to crawlcheck.io.
 // Zero dependencies. Node 20+:  node crawlcheck-verify.mjs bundle.json
+// Exit status: 0 only when the document is ACCEPTED (which needs --online, so the issuer is checked); 1 a check FAILED or
+// the signing key is not one this release knows; 3 intact but NOT ACCEPTED (offline: the issuer was not checked); 2 usage.
 // Browser or Node module:        import { verifyBundle } from "./crawlcheck-verify.mjs"
 //
 // Also verifies a remediation receipt (node crawlcheck-verify.mjs receipt.json): receipt_hash, key_id, signature, order;
@@ -20,7 +22,7 @@
 //   decision_root      (manifest v3) the sealed root over the decisions recomputes from the decision leaves (licence bundles)
 //   lineage_root       (manifest v3) the sealed root over the extracted business facts recomputes from their leaves (licence bundles)
 // A check that cannot run (a withheld subject, an unsealed day) is null with the reason, never a pass.
-// Every result also separates the questions a single "verified" used to answer at once (vt1, 2026-10-06):
+// Every result also separates the questions a single "verified" used to answer at once:
 //   integrity_valid   no check over the bytes failed (hashes, signature, proof paths)
 //   issuer_trusted    the signing key is in CrawlCheck's published key directory: true / false, or null offline
 //   accepted          integrity_valid AND issuer_trusted === true. Act on this, never on verified alone.
@@ -28,6 +30,11 @@
 //   assurance         "complete" or "partial", with unavailable[] naming the checks that could not run
 // Offline, issuer_trusted is null and accepted is false. Close it with --online (fetches the key directory) or
 // pass the published key ids yourself: verifyReceipt(doc, { publishedKids: [...] }).
+// A signature that could not be checked is never a pass: a document that names a signing key but does not carry it, or
+// carries no signature, an empty one or one that does not decode, FAILS key_id / signature, and integrity_valid, accepted
+// and accepted_strict all need the signature to have been checked and to verify. Offline, issuer_pinned says whether the
+// key id is one of the ids this release ships (CRAWLCHECK_KEY_IDS); a document under any other key is refused by the
+// command line. A Resolve answer without its transparency proof is partial assurance (log_leaf, log_inclusion not run).
 // What it cannot do offline: read a Bitcoin block header. It prints the block height and the merkle root the
 // proof commits to; compare that value with any Bitcoin node or block explorer.
 
@@ -61,6 +68,27 @@ export async function merkleRootHex(hexLeaves) {
   return level[0];
 }
 const leafHex = async (o) => hex(await sha256(enc.encode(canon(o))));
+// The signed body: every own member of the document except the named ones, each as an own data property. Built with
+// Object.fromEntries so that a member with a special name (__proto__, constructor) is hashed like any other.
+const bodyOf = (x, drop) => Object.fromEntries(Object.entries(x).filter(([k]) => drop.indexOf(k) < 0));
+/** CrawlCheck's signing key ids (RFC 7638 thumbprints), as published at /.well-known/http-message-signatures-directory on 2026-11-25. */
+export const CRAWLCHECK_KEY_IDS = Object.freeze(["hcIAczGf-8EFBnkunmZlvFWnD2nHHeHeC9cM4BTiBVo", "1hHmE3fo1rg5Ig70wuFtJ5wBc7G-sUTgUJkxyPWFRps", "NP5GewowKgJmU_ITSisKu-0ZFpvAL1ov86KDXIFmecw", "AqR_NNfBCBE0A_KXkQ86yrLAHiC-JbA5Df0BSV1PIEU"]);
+// Ed25519 over msg: true or false. null ONLY when this runtime has no Ed25519 at all (probed once with a fixed public
+// key). A missing, empty or undecodable key or signature is false: it must never read as "could not run".
+let edRuntime = null;
+async function edHere() {
+  if (edRuntime === null) { try { await subtle.importKey("jwk", { kty: "OKP", crv: "Ed25519", x: "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo" }, { name: "Ed25519" }, false, ["verify"]); edRuntime = true; } catch (e) { edRuntime = false; } }
+  return edRuntime;
+}
+async function edCheck(x, sig, msg) {
+  if (typeof x !== "string" || !x || typeof sig !== "string" || !sig) return false;
+  try { const pk = await subtle.importKey("jwk", { kty: "OKP", crv: "Ed25519", x }, { name: "Ed25519" }, false, ["verify"]); return (await subtle.verify({ name: "Ed25519" }, pk, b64(sig), enc.encode(msg))) === true; }
+  catch (e) { return (await edHere()) ? false : null; }
+}
+const NO_ED = "this runtime cannot verify Ed25519";
+const noKeyWhy = (kid) => "the signature names key id " + (kid || "?") + " but the document does not carry that public key, so the signature cannot be checked: reject this document";
+// The signature was checked and verifies under the key whose thumbprint is the stated key id.
+const sigChecked = (checks) => { const s = checks.find((c) => c.id === "signature"), k = checks.find((c) => c.id === "key_id"); return !!s && s.ok === true && !!k && k.ok === true; };
 
 // ── OpenTimestamps: parse the detached proof and evaluate every branch ─────────
 function reader(u8) {
@@ -138,10 +166,9 @@ async function verifyBundle0(b) {
     const msg = MEG_SIG_PREFIX + man.sha256;
     if (sg.message && sg.message !== msg) C("signature", false, "the signed message does not name this manifest");
     else {
-      let ok = false;
-      try { const pk = await subtle.importKey("jwk", { kty: "OKP", crv: "Ed25519", x: key.jwk.x }, { name: "Ed25519" }, false, ["verify"]); ok = await subtle.verify({ name: "Ed25519" }, pk, b64(sg.sig), enc.encode(msg)); }
-      catch (e) { C("signature", null, "this runtime cannot verify Ed25519: " + (e && e.message || e)); ok = null; }
-      if (ok !== null) C("signature", ok, ok ? "Ed25519 signature over the manifest digest verifies" : "signature does NOT verify");
+      const ok = await edCheck(key.jwk.x, sg.sig, msg);
+      if (ok === null) C("signature", null, NO_ED);
+      else C("signature", ok, ok ? "Ed25519 signature over the manifest digest verifies" : "signature does NOT verify");
     }
   }
   // 3. subject
@@ -215,19 +242,18 @@ async function verifyReceipt0(rc) {
   const checks = [];
   const C = (id, ok, why) => checks.push({ id, ok, why });
   if (!rc || rc.kind !== "crawlcheck-remediation-receipt" || !rc.signature) throw new Error("not a CrawlCheck remediation receipt");
-  const body = {}; for (const k of Object.keys(rc)) if (k !== "receipt_id" && k !== "signature") body[k] = rc[k];
+  const body = bodyOf(rc, ["receipt_id", "signature"]);
   const sha = hex(await sha256(enc.encode(canon(body))));
   C("receipt_hash", sha === rc.signature.receipt_sha256 && rc.receipt_id === "rc1:" + sha, sha === rc.signature.receipt_sha256 ? "the receipt hashes to its id " + sha.slice(0, 16) + "…" : "the receipt hashes to " + sha + ", it claims " + rc.signature.receipt_sha256 + " - a field was changed");
   const jwk = rc.issuer && rc.issuer.key && rc.issuer.key.jwk;
-  if (!jwk || !jwk.x) { C("key_id", null, "no key in the receipt"); C("signature", null, "no key to check against"); }
+  if (!jwk || !jwk.x) { C("key_id", false, noKeyWhy(rc.signature.kid)); C("signature", false, "no key to check against: the signature was not checked"); }
   else {
     const thumb = b64u(await sha256(enc.encode(JSON.stringify({ crv: jwk.crv, kty: jwk.kty, x: jwk.x }))));
     C("key_id", thumb === rc.signature.kid, thumb === rc.signature.kid ? "public key thumbprint (RFC 7638) is the key id " + thumb.slice(0, 12) + "…; the same id is published in " + (rc.issuer.key.published_in || "the key directory") : "thumbprint " + thumb + " does not match key id " + rc.signature.kid);
     const msg = RCPT_SIG_PREFIX + sha;
-    let ok = null;
-    try { const pk = await subtle.importKey("jwk", { kty: "OKP", crv: "Ed25519", x: jwk.x }, { name: "Ed25519" }, false, ["verify"]); ok = rc.signature.message === msg && await subtle.verify({ name: "Ed25519" }, pk, b64(rc.signature.sig), enc.encode(msg)); }
-    catch (e) { ok = null; C("signature", null, "this runtime cannot verify Ed25519: " + (e && e.message || e)); }
-    if (ok !== null) C("signature", ok, ok ? "Ed25519 signature over the receipt digest verifies" : "signature does NOT verify over this content");
+    const ok = rc.signature.message === msg ? await edCheck(jwk.x, rc.signature.sig, msg) : false;
+    if (ok === null) C("signature", null, NO_ED);
+    else C("signature", ok, ok ? "Ed25519 signature over the receipt digest verifies" : "signature does NOT verify over this content");
   }
   C("key_published", null, "offline this cannot be decided: compare key id " + (rc.signature.kid || "?") + " with the ids published at " + ((rc.issuer && rc.issuer.key && rc.issuer.key.published_in) || "the key directory") + " (a receipt re-signed with any other key passes every other check here)");
   const b = rc.before || {}, a = rc.after || {};
@@ -249,21 +275,20 @@ async function verifyExport0(x) {
   const checks = [];
   const C = (id, ok, why) => checks.push({ id, ok, why });
   if (!x || x.kind !== "crawlcheck-evidence-export") throw new Error("not a CrawlCheck evidence export");
-  const body = {}; for (const k of Object.keys(x)) if (k !== "export_sha256" && k !== "signature") body[k] = x[k];
+  const body = bodyOf(x, ["export_sha256", "signature"]);
   const sha = hex(await sha256(enc.encode(canon(body))));
   if (!x.signature) { C("export_hash", sha === x.export_sha256, sha === x.export_sha256 ? "the file hashes to its stated digest " + sha.slice(0, 16) + "…" : "the file hashes to " + sha + ", it states " + x.export_sha256 + " - a field was changed"); C("signature", null, "the export is unsigned (the observer had no signing key when it was made)"); }
   else {
     C("export_hash", sha === x.export_sha256 && x.signature.export_sha256 === sha, sha === x.export_sha256 ? "the file hashes to its stated digest " + sha.slice(0, 16) + "…" : "the file hashes to " + sha + ", it states " + x.export_sha256 + " - a field was changed");
     const jwk = x.signature.key && x.signature.key.jwk;
-    if (!jwk || !jwk.x) { C("key_id", null, "no key in the export"); C("signature", null, "no key to check against"); }
+    if (!jwk || !jwk.x) { C("key_id", false, noKeyWhy(x.signature.kid)); C("signature", false, "no key to check against: the signature was not checked"); }
     else {
       const thumb = b64u(await sha256(enc.encode(JSON.stringify({ crv: jwk.crv, kty: jwk.kty, x: jwk.x }))));
       C("key_id", thumb === x.signature.kid, thumb === x.signature.kid ? "public key thumbprint (RFC 7638) is the key id " + thumb.slice(0, 12) + "…; the same id is published in " + (x.signature.key.published_in || "the key directory") : "thumbprint " + thumb + " does not match key id " + x.signature.kid);
       const msg = EXPORT_SIG_PREFIX + sha;
-      let ok = null;
-      try { const pk = await subtle.importKey("jwk", { kty: "OKP", crv: "Ed25519", x: jwk.x }, { name: "Ed25519" }, false, ["verify"]); ok = x.signature.message === msg && await subtle.verify({ name: "Ed25519" }, pk, b64(x.signature.sig), enc.encode(msg)); }
-      catch (e) { ok = null; C("signature", null, "this runtime cannot verify Ed25519: " + (e && e.message || e)); }
-      if (ok !== null) C("signature", ok, ok ? "Ed25519 signature over the export digest verifies" : "signature does NOT verify over this content");
+      const ok = x.signature.message === msg ? await edCheck(jwk.x, x.signature.sig, msg) : false;
+      if (ok === null) C("signature", null, NO_ED);
+      else C("signature", ok, ok ? "Ed25519 signature over the export digest verifies" : "signature does NOT verify over this content");
     }
     C("key_published", null, "offline this cannot be decided: compare key id " + (x.signature.kid || "?") + " with the ids published at " + ((x.signature.key && x.signature.key.published_in) || "the key directory"));
   }
@@ -296,7 +321,7 @@ async function verifyExport0(x) {
 // A resolution records a dispute against one finding, the three readings that settled it (the rule replayed over
 // the disputed record's sealed bytes, the primary observer's fresh audit, every independent observer's reading) and
 // the verdict. It is signed like a receipt. verdict_derivable runs the published decision table (dspVerdict, the
-// same function the Worker runs) over the recorded readings: a resolution whose verdict was edited, or whose
+// same function the service runs) over the recorded readings: a resolution whose verdict was edited, or whose
 // readings were edited to fit it, fails here even before the signature does.
 const DSP_SIG_PREFIX = "crawlcheck-dispute-resolution-v1\n";
 export function dspVerdict(m) {
@@ -323,19 +348,18 @@ async function verifyResolution0(x) {
   const checks = [];
   const C = (id, ok, why) => checks.push({ id, ok, why });
   if (!x || x.kind !== "crawlcheck-dispute-resolution" || !x.signature) throw new Error("not a CrawlCheck dispute resolution");
-  const body = {}; for (const k of Object.keys(x)) if (k !== "resolution_id" && k !== "signature") body[k] = x[k];
+  const body = bodyOf(x, ["resolution_id", "signature"]);
   const sha = hex(await sha256(enc.encode(canon(body))));
   C("resolution_hash", sha === x.signature.resolution_sha256 && x.resolution_id === "dr1:" + sha, sha === x.signature.resolution_sha256 ? "the resolution hashes to its id " + sha.slice(0, 16) + "…" : "the resolution hashes to " + sha + ", it claims " + x.signature.resolution_sha256 + " - a field was changed");
   const jwk = x.issuer && x.issuer.key && x.issuer.key.jwk;
-  if (!jwk || !jwk.x) { C("key_id", null, "no key in the resolution"); C("signature", null, "no key to check against"); }
+  if (!jwk || !jwk.x) { C("key_id", false, noKeyWhy(x.signature.kid)); C("signature", false, "no key to check against: the signature was not checked"); }
   else {
     const thumb = b64u(await sha256(enc.encode(JSON.stringify({ crv: jwk.crv, kty: jwk.kty, x: jwk.x }))));
     C("key_id", thumb === x.signature.kid, thumb === x.signature.kid ? "public key thumbprint (RFC 7638) is the key id " + thumb.slice(0, 12) + "…; the same id is published in " + (x.issuer.key.published_in || "the key directory") : "thumbprint " + thumb + " does not match key id " + x.signature.kid);
     const msg = DSP_SIG_PREFIX + sha;
-    let ok = null;
-    try { const pk = await subtle.importKey("jwk", { kty: "OKP", crv: "Ed25519", x: jwk.x }, { name: "Ed25519" }, false, ["verify"]); ok = x.signature.message === msg && await subtle.verify({ name: "Ed25519" }, pk, b64(x.signature.sig), enc.encode(msg)); }
-    catch (e) { ok = null; C("signature", null, "this runtime cannot verify Ed25519: " + (e && e.message || e)); }
-    if (ok !== null) C("signature", ok, ok ? "Ed25519 signature over the resolution digest verifies" : "signature does NOT verify over this content");
+    const ok = x.signature.message === msg ? await edCheck(jwk.x, x.signature.sig, msg) : false;
+    if (ok === null) C("signature", null, NO_ED);
+    else C("signature", ok, ok ? "Ed25519 signature over the resolution digest verifies" : "signature does NOT verify over this content");
   }
   C("key_published", null, "offline this cannot be decided: compare key id " + (x.signature.kid || "?") + " with the ids published at " + ((x.issuer && x.issuer.key && x.issuer.key.published_in) || "the key directory"));
   const dv = dspVerdict(x.remeasurement || {});
@@ -351,7 +375,7 @@ async function verifyResolution0(x) {
     note: "Every check used only the resolution itself. To confirm the key is CrawlCheck's, compare its id with " + ((x.issuer && x.issuer.key && x.issuer.key.published_in) || "the published key directory") + "; to check a reading, open the record or the signed observation it links." };
 }
 
-// tl1: the Resolve log's leaf content and RFC 9162 inclusion check (the same rules the log publishes).
+// the Resolve log's leaf content and RFC 9162 inclusion check (the same rules the log publishes).
 function tlContentV(doc) {
   const a = doc && doc.actions || {}, acts = {};
   Object.keys(a).sort().forEach((k) => { const x = a[k] || {}; acts[k] = { decision: x.decision || null, doubts: (Array.isArray(x.doubts) ? x.doubts : []).slice().sort() }; });
@@ -371,7 +395,7 @@ export async function rfcRootV(leafHex, index, size, path) {
   }
   return sn === 0 ? hex(r) : null;
 }
-// tv1: threshold-signed verdicts. Every signer is checked on its own: its Ed25519 signature over its envelope, the
+// threshold-signed verdicts. Every signer is checked on its own: its Ed25519 signature over its envelope, the
 // binding of its key to its identity (GitHub's RS256 token, a self-signed enrolment, or the published key directory),
 // and the field values recomputed from its envelope. The verdict holds when signers on at least k distinct networks pass.
 const TV_OBS_PREFIX = "crawlcheck-observation-v1\n", TV_ENROL_PREFIX = "crawlcheck-observer-enrol-v1\n";
@@ -423,40 +447,43 @@ async function verifyDataDoc0(x) {
   // 1.7.0: every kind the service signs with this scheme verifies (field checks, opt-out records, AI-visibility and what-moved
   // readings were refused by the old fixed list though their signatures were valid); trust still rests on key_published.
   if (!x || !/^crawlcheck-[a-z0-9]+(-[a-z0-9]+){0,6}$/.test(String(x.kind)) || !x.signature || !x.signature.message || String(x.signature.message).indexOf(DATA_SIG_PREFIX) !== 0) throw new Error("not a signed CrawlCheck document (kind crawlcheck-*, signed with the crawlcheck-data-v1 scheme)");
-  const body = {}; for (const k of Object.keys(x)) if (k !== "sha256" && k !== "signature") body[k] = x[k];
+  const body = bodyOf(x, ["sha256", "signature"]);
   const sha = hex(await sha256(enc.encode(canon(body))));
   C("document_hash", sha === x.sha256, sha === x.sha256 ? "the document hashes to its stated digest " + sha.slice(0, 16) + "…" : "the document hashes to " + sha + ", it states " + x.sha256 + " - a field was changed");
   const jwk = x.signature.key && x.signature.key.jwk;
-  if (!jwk || !jwk.x) { C("key_id", null, "no key in the document"); C("signature", null, "no key to check against"); }
+  if (!jwk || !jwk.x) { C("key_id", false, noKeyWhy(x.signature.kid)); C("signature", false, "no key to check against: the signature was not checked"); }
   else {
     const thumb = b64u(await sha256(enc.encode(JSON.stringify({ crv: jwk.crv, kty: jwk.kty, x: jwk.x }))));
     C("key_id", thumb === x.signature.kid, thumb === x.signature.kid ? "public key thumbprint (RFC 7638) is the key id " + thumb.slice(0, 12) + "…" : "thumbprint " + thumb + " does not match key id " + x.signature.kid);
     const msg = DATA_SIG_PREFIX + sha;
-    let ok = null;
-    try { const pk = await subtle.importKey("jwk", { kty: "OKP", crv: "Ed25519", x: jwk.x }, { name: "Ed25519" }, false, ["verify"]); ok = x.signature.message === msg && await subtle.verify({ name: "Ed25519" }, pk, b64(x.signature.sig), enc.encode(msg)); }
-    catch (e) { ok = null; C("signature", null, "this runtime cannot verify Ed25519: " + (e && e.message || e)); }
-    if (ok !== null) C("signature", ok, ok ? "Ed25519 signature over the document digest verifies" : "signature does NOT verify over this content");
+    const ok = x.signature.message === msg ? await edCheck(jwk.x, x.signature.sig, msg) : false;
+    if (ok === null) C("signature", null, NO_ED);
+    else C("signature", ok, ok ? "Ed25519 signature over the document digest verifies" : "signature does NOT verify over this content");
   }
   C("key_published", null, "offline this cannot be decided: compare key id " + (x.signature.kid || "?") + " with the ids published at " + ((x.signature.key && x.signature.key.published_in) || "the key directory"));
   if (x.kind === "crawlcheck-data-export-part" && x.inventory) { let iv = null; try { iv = await verifyDataDoc(x.inventory); } catch (e) { iv = null; } C("inventory", !!(iv && iv.verified && x.inventory.sha256 === x.inventory_sha256), iv && iv.verified ? "the part carries the signed inventory it names" : "the inventory inside this part does not verify or is not the one named"); }
   if (x.kind === "crawlcheck-decision") { const r = x.resolve || {}; C("resolve_bound", /^[0-9a-f]{64}$/.test(String(r.sha256 || "")) && typeof r.kid === "string" && r.kid.length > 0, /^[0-9a-f]{64}$/.test(String(r.sha256 || "")) ? "the decision names the resolve answer it was made from (" + String(r.sha256).slice(0, 16) + "…), signed by key " + String(r.kid).slice(0, 12) + "… (online, it must be a published key)" : "the decision does not name a resolve answer digest"); C("decision_known", ["allow", "warn", "require_confirmation", "block", "unsupported"].indexOf(x.decision) >= 0, "decision is " + x.decision); }
   if (x.kind === "crawlcheck-snapshot") { const ps = Array.isArray(x.parts) ? x.parts : []; C("parts", ps.length > 0 && ps.every((p) => /^part-\d{4}\.ndjson\.gz$/.test(String(p.path)) && /^[0-9a-f]{64}$/.test(String(p.sha256)) && p.records > 0) && ps.reduce((a, p) => a + p.records, 0) === x.records, ps.reduce((a, p) => a + (p.records || 0), 0) === x.records ? ps.length + " parts, " + x.records + " records; check each downloaded part with sha256sum against its sha256, then each line with this tool" : "the parts' record counts do not add up to records (" + x.records + ")"); }
-  if (x.kind === "crawlcheck-resolve" && Array.isArray(x.absences)) {   // sa1: every absence states what was checked, from where and when
+  if (x.kind === "crawlcheck-resolve" && Array.isArray(x.absences)) {   // every absence states what was checked, from where and when
     const bad = x.absences.filter((a) => !(a && a.what && (a.result === "absent" || a.result === "none") && a.at && !isNaN(Date.parse(a.at)) && a.from && a.from.observer && typeof a.scope === "string" && Array.isArray(a.checked) && a.checked.length && a.checked.every((c) => c && c.method && (a.result !== "absent" || c.status === undefined || c.status === 404 || c.status === 410))));
     C("absences_scoped", bad.length === 0, x.absences.length + " absence record(s)" + (x.absences.length ? " (" + x.absences.map((a) => a.what).join(", ") + ")" : "") + (bad.length ? "; " + bad.length + " lack a definite check, a time, a vantage or a scope" : ", each naming what was requested, the answer, the vantage and the time"));
   }
-  if (x.kind === "crawlcheck-resolve" && x.transparency) {   // tl1: the answer's place in the Resolve transparency log
+  if (x.kind === "crawlcheck-resolve" && x.transparency) {   // the answer's place in the Resolve transparency log
     const t = x.transparency, leaf = hex(await sha256(cat(new Uint8Array([0]), enc.encode(canon(tlContentV(x))))));
     C("log_leaf", leaf === t.leaf_hash, leaf === t.leaf_hash ? "the answer's decision content hashes to its log leaf " + leaf.slice(0, 16) + "…" : "the decision content hashes to " + leaf + ", the answer names " + t.leaf_hash);
     if (t.state === "included" && t.sth) {
       const root = await rfcRootV(leaf, t.index, t.batch_size, t.path || []);
       C("log_inclusion", root !== null && root === t.sth.batch_root, root === t.sth.batch_root ? "the leaf folds along its " + (t.path || []).length + "-step path to batch " + t.batch + "'s root (RFC 9162)" : "the inclusion path does NOT lead to the signed batch root");
       let sv = null; try { sv = await verifyDataDoc0(t.sth); } catch (e) { sv = null; }
-      const same = true;   // kp3: the log head may be signed by the log key; online, its key must be published (trustOf)
+      const same = true;   // the log head may be signed by the log key; online, its key must be published (trustOf)
       C("log_head_signature", !!(sv && sv.verified) && t.sth.kind === "crawlcheck-log-sth" && t.sth.batch === t.batch && same, sv && sv.verified ? "batch " + t.batch + "'s signed tree head verifies (tree size " + t.sth.tree_size + ", chained to " + String(t.sth.prev_sth_sha256 || "genesis").slice(0, 16) + "…)" : "the signed tree head does NOT verify");
     } else C("log_inclusion", null, "pending: the leaf is queued and merged within " + (t.merged_within_minutes || 30) + " minutes; fetch the proof at " + (t.proof || "the log"));
   }
-  if (x.kind === "crawlcheck-resolve-as-of") {   // ah1: the answer in force at as_of, as signed then
+  if (x.kind === "crawlcheck-resolve" && !x.transparency) {   // no proof of the answer's place in the log: partial assurance, never a skipped check
+    C("log_leaf", null, "the answer carries no transparency proof, so its log leaf was not checked");
+    C("log_inclusion", null, "the answer carries no transparency proof: its place in the Resolve log is unproven (ask the log for the proof of this answer)");
+  }
+  if (x.kind === "crawlcheck-resolve-as-of") {   // the answer in force at as_of, as signed then
     let av = null; try { av = await verifyDataDoc0(x.answer); } catch (e) { av = null; }
     C("answer_signature", !!(av && av.verified) && !!x.answer && x.answer.kind === "crawlcheck-resolve" && x.answer.domain === x.domain, av && av.verified ? "the archived answer verifies on its own (signed " + (x.answer.signature && x.answer.signature.signed_at) + ")" : "the archived answer does NOT verify");
     const leaf = x.answer ? hex(await sha256(cat(new Uint8Array([0]), enc.encode(canon(tlContentV(x.answer)))))) : null;
@@ -468,7 +495,7 @@ async function verifyDataDoc0(x) {
       C("log_inclusion", root !== null && root === pr.sth.batch_root && !!(sv && sv.verified), root === pr.sth.batch_root ? "the leaf is in batch " + pr.batch + " of the signed log (head created " + pr.sth.created_at + ")" : "the inclusion proof does NOT reach the signed batch root"); }
     else C("log_inclusion", null, "not merged into the log yet; merged within 30 minutes of first appearing");
   }
-  if (x.kind === "crawlcheck-threshold-verdict") {   // tv1
+  if (x.kind === "crawlcheck-threshold-verdict") {
     const rows = await verifyThresholdSigners(x), k = x.threshold && x.threshold.k || 2;
     rows.forEach((r) => C("signer:" + r.observer_id, r.passes, r.passes ? "signature, key binding (" + (x.signers.find((s) => s.observer_id === r.observer_id).binding.kind) + ") and recomputed " + (x.statement && x.statement.family) + " values all check (network " + r.network + ")" : r.why.join("; ")));
     const nets = new Set(rows.filter((r) => r.passes).map((r) => r.network));
@@ -483,8 +510,8 @@ async function verifyDataDoc0(x) {
 // ── command line ─────────────────────────────────────────────────────────────
 // Run as a script under ANY file name (a browser saves a second download as "crawlcheck-verify (1).mjs"); imported, it
 // stays a library. The old test matched the file name only, so a renamed copy exited 0 having checked nothing.
-// vt1: integrity, issuer trust and completeness, reported apart. Same semantics as @crawlcheck/sdk and the Python package.
-// kp3 (2026-10-10): keys a document leans on besides its own signer (the resolve answer a decision names, the log head
+// integrity, issuer trust and completeness, reported apart. Same semantics as @crawlcheck/sdk and the Python package.
+// keys a document leans on besides its own signer (the resolve answer a decision names, the log head
 // an answer carries). Since keys are separated by purpose these can differ; online, every one must be published.
 export function relatedKids(x) {
   const out = [];
@@ -495,7 +522,7 @@ export function relatedKids(x) {
   } catch (e) { }
   return out.filter((k, i) => typeof k === "string" && out.indexOf(k) === i);
 }
-// conf2: the signing policy (https://crawlcheck.io/keys#policy, machine copy spec/key-policy/policy.json) as code. Which key
+// the signing policy (https://crawlcheck.io/keys#policy, machine copy spec/key-policy/policy.json) as code. Which key
 // PURPOSE may sign which object at which time, retired keys, compromised keys. Same rule in the Python package.
 export const KEY_POLICY = { v: 2,
   object_purpose: { "crawlcheck-decision": "decisions", "crawlcheck-log-sth": "log heads", "*": "documents" },
@@ -514,14 +541,23 @@ export async function keyPolicyFrom(directory, rotation) {
     const purpose = kpPurpose(k.crawlcheck_purpose);
     keys[kid] = { purpose, start: kpMs(k.crawlcheck_signs_from) ?? kpMs(k.nbf) ?? kpMs(KEY_POLICY.starts[purpose]) };
   }
-  for (const r of (rotation && rotation.retired) || []) if (r && r.thumbprint) retired[r.thumbprint] = { purpose: kpPurpose(r.purpose), start: kpMs(r.crawlcheck_signs_from) ?? kpMs(r.not_before) ?? kpMs(KEY_POLICY.starts[kpPurpose(r.purpose)]), stopped: kpMs(r.stopped_signing_at) ?? kpMs(r.retired_at) };   // conf3: a retired key keeps its signing window
+  for (const r of (rotation && rotation.retired) || []) if (r && r.thumbprint) retired[r.thumbprint] = { purpose: kpPurpose(r.purpose), start: kpMs(r.crawlcheck_signs_from) ?? kpMs(r.not_before) ?? kpMs(KEY_POLICY.starts[kpPurpose(r.purpose)]), stopped: kpMs(r.stopped_signing_at) ?? kpMs(r.retired_at) };   // a retired key keeps its signing window
   for (const c of (rotation && rotation.compromised) || []) if (c && c.thumbprint) compromised[c.thumbprint] = kpMs(c.compromised_since) ?? 0;
   return { v: 2, kids: Object.keys(keys), keys, retired, compromised, rotation: !!rotation };
 }
+// The times a document states. body: the latest time inside the signed bytes. claimed: signature.signed_at, which the
+// signature does NOT cover (the signature object is outside the hashed body), so anyone holding the document can edit it.
+const KP_BODY_TIMES = ["decided_at", "answered_at", "sealed_at", "generated_at", "issued_at", "at", "created_at", "approved_at"];
+function kpTimes(x) {
+  let body = null;
+  for (const f of KP_BODY_TIMES) { const t = kpMs(x && x[f]); if (t !== null && (body === null || t > body)) body = t; }
+  return { body, claimed: kpMs(x && x.signature && x.signature.signed_at) };
+}
+// The time the signing policy is read at: the latest time the document carries. signature.signed_at can move that time
+// later, never earlier than a time the signed body states.
 export function signedAtOf(x) {
-  const s = x && x.signature, c = [s && s.signed_at, x && x.decided_at, x && x.answered_at, x && x.sealed_at, x && x.generated_at, x && x.issued_at, x && x.at];
-  for (const v of c) { const t = kpMs(v); if (t !== null) return t; }
-  return null;
+  const { body, claimed } = kpTimes(x);
+  return body === null ? claimed : claimed === null ? body : Math.max(body, claimed);
 }
 function kpBoundKid(x) {
   const path = KEY_POLICY.bound[x && x.kind]; if (!path) return null;
@@ -542,7 +578,7 @@ function kpExpected(objPurpose, t, kp) {
   for (const p of KEY_POLICY.chains[objPurpose]) {
     if (p === "requests") return p;
     if (Object.keys(kp.keys).some((kid) => kp.keys[kid].purpose === p && kp.compromised[kid] === undefined && (t === null || kp.keys[kid].start === null || kp.keys[kid].start <= t))) return p;
-    // conf3: a key retired since still covered its own signing window: a decision made while a decision key was live expects that purpose
+    // a key retired since still covered its own signing window: a decision made while a decision key was live expects that purpose
     if (t !== null && Object.keys(kp.retired || {}).some((kid) => { const r = kp.retired[kid]; return r.purpose === p && kp.compromised[kid] === undefined && (r.start === null || r.start === undefined || r.start <= t) && r.stopped !== null && t <= r.stopped; })) return p;
   }
   return "requests";
@@ -551,7 +587,18 @@ function kpExpected(objPurpose, t, kp) {
 // code (stable): ok, ok_bound, key_wrong_purpose, key_not_yet_active, key_retired, key_compromised, key_unknown, no_signing_time;
 // applyKeyPolicy adds related_<code> when the key a document leans on (its answer, its log head) fails.
 export function keyPolicyCheck(x, kp) {
-  const kid = x && x.signature && x.signature.kid, t = signedAtOf(x);
+  const r = kpCheckAt(x, kp, signedAtOf(x)), tm = kpTimes(x);
+  if (tm.body !== null || r.ok === false) return r;
+  // No time inside the signed bytes. signature.signed_at is not covered by the signature, and leaving it out is as easy as
+  // editing it, so neither a pass nor "not decided" may rest on it: the result stands only if the policy also accepts this
+  // key for this object now. Otherwise it fails, whatever the unsigned field says and whether or not it is there.
+  const now = kpCheckAt(x, kp, Date.now());
+  if (now.ok === true) return r;
+  return { ok: false, code: "no_signing_time", known: r.known, purpose: r.purpose, expected: r.expected,
+    why: "the signed body states no time, and the policy does not accept this key for this object now (" + now.why + "); signature.signed_at is not covered by the signature, so it cannot place the document at an earlier time" };
+}
+function kpCheckAt(x, kp, t) {
+  const kid = x && x.signature && x.signature.kid;
   const objPurpose = KEY_POLICY.object_purpose[x && x.kind] || KEY_POLICY.object_purpose["*"];
   const k = kpKey(kid, t, kp);
   if (k.ok !== true) return { ok: k.ok, code: k.code, known: k.known, purpose: k.purpose || null, expected: null, why: k.why };
@@ -576,11 +623,41 @@ export function applyKeyPolicy(res, x, kp) {
   let checks = (res.checks || []).filter((c) => c.id !== "key_published" && c.id !== "key_purpose").concat([kpub, kpur]);
   const ran = checks.filter((c) => c.ok !== null), failed = checks.filter((c) => c.ok === false);
   const own = checks.filter((c) => c.id !== "key_published" && c.id !== "key_purpose");
-  const integrity_valid = own.some((c) => c.ok !== null) && own.every((c) => c.ok !== false);
+  const integrity_valid = own.some((c) => c.ok !== null) && own.every((c) => c.ok !== false) && sigChecked(own);   // the signature must have been checked, not skipped
   const unavailable = checks.filter((c) => c.ok === null).map((c) => c.id);
   const accepted = integrity_valid && kpub.ok === true && kpur.ok !== false;
   return Object.assign({}, res, { checks, verified: ran.length > 0 && failed.length === 0, summary: failed.length ? failed.length + " check(s) FAILED" : ran.length + " of " + checks.length + " checks ran and passed",
     integrity_valid, issuer_trusted: kpub.ok, key_policy_valid: kpur.ok, key_policy_code: kpur.code, accepted, accepted_strict: accepted && unavailable.length === 0, assurance: unavailable.length ? "partial" : "complete", unavailable });
+}
+// The key ids this release ships with the purpose and start time the directory gave each (read 2026-11-25).
+const PINNED_KEYS = Object.freeze({ "hcIAczGf-8EFBnkunmZlvFWnD2nHHeHeC9cM4BTiBVo": { purpose: "requests", start: 1789158247000 }, "1hHmE3fo1rg5Ig70wuFtJ5wBc7G-sUTgUJkxyPWFRps": { purpose: "documents", start: 1791642323000 }, "NP5GewowKgJmU_ITSisKu-0ZFpvAL1ov86KDXIFmecw": { purpose: "decisions", start: 1794243600000 }, "AqR_NNfBCBE0A_KXkQ86yrLAHiC-JbA5Df0BSV1PIEU": { purpose: "log heads", start: 1794243600000 } });
+/** The signing policy for the key ids this release ships, limited to the ids in kids (all of them when omitted). It has no rotation record, so retired and compromised keys are unknown to it: prefer publishedKeyPolicy() when online. */
+export function pinnedKeyPolicy(kids) {
+  const keys = {};
+  for (const k of Object.keys(PINNED_KEYS)) if (!Array.isArray(kids) || kids.indexOf(k) > -1) keys[k] = { purpose: PINNED_KEYS[k].purpose, start: PINNED_KEYS[k].start };
+  return { v: 2, kids: Object.keys(keys), keys, retired: {}, compromised: {}, rotation: false, source: "pinned" };
+}
+// A caller that passes key ids only gives no purposes. For the ids this release knows, the purpose rule still applies:
+// a log-head key does not sign a decision because its id is on the list. Adds a failing key_purpose check; for a listed
+// id this release does not know, an undecided one (code purpose_unknown); otherwise nothing.
+export function applyPinnedPurpose(res, x, publishedKids) {
+  if (!res || !Array.isArray(publishedKids) || !x || typeof x !== "object" || !x.signature || (res.checks || []).some((c) => c.id === "key_purpose")) return res;
+  const kp = pinnedKeyPolicy(publishedKids), has = (k) => typeof k === "string" && Object.prototype.hasOwnProperty.call(kp.keys, k); let bad = null, unknown = null;
+  if (has(x.signature.kid)) { const r = keyPolicyCheck(x, kp); if (r.ok === false) bad = { code: r.code, why: r.why }; }
+  else if (publishedKids.indexOf(x.signature.kid) > -1) unknown = x.signature.kid;
+  const sth = x.transparency && x.transparency.sth;
+  if (!bad && sth && sth.signature && has(sth.signature.kid)) { const r = keyPolicyCheck(sth, kp); if (r.ok === false) bad = { code: "related_" + r.code, why: "its log head: " + r.why }; }
+  else if (!bad && sth && sth.signature && publishedKids.indexOf(sth.signature.kid) > -1) unknown = unknown || sth.signature.kid;
+  if (!bad && unknown) {
+    // A listed key id this release does not ship: nothing here says what that key may sign. Not a failure and not a pass:
+    // the result is partial (never accepted_strict), and callers that act on a decision or keep a log head refuse it.
+    const checks = res.checks.concat([{ id: "key_purpose", ok: null, code: "purpose_unknown", why: "key " + unknown + " is on the list given, but this release does not know its purpose, so which objects it may sign was not checked: pass keyPolicy (publishedKeyPolicy()) instead of key ids" }]);
+    const unavailable = (res.unavailable || []).concat(["key_purpose"]);
+    return Object.assign({}, res, { checks, key_policy_valid: null, key_policy_code: "purpose_unknown", accepted_strict: false, assurance: "partial", unavailable });
+  }
+  if (!bad) return res;
+  const checks = res.checks.concat([{ id: "key_purpose", ok: false, code: bad.code, why: bad.why }]);
+  return Object.assign({}, res, { checks, verified: false, summary: checks.filter((c) => c.ok === false).length + " check(s) FAILED", key_policy_valid: false, key_policy_code: bad.code, accepted: false, accepted_strict: false });
 }
 // The directory and the rotation record, read now (online). The rotation record is optional: without it retired and
 // compromised keys are unknown, and only keys still in the directory are accepted.
@@ -607,10 +684,16 @@ export function trustOf(res, kid, publishedKids, related) {
   const ran = checks.filter((c) => c.ok !== null), failed = checks.filter((c) => c.ok === false);
   const unavailable = checks.filter((c) => c.ok === null && c.id !== "key_published").map((c) => c.id);
   const verified = ran.length > 0 && failed.length === 0;
-  const integrity_valid = ran.some((c) => c.id !== "key_published") && checks.filter((c) => c.id !== "key_published").every((c) => c.ok !== false);
-  const accepted = integrity_valid && issuer === true;
+  // A document that names a signing key has integrity only when its signature was checked and verifies under that key:
+  // a signature check that did not run (no key carried, no Ed25519 here) is not a pass. accepted always needs it.
+  const signed = sigChecked(checks);
+  const integrity_valid = ran.some((c) => c.id !== "key_published") && checks.filter((c) => c.id !== "key_published").every((c) => c.ok !== false) && (!kid || signed);
+  const accepted = integrity_valid && issuer === true && signed;
+  // Offline (no published key ids given): does the signature verify under a key id this release ships? false: not a CrawlCheck
+  // key as far as this release knows, or the document only names one (a claimed key id alone is never enough).
+  const issuer_pinned = Array.isArray(publishedKids) || !kid ? null : CRAWLCHECK_KEY_IDS.indexOf(kid) > -1 && signed;
   return Object.assign({}, res, { checks, verified, summary: failed.length ? failed.length + " check(s) FAILED" : ran.length + " of " + checks.length + " checks ran and passed",
-    integrity_valid, issuer_trusted: issuer, accepted, accepted_strict: accepted && unavailable.length === 0,
+    integrity_valid, issuer_trusted: issuer, issuer_pinned, accepted, accepted_strict: accepted && unavailable.length === 0,
     assurance: unavailable.length ? "partial" : "complete", unavailable });
 }
 // The published Ed25519 key ids (RFC 7638 thumbprints) from the observer's key directory.
@@ -626,7 +709,7 @@ export async function verifyBundle(b, opts) { return trustOf(await verifyBundle0
 export async function verifyReceipt(rc, opts) { return trustOf(await verifyReceipt0(rc), rc && rc.signature && rc.signature.kid, opts && opts.publishedKids); }
 export async function verifyExport(x, opts) { return trustOf(await verifyExport0(x), kidOf(x), opts && opts.publishedKids); }
 export async function verifyResolution(x, opts) { return trustOf(await verifyResolution0(x), kidOf(x), opts && opts.publishedKids); }
-// dns1: a Resolve-over-DNS TXT record (ccr1). Strings joined without spaces; quotes from dig output are stripped.
+// a Resolve-over-DNS TXT record (ccr1). Strings joined without spaces; quotes from dig output are stripped.
 async function verifyDnsTxt0(txt) {
   if (!subtle) throw new Error("this runtime has no WebCrypto (crypto.subtle)");
   const checks = [], C = (id, ok, why) => checks.push({ id, ok, why });
@@ -637,28 +720,29 @@ async function verifyDnsTxt0(txt) {
   if (f.x && f.k) {
     const thumb = b64u(await sha256(enc.encode(JSON.stringify({ crv: "Ed25519", kty: "OKP", x: f.x }))));
     C("key_id", thumb === f.k, thumb === f.k ? "public key thumbprint (RFC 7638) is the key id " + thumb.slice(0, 12) + "…" : "thumbprint " + thumb + " does not match key id " + f.k);
-    let ok = null; try { const pk = await subtle.importKey("jwk", { kty: "OKP", crv: "Ed25519", x: f.x }, { name: "Ed25519" }, false, ["verify"]); ok = await subtle.verify({ name: "Ed25519" }, pk, b64(sig), enc.encode("crawlcheck-dns-v1\n" + body)); } catch (e) { ok = null; C("signature", null, "this runtime cannot verify Ed25519: " + (e && e.message || e)); }
-    if (ok !== null) C("signature", ok, ok ? "Ed25519 signature over the record verifies" : "signature does NOT verify over this record");
-  }
+    const ok = await edCheck(f.x, sig, "crawlcheck-dns-v1\n" + body);
+    if (ok === null) C("signature", null, NO_ED);
+    else C("signature", ok, ok ? "Ed25519 signature over the record verifies" : "signature does NOT verify over this record");
+  } else { C("key_id", false, "the record carries no key or key id"); C("signature", false, "no key to check against: the signature was not checked"); }
   const fu = Date.parse(f.f || ""); C("fresh", isFinite(fu) ? fu > Date.now() : false, isFinite(fu) ? (fu > Date.now() ? "fresh until " + f.f : "expired at " + f.f + ": ask again") : "no fresh_until");
   C("key_published", null, "offline this cannot be decided: compare key id " + (f.k || "?") + " with the ids published at https://crawlcheck.io/.well-known/http-message-signatures-directory");
   return { record: f, decisions: { read: f.read || null, cite: f.cite || null, connect: f.connect || null, transact: f.transact || null }, checks };
 }
 export async function verifyDnsTxt(txt, opts) { const r = await verifyDnsTxt0(txt); return trustOf(r, r.record && r.record.k, opts && opts.publishedKids); }
-export async function verifyDataDoc(x, opts) { return trustOf(await verifyDataDoc0(x), kidOf(x), opts && opts.publishedKids, relatedKids(x)); }
+export async function verifyDataDoc(x, opts) { return applyPinnedPurpose(trustOf(await verifyDataDoc0(x), kidOf(x), opts && opts.publishedKids, relatedKids(x)), x, opts && opts.publishedKids); }
 
 const isMain = typeof process !== "undefined" && !!(process.argv && process.argv[1]) && await (async () => { try { const { pathToFileURL } = await import("node:url"); const { realpathSync } = await import("node:fs"); return import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href; } catch (e) { return false; } })();
 if (isMain) {
   const online = process.argv.includes("--online");
-  if (process.argv.includes("--dns")) {   // dns1: a Resolve-over-DNS TXT record
+  if (process.argv.includes("--dns")) {   // a Resolve-over-DNS TXT record
     let txt = process.argv.slice(2).filter((a) => a !== "--online" && a !== "--dns").join(" ");
     if (!txt) { const { readFileSync } = await import("node:fs"); txt = readFileSync(0, "utf8"); }
     let kd; if (online) { try { kd = await publishedKeyIds(); } catch (e) { console.log("could not read the published key directory: " + e.message); } }
     const r = await verifyDnsTxt(txt, { publishedKids: kd });
     console.log("CrawlCheck Resolve over DNS: " + (r.record.d || "?") + " " + (r.record.st || "?") + " · read " + r.decisions.read + " · cite " + r.decisions.cite + " · connect " + r.decisions.connect + " · transact " + r.decisions.transact);
     for (const c of r.checks) console.log((c.ok === true ? "PASS" : c.ok === false ? "FAIL" : " -- ") + "  " + c.id.padEnd(23) + c.why);
-    console.log(r.summary); console.log(r.accepted ? "ACCEPTED" : "NOT ACCEPTED" + (r.integrity_valid && r.issuer_trusted === null ? ": issuer unknown offline (run with --online)" : ""));
-    process.exit(r.checks.some((c) => c.ok === false) ? 1 : 0);
+    console.log(r.summary); console.log(r.accepted ? "ACCEPTED" : "NOT ACCEPTED" + (r.issuer_pinned === false ? ": not signed by one of CrawlCheck's published keys (as shipped with this verifier; run with --online to read the current directory)" : r.integrity_valid && r.issuer_trusted === null ? ": issuer unknown offline (run with --online)" : ""));
+    process.exit(r.checks.some((c) => c.ok === false) || r.issuer_pinned === false ? 1 : r.accepted ? 0 : 3);   // 0 only when ACCEPTED
   }
   const f = process.argv.slice(2).filter((a) => a !== "--online")[0];
   if (!f) { console.log("usage: node crawlcheck-verify.mjs [--online] [--dns \"<ccr1 TXT record>\"] <bundle.json | receipt.json | export.json | resolution.json | deletion.json | answer.json | decision.json | manifest.json>"); process.exit(2); }
@@ -682,6 +766,6 @@ if (isMain) {
   if (isEx) for (const r of res.receipts) console.log(mark(r.verified) + "    receipt " + String(r.id || "?").slice(0, 20) + (r.failed && r.failed.length ? " failed: " + r.failed.join(", ") : ""));
   console.log(res.summary);
   console.log("integrity " + (res.integrity_valid ? "valid" : "NOT valid") + " · issuer " + (res.issuer_trusted === true ? "trusted (key published)" : res.issuer_trusted === false ? "NOT trusted (key not published)" : "not checked offline: run with --online") + " · assurance " + res.assurance + (res.unavailable.length ? " (" + res.unavailable.join(", ") + " could not run)" : ""));
-  console.log(res.accepted ? (res.accepted_strict ? "ACCEPTED" : "ACCEPTED, partial assurance") : "NOT ACCEPTED" + (res.integrity_valid && res.issuer_trusted === null ? ": issuer unknown offline" : ""));
-  process.exit(res.checks.some((c) => c.ok === false) ? 1 : 0);
+  console.log(res.accepted ? (res.accepted_strict ? "ACCEPTED" : "ACCEPTED, partial assurance") : "NOT ACCEPTED" + (res.issuer_pinned === false ? ": not signed by one of CrawlCheck's published keys (as shipped with this verifier; run with --online to read the current directory)" : res.integrity_valid && res.issuer_trusted === null ? ": issuer unknown offline" : ""));
+  process.exit(res.checks.some((c) => c.ok === false) || res.issuer_pinned === false ? 1 : res.accepted ? 0 : 3);   // 0 only when ACCEPTED
 }

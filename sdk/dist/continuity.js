@@ -59,8 +59,8 @@ export async function lockToolParts(t) {
     return { description_sha256: await sha256Hex(canon(t?.description ?? null)), schema_sha256: await sha256Hex(canon(schema)), annotations_sha256: await sha256Hex(canon(t?.annotations ?? null)) };
 }
 /** parts for a lockfile: { [tool name]: lockToolParts(tool) }, for every tool given. Store it as lock.parts next to lock.tools. */
-export async function lockParts(tools) { const o = {}; for (const t of (tools ?? []))
-    o[String(t?.name ?? "").slice(0, 120)] = await lockToolParts(t); return o; }
+export async function lockParts(tools) { const o = []; for (const t of (tools ?? []))
+    o.push([String(t?.name ?? "").slice(0, 120), await lockToolParts(t)]); return Object.fromEntries(o); }
 /** The most tools a v1 (lk) lockfile hashes; CrawlCheck's lockfile endpoint hashes the same. A longer list is compared on
  * its first LOCK_V1_MAX_TOOLS tools and the read is marked incomplete (tool_list_truncated), never cut silently. */
 export const LOCK_V1_MAX_TOOLS = 300;
@@ -153,10 +153,10 @@ export async function continuityCheck(lock, tools, opts = {}) {
     const rows = [];
     for (const t of tools.slice(0, LOCK_V1_MAX_TOOLS))
         rows.push({ name: String(t?.name ?? "").slice(0, 120), sha256: await toolHash(t), t });
-    const cur = {};
-    rows.forEach((r) => { cur[r.name] = r; });
+    const cur = Object.create(null);
+    rows.forEach((r) => { cur[r.name] = r; }); // no prototype: a tool named constructor or __proto__ is a tool like any other
     const listHash = await sha256Hex(rows.map((r) => r.sha256).sort().join("\n"));
-    const was = {};
+    const was = Object.create(null);
     (lock?.tools ?? []).forEach((r) => { was[r.name] = r.sha256; });
     const approvedAt = Date.parse(lock?.approved_at ?? "");
     rec.baseline = { tools_sha256: lock?.tools_sha256 ?? null, approved_at: lock?.approved_at ?? null, age_days: isFinite(approvedAt) ? Math.floor((now - approvedAt) / 864e5) : null, server: lock?.server?.url ?? null, per_part: !!(lock && lock.parts), trust: opts.baselineTrust ?? null };
@@ -178,7 +178,7 @@ export async function continuityCheck(lock, tools, opts = {}) {
         for (const n of Object.keys(was).filter((n) => !(n in cur)).sort())
             ev(rec, pol, mode, "tool_removed", n, X, now);
     for (const n of Object.keys(cur).filter((n) => n in was && was[n] !== cur[n].sha256).sort()) {
-        const P = lock && lock.parts && lock.parts[n];
+        const P = lock && lock.parts && Object.prototype.hasOwnProperty.call(lock.parts, n) && lock.parts[n];
         if (!P) {
             ev(rec, pol, mode, "tool_changed", n, X, now);
             continue;
@@ -231,7 +231,7 @@ async function jcsCheck(rec, pol, mode, lock, J, tools, opts, X, now) {
     }
     if (!complete)
         ev(rec, pol, mode, "tool_list_truncated", null, X, now);
-    const was = {}, cur = {}, raw = {};
+    const was = Object.create(null), cur = Object.create(null), raw = Object.create(null); // no prototype: a tool named constructor or __proto__ is a tool like any other
     J.tools.forEach((r) => { if (r && typeof r.name === "string")
         was[r.name] = r; });
     cj.tools.forEach((r) => { cur[r.name] = r; });
@@ -246,7 +246,7 @@ async function jcsCheck(rec, pol, mode, lock, J, tools, opts, X, now) {
         const a = was[n], b = cur[n], dc = a.contract !== b.contract, dx = a.extras !== b.extras;
         if (!dc && !dx)
             continue;
-        const P = lock && lock.parts && lock.parts[n], q = P ? await lockToolParts(raw[n]) : null, moved = [];
+        const P = lock && lock.parts && Object.prototype.hasOwnProperty.call(lock.parts, n) && lock.parts[n], q = P ? await lockToolParts(raw[n]) : null, moved = [];
         if (dc && P && q.description_sha256 !== P.description_sha256) {
             ev(rec, pol, mode, "description_changed", n, X, now);
             moved.push("d");
@@ -374,6 +374,48 @@ export function continuityClassOf(g) {
         return "response_malformed";
     return "decision_refused";
 }
+// The failure class of a guard() or guardedFetch() result, as a field on the result (failure_class): one word for why it
+// did not proceed. Finer than continuityClassOf, which is unchanged (continuity records and policies key on its classes):
+//   operation_mismatch, replay_mismatch   the receipt is for another operation / does not carry this request's nonce
+//                                         (continuityClassOf reports both as server_identity_mismatch)
+//   revoked, split_view                   refused from the held revocation list / the answer log showed two histories
+//   response_malformed                    what came back is not a v1 decision receipt at all
+//   fetch_refused                         guardedFetch's own: the URL or a redirect could not be checked, so no decision was asked for
+// A receipt for another domain or action is server_identity_mismatch even when its lifetime is also wrong for the action asked.
+export const GUARD_FAILURE_CLASSES = ["service_unavailable", "check_timeout", "response_malformed", "signature_invalid", "key_unknown", "key_retired", "server_identity_mismatch", "evidence_expired", "operation_mismatch", "replay_mismatch", "decision_refused", "revoked", "split_view", "fetch_refused"];
+/** Which failure class a refused guard() result is: one of GUARD_FAILURE_CLASSES (never fetch_refused, which only guardedFetch sets). guard() sets it as result.failure_class. */
+export function guardFailureClassOf(g) {
+    if (!g)
+        return "service_unavailable";
+    if (typeof g.failure_class === "string" && GUARD_FAILURE_CLASSES.indexOf(g.failure_class) > -1)
+        return g.failure_class;
+    if (g.revoked)
+        return "revoked";
+    if (Array.isArray(g.split_view) && g.split_view.length)
+        return "split_view";
+    const why = (g.why || []).join("; "), r = g.receipt, A = g.acceptance;
+    if (r === null || r === undefined)
+        return /timed? ?out|abort/i.test(why) ? "check_timeout" : "service_unavailable";
+    if (typeof r !== "object" || Array.isArray(r) || r.kind !== "crawlcheck-decision" || r.v !== 1)
+        return "response_malformed";
+    if (!A)
+        return g.verification === null || g.verification === undefined ? "response_malformed" : "decision_refused";
+    if (!A.integrity_valid)
+        return "signature_invalid";
+    if (A.issuer_trusted !== true)
+        return "key_unknown";
+    if (A.key_policy_valid === false)
+        return "key_retired";
+    if (!A.subject_matches)
+        return "server_identity_mismatch";
+    if (!A.freshness_valid)
+        return "evidence_expired";
+    if (A.operation_matches === false)
+        return "operation_mismatch";
+    if (A.replay_safe === false)
+        return "replay_mismatch";
+    return "decision_refused";
+}
 // ── signed baseline (1.13.0) ───────────────────────────────────────────────────────────────────────────────────────
 // Whoever can edit the approved lockfile can approve their own tools. So the baseline's signature is checked once, when a
 // gate is created (startup), before anything is compared against it:
@@ -396,9 +438,7 @@ async function edVerify(x, msg, sig) {
         return /not supported|unrecognized|unknown algorithm|NotSupported/i.test(String(e && (e.name + " " + e.message))) ? null : false;
     }
 }
-const without = (o, keys) => { const b = {}; for (const k of Object.keys(o))
-    if (keys.indexOf(k) < 0)
-        b[k] = o[k]; return b; };
+const without = (o, keys) => Object.fromEntries(Object.entries(o).filter(([k]) => keys.indexOf(k) < 0)); // every own member, one named __proto__ included
 const xOf = (k) => (typeof k === "string" ? k : k && typeof k.x === "string" ? k.x : null);
 /** The operator's signature over the canonical lockfile (every field but operator_signature). privateKey: an Ed25519 private JWK ({kty, crv, x, d}). */
 export async function signLock(lock, privateKey) {

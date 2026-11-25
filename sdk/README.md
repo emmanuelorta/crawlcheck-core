@@ -18,6 +18,8 @@ const { proceed, receipt } = await cc.guard("example.com", "read", { agent: "MyA
 
 Since 1.11.0 `guard()` also returns `acceptance`: the separate questions a single "verified" used to answer at once, so nothing can mistake "signature valid" for "safe to proceed".
 
+Every `guard()` and `guardedFetch()` result also carries `failure_class`: `null` when it proceeds, otherwise one word for why not (`service_unavailable`, `check_timeout`, `response_malformed`, `signature_invalid`, `key_unknown`, `key_retired`, `server_identity_mismatch`, `evidence_expired`, `operation_mismatch`, `replay_mismatch`, `decision_refused`, `revoked`, `split_view`, and `fetch_refused` from `guardedFetch` only; the list is `GUARD_FAILURE_CLASSES`). Pass `mode: "observe"` to run every check and refuse nothing: `proceed` is then always true, and `would_proceed`, `failure_class` and `why` say what `enforce` (the default) would have done. `onRecord(result)` receives every result in both modes.
+
 | field | the question |
 |---|---|
 | `integrity_valid` | are the bytes unchanged (hashes, signature, proof paths)? |
@@ -34,7 +36,13 @@ Since 1.11.0 `guard()` also returns `acceptance`: the separate questions a singl
 
 `acceptanceOf(receipt, verification, checkDecision(receipt, want))` computes the same split for a receipt you hold. A receipt is evidence and a recommendation: whether your agent acts is decided by your deployment's policy, and every receipt names the policy that produced it (`authority`). `POST https://crawlcheck.io/api/v1/preflight/replay` with a receipt re-runs the decision from the archived answer and the inputs the receipt carries; `GET /api/v1/preflight/rules` serves the rule tables that hash to `engine.rules_sha256`.
 
-Every verification returns `integrity_valid`, `issuer_trusted` and `accepted`. Act on `accepted`: it needs the signing key to be one CrawlCheck publishes, so a document someone signed with their own key is `verified` offline but never `accepted`. The client methods (`verifyDocument`, `verifyOffline`, `verifyReceiptOffline`, `guard`) check the published key directory for you.
+Every verification returns `integrity_valid`, `issuer_trusted` and `accepted`. Act on `accepted`: it needs the signing key to be one CrawlCheck publishes, so a document someone signed with their own key is `verified` offline but never `accepted`. The client methods (`verifyDocument`, `verifyOffline`, `verifyReceiptOffline`, `guard`) check the published key directory for you. A signature that could not be checked is never a pass: `integrity_valid` and `accepted` both need the signature to have verified under the stated key. Offline, `issuer_pinned` says whether the signature verifies under one of the key ids this release ships (`CRAWLCHECK_KEY_IDS`); a document that only names such an id is `issuer_pinned: false`. `verifyDocument(doc, { publishedKids })` decides the issuer from a list you hold, and for the ids this release knows it still applies each key's purpose (`pinnedKeyPolicy()` is that policy as data). A Resolve answer without its transparency proof is `assurance: "partial"` (`accepted_strict: false`).
+
+Offline pinning knows only the keys listed in the SDK version you have installed: after CrawlCheck rotates a key, a genuine document under the new key reads `issuer_pinned: false` offline until you upgrade to a version that lists it. Online verification reads the current key directory and is unaffected.
+
+The signing policy is read at the latest time a document states inside its signed body (`decided_at`, `answered_at`, `created_at` and the like). `signature.signed_at` is not covered by the signature, so it can move that time later and never earlier; a decision receipt whose only time is that field fails `key_purpose`.
+
+The command-line verifier (`node node_modules/@crawlcheck/sdk/dist/verify.js [--online] file.json`) exits 0 only when it prints ACCEPTED, which needs `--online`; 1 when a check failed or the key is not one this release knows; 3 when the document is intact but its issuer was not checked.
 
 Since 1.9.1 a key the rotation record lists as retired still counts for its own signing window when the expected purpose is worked out: after a decision-key rotation, receipts the old decision key signed inside its window verify, and no other key may sign a decision made while that key was live (key-policy suite cases retired-decision-key-*).
 
@@ -233,9 +241,8 @@ Remediation receipts (before, declared fix, deployment, after, verdict, signed):
 ```js
 import { verifyReceipt } from "@crawlcheck/sdk";
 const rc = await cc.receipt("rc1:…");
-const r = await verifyReceipt(rc);                                  // hash, key id, signature, order
-const ours = (await cc.publishedKeyIds()).includes(rc.signature.kid);  // the one check offline cannot do
-const accept = r.verified && ours;
+const r = await verifyReceipt(rc, { publishedKids: await cc.publishedKeyIds() });  // hash, key id, signature, order, and the key is one CrawlCheck publishes
+const accept = r.accepted;                                          // never r.verified alone
 ```
 
 ## Prove the verifier
@@ -245,11 +252,11 @@ const suite = await cc.conformance();   // 19 real bundles and receipts, valid a
 suite.ok;                              // every fixture gave exactly its expected checks and verdict
 ```
 
-`npm test` in the installed package runs the conformance suite and live checks against crawlcheck.io.
+The package ships the built code only; the test suite lives in the source repository, where `npm test` runs the conformance suite and live checks against crawlcheck.io.
 
 ## Catch a split view
 
-Every Resolve answer names its leaf in CrawlCheck's transparency log and, once merged, carries the signed tree head of its batch. The client keeps every head it sees in `client.log` (plain JSON) and checks each new one against its neighbours: two heads for one batch, or a head that does not chain to the one before, is a **fork**, kept with both signed heads as proof. `guard()` refuses to proceed while the client holds one.
+Every Resolve answer names its leaf in CrawlCheck's transparency log and, once merged, carries the signed tree head of its batch. The client keeps every head it sees in `client.log` (plain JSON) and checks each new one against its neighbours: two heads for one batch, or a head that does not chain to the one before, is a **fork**, kept with both signed heads as proof. `guard()` refuses to proceed while the client holds one. The client keeps a head only when a key CrawlCheck publishes for log heads signed it; any other head is ignored, listed in `client.logIgnored`, and never becomes part of a fork.
 
 ```js
 import fs from "node:fs";
@@ -262,7 +269,7 @@ console.log(r.summary);                              // "consistent: ..." or "SP
 fs.writeFileSync("cc-log.json", JSON.stringify(client.log));
 ```
 
-`logCheck` verifies the outside witness: a GitHub Actions run re-checks the chain and co-signs the newest head with a GitHub OIDC token (RS256, GitHub's key) whose audience is the head's digest. A head the witness's chain does not contain shows up as a fork. Heads newer than the witnessed one are listed as `unwitnessed`. Clients can also swap heads directly: `logHeads(store)` on one side, `client.logGossip(heads)` on the other. Forks are reported to `/api/v1/log/gossip` (pass `{ report: false }` to skip).
+`logCheck` verifies the outside witness: a GitHub Actions run re-checks the chain and co-signs the newest head with a GitHub OIDC token (RS256, GitHub's key) whose audience is the head's digest. A head the witness's chain does not contain shows up as a fork. Heads newer than the witnessed one are listed as `unwitnessed`. Clients can also swap heads directly: `logHeads(store)` on one side, `await client.logGossip(heads)` on the other. If you call `logObserve` or `logGossip` yourself, pass `{ keyPolicy }` (from `publishedKeyPolicy()`) or `{ publishedKids }`: without either a head is checked against its own key only and is kept marked `issuer_checked: false`. `logPrune(store, { keyPolicy })` re-checks a saved store and drops what no published key signed. If you keep a log store on disk between runs, it is worth passing it through `logPrune` once with this version before you rely on it, so that anything an earlier release kept without a key check is tidied away. Forks are reported to `/api/v1/log/gossip` (pass `{ report: false }` to skip).
 
 ## Errors
 

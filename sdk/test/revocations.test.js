@@ -1,5 +1,5 @@
 // Offline revocations (rvd1): the client syncs the signed list and its ?since= delta, and guard() refuses a listed
-// domain for a listed action with the network cut. Fixtures are signed by the Worker's own code with a throwaway key.
+// domain for a listed action with the network cut. Fixtures are signed by the service's own code with a throwaway key.
 import test from "node:test"; import assert from "node:assert/strict"; import fs from "node:fs";
 import { CrawlCheck, newRevocationStore, applyRevocations, revokedFor } from "../dist/index.js";
 const F = JSON.parse(fs.readFileSync(new URL("./fixtures/revocations.json", import.meta.url), "utf8"));

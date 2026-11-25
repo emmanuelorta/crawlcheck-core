@@ -188,6 +188,13 @@ export declare const lockParts: (tools: McpTool[]) => Promise<Record<string, {
 /** The separate acceptance questions for one decision receipt. Act on policy_result, never on integrity_valid alone. */
 /** Which continuity failure class a refused guard() result is. */
 export declare const continuityClassOf: (g: GuardResult | null) => string;
+/** Why a guard() or guardedFetch() result did not proceed (or, in observe mode, would not have). fetch_refused is set by guardedFetch only. https://crawlcheck.io/spec/guard */
+export type GuardFailureClass = "service_unavailable" | "check_timeout" | "response_malformed" | "signature_invalid" | "key_unknown" | "key_retired" | "server_identity_mismatch" | "evidence_expired" | "operation_mismatch" | "replay_mismatch" | "decision_refused" | "revoked" | "split_view" | "fetch_refused";
+export declare const GUARD_FAILURE_CLASSES: GuardFailureClass[];
+/** Which failure class a refused guard() result is. Finer than continuityClassOf (which is unchanged): operation_mismatch, replay_mismatch, revoked, split_view and response_malformed are named separately. guard() puts it on the result as failure_class. */
+export declare const guardFailureClassOf: (g: GuardResult | null) => GuardFailureClass;
+/** enforce (default): a refused result has proceed false. observe: the same checks run and are reported, and nothing is enforced (proceed is true; would_proceed says what enforce would have returned). */
+export type GuardMode = "enforce" | "observe";
 export declare const acceptanceOf: (receipt: unknown, verification: unknown, scope: {
     fields?: unknown;
 } | null, opts?: {
@@ -326,11 +333,12 @@ export interface VerifyCheck {
 export interface Trust {
     integrity_valid: boolean;
     issuer_trusted: boolean | null;
-    accepted: boolean; /** conf2: the signing policy accepts this key for this object at its signing time (purpose, retired, compromised). null: not decided. */
-    key_policy_valid?: boolean | null; /** conf2: stable reason: ok, ok_bound, key_wrong_purpose, key_not_yet_active, key_retired, key_compromised, key_unknown, no_signing_time, or related_<code> for a key the document leans on. */
+    accepted: boolean; /** Offline only (no published key ids given): whether the signature verifies under a key id this release ships (CRAWLCHECK_KEY_IDS). false: not a CrawlCheck key as far as this release knows, or the document only names one. null: not applicable. An SDK released before a key rotation does not list the new key. */
+    issuer_pinned?: boolean | null; /** the signing policy accepts this key for this object at its signing time (purpose, retired, compromised). null: not decided. */
+    key_policy_valid?: boolean | null; /** stable reason: ok, ok_bound, key_wrong_purpose, key_not_yet_active, key_retired, key_compromised, key_unknown, no_signing_time, purpose_unknown (key ids only, and the id is not one this release ships: partial, purpose not checked), or related_<code> for a key the document leans on. */
     key_policy_code?: string | null;
 }
-/** conf2: the key directory and rotation record as the signing policy reads them (keyPolicyFrom / publishedKeyPolicy). */
+/** the key directory and rotation record as the signing policy reads them (keyPolicyFrom / publishedKeyPolicy). */
 export interface KeyPolicyInput {
     v: 2;
     kids: string[];
@@ -370,6 +378,10 @@ export declare const keyPolicyFrom: (directory: unknown, rotation?: unknown) => 
 export declare const keyPolicyCheck: (doc: unknown, kp: KeyPolicyInput) => KeyPolicyResult;
 /** Apply the signing policy to a verification: key_published (retired keys included), key_purpose, and the trust fields. */
 export declare const applyKeyPolicy: <T>(res: T, doc: unknown, kp: KeyPolicyInput) => T & Trust;
+/** The signing policy for the key ids this release ships (purposes and start times; no rotation record), limited to the ids given. For offline use; online, publishedKeyPolicy() is current. */
+export declare const pinnedKeyPolicy: (kids?: string[] | readonly string[]) => KeyPolicyInput;
+/** CrawlCheck's signing key ids (RFC 7638 thumbprints) as published when this release was cut. Offline, a document under any other key id has issuer_pinned: false. */
+export declare const CRAWLCHECK_KEY_IDS: readonly string[];
 export interface BundleVerification extends Partial<Trust> {
     verified: boolean;
     summary: string;
@@ -396,9 +408,13 @@ export interface ReceiptVerification extends Partial<Trust> {
     note: string;
 }
 /** Verify an evidence bundle with no call to CrawlCheck (the same code as /crawlcheck-verify.mjs). */
-export declare const verifyBundle: (b: unknown) => Promise<BundleVerification>;
+export declare const verifyBundle: (b: unknown, opts?: {
+    publishedKids?: string[];
+}) => Promise<BundleVerification>;
 /** Verify a remediation receipt with no call to CrawlCheck. */
-export declare const verifyReceipt: (rc: unknown) => Promise<ReceiptVerification>;
+export declare const verifyReceipt: (rc: unknown, opts?: {
+    publishedKids?: string[];
+}) => Promise<ReceiptVerification>;
 export interface DocumentVerification extends Partial<Trust> {
     verified: boolean;
     summary: string;
@@ -409,8 +425,14 @@ export interface DocumentVerification extends Partial<Trust> {
     };
     checks: VerifyCheck[];
 }
-/** Verify a signed resolve answer, preflight decision receipt, data inventory, export part or deletion record offline. */
-export declare const verifyDocument: (doc: unknown) => Promise<DocumentVerification & Trust>;
+/**
+ * Verify a signed resolve answer, preflight decision receipt, data inventory, export part or deletion record offline.
+ * Offline it is never accepted (issuer_trusted: null); issuer_pinned says whether the key id is one this release ships.
+ * Pass opts.publishedKids (publishedKeyIds(), or CRAWLCHECK_KEY_IDS to trust the ids this release ships) to decide the issuer.
+ */
+export declare const verifyDocument: (doc: unknown, opts?: {
+    publishedKids?: string[] | readonly string[];
+}) => Promise<DocumentVerification & Trust>;
 /** Verify a signed evidence export (and every bundle and receipt inside it) offline. */
 export declare const verifyExport: (x: unknown) => Promise<{
     verified: boolean;
@@ -610,10 +632,14 @@ export interface GuardOptions extends PreflightOptions {
     onlineKeys?: boolean;
     /** Pinned CrawlCheck key ids, for offline use with onlineKeys: false. */
     publishedKids?: string[];
-    /** conf2: a pinned key policy (keyPolicyFrom(savedDirectory, savedRotation)), for offline use with onlineKeys: false. Checks key purpose too. */
+    /** a pinned key policy (keyPolicyFrom(savedDirectory, savedRotation)), for offline use with onlineKeys: false. Checks key purpose too. */
     keyPolicy?: KeyPolicyInput;
     /** Testing clock (ms since epoch). Default Date.now(). */
     now?: number;
+    /** "enforce" (default) or "observe". In observe every check still runs and the result says what enforce would have done (would_proceed, failure_class, why), but proceed is always true: nothing is refused. For a pilot before turning enforcement on. */
+    mode?: GuardMode;
+    /** Called with every guard() result, in both modes, before it is returned (guardedFetch: once per checked hop). Keep the results to see what the guard decides. An error it throws is ignored. */
+    onRecord?: (result: GuardResult) => void | Promise<void>;
 }
 /** The longest a receipt may stay valid, per action (seconds). A receipt that claims longer is refused. Published at https://crawlcheck.io/spec/guard */
 export declare const ACTION_MAX_LIFETIME_S: Record<string, number>;
@@ -658,7 +684,17 @@ export interface GuardResult {
     acceptance: Acceptance | null;
     split_view?: LogFork[]; /** Set when the domain was refused from the held revocation list, with no network call. */
     revoked?: RevokedEntry;
+    /** Why the result did not proceed, as one class; null when it did. In observe mode: why enforce would not have proceeded. Always set by guard(). */
+    failure_class?: GuardFailureClass | null;
+    /** The mode this result was produced in. Always set by guard(). */
+    mode?: GuardMode;
+    /** false in observe mode: proceed was not decided by the checks. Always set by guard(). */
+    enforced?: boolean;
+    /** What enforce mode returns as proceed for the same checks. Equals proceed in enforce mode. Always set by guard(). */
+    would_proceed?: boolean;
 }
+/** Headers guardedFetch still sends after a redirect leaves the origin the caller named. Everything else stays behind. */
+export declare const GUARDED_SAFE_HEADERS: string[];
 export interface GuardedFetchOptions extends GuardOptions {
     action?: Action;
     init?: RequestInit;
@@ -671,7 +707,9 @@ export interface GuardedHop {
     proceed: boolean;
     decision: string | null;
     why: string[];
-    status?: number;
+    status?: number; /** This hop's guard failure class; null when its check passed. */
+    failure_class?: GuardFailureClass | null; /** What enforce mode decides for this hop. */
+    would_proceed?: boolean;
 }
 export interface GuardedFetchResult {
     proceed: boolean;
@@ -679,6 +717,13 @@ export interface GuardedFetchResult {
     url: string;
     hops: GuardedHop[];
     why: string[];
+    /** Why the fetch did not proceed: the refused hop's guard failure class, or fetch_refused when the URL or a redirect could not be checked at all. null when every check passed. In observe mode: the first hop enforce would have refused. */
+    failure_class?: GuardFailureClass | null;
+    mode?: GuardMode;
+    /** false in observe mode. */
+    enforced?: boolean;
+    /** false when enforce mode would have stopped the fetch (at the first hop whose would_proceed is false). */
+    would_proceed?: boolean;
 }
 export interface LogHead {
     kind: "crawlcheck-log-sth";
@@ -701,7 +746,8 @@ export interface LogFork {
     a: LogHead;
     b: LogHead;
     detected_at: string;
-    proof: string;
+    proof: string; /** true when both heads were checked against CrawlCheck's keys; false: either may be signed by anyone. */
+    issuer_checked?: boolean;
 }
 export interface LogStore {
     v: 1;
@@ -714,7 +760,8 @@ export interface LogStore {
         tree_size: number;
         prev_sth_sha256: string | null;
         created_at: string | null;
-        sth: LogHead;
+        sth: LogHead; /** true when the head was checked against CrawlCheck's keys before it was kept. */
+        issuer_checked?: boolean;
     }>;
     forks: LogFork[];
     witnessed: {
@@ -758,26 +805,31 @@ export interface LogCheckResult {
 export declare const LOG_ID: string;
 /** A new, empty transparency-log store (plain JSON: persist it between runs). */
 export declare const newLogStore: () => LogStore;
-/** Check one signed tree head against the store and keep it. A fork carries both contradicting signed heads. */
-export declare const logObserve: (store: LogStore, sth: unknown, opts?: {
+/** The keys a log head is checked against: key ids, or (better) the signing policy with purposes and rotation. */
+export interface LogKeyOptions {
     publishedKids?: string[];
+    keyPolicy?: KeyPolicyInput;
+}
+/** Check one signed tree head against the store and keep it. Pass publishedKids or keyPolicy: a head that is not signed by a published key is invalid and is not kept. A fork carries both contradicting signed heads. */
+export declare const logObserve: (store: LogStore, sth: unknown, opts?: LogKeyOptions & {
     maxHeads?: number;
 }) => Promise<LogObservation>;
 /** Check the head inside a Resolve answer (transparency.sth), if it carries one. */
-export declare const logObserveAnswer: (store: LogStore, answer: unknown, opts?: {
-    publishedKids?: string[];
-}) => Promise<LogObservation>;
+export declare const logObserveAnswer: (store: LogStore, answer: unknown, opts?: LogKeyOptions) => Promise<LogObservation>;
 /** The signed heads a store holds, newest first: what a client sends its peers. */
 export declare const logHeads: (store: LogStore, limit?: number) => LogHead[];
 /** Gossip: check another client's heads against this store. */
-export declare const logGossip: (store: LogStore, sths: unknown[], opts?: {
-    publishedKids?: string[];
-}) => Promise<{
+export declare const logGossip: (store: LogStore, sths: unknown[], opts?: LogKeyOptions) => Promise<{
     forks: LogFork[];
     results: (LogObservation & {
         batch: number;
         sha256: string;
     })[];
+}>;
+/** Re-check a saved store against CrawlCheck's keys: forks and heads that are not signed by a published key are dropped. */
+export declare const logPrune: (store: LogStore, opts: LogKeyOptions) => Promise<{
+    forks_dropped: number;
+    heads_dropped: number;
 }>;
 /** Verify the outside witness's co-signature: a GitHub OIDC JWT (RS256) whose audience is crawlcheck-sth:<head sha256>. */
 export declare const verifyWitnessToken: (token: string, sthSha256: string, jwks: unknown) => Promise<{
@@ -1011,6 +1063,17 @@ export declare class CrawlCheck {
             sha256: string;
         })[];
     }>;
+    /** Log heads this client was shown and did not keep, newest last (at most 50): not signed by a key CrawlCheck publishes for log heads, or not a head at all. They are never stored and never count as a fork. */
+    logIgnored: {
+        batch: number | null;
+        sha256: string | null;
+        why: string;
+        at: string;
+    }[];
+    private noteIgnored;
+    /** What a log head must be signed with before this client keeps it: the published signing policy, or (when the directory cannot be read) the policy for the key ids this release ships. A head is never kept on its own word. */
+    private logKeyOptions;
+    private observeAnswer;
     /**
      * Fetch the signed revocation list (a ?since= delta when the store already holds one), verify it (integrity and a
      * published signing key) and apply it. A delta that no longer reaches back is replaced by the full list. Nothing is
@@ -1022,7 +1085,7 @@ export declare class CrawlCheck {
     /** The policy engine: a signed decision receipt (allow | warn | require_confirmation | block | unsupported). A policy can only make the decision stricter. */
     preflight(domain: string, action?: Action, opts?: PreflightOptions): Promise<DecisionReceipt>;
     private kpCache;
-    /** conf2: the key directory and rotation record, read now (cached 10 minutes), as the signing policy reads them. */
+    /** the key directory and rotation record, read now (cached 10 minutes), as the signing policy reads them. */
     publishedKeyPolicy(): Promise<KeyPolicyInput>;
     /** Verify a signed document here. With onlineKeys (default), its signing key must also be in the published directory and the signing policy must accept it. */
     verifyDocument(doc: unknown, onlineKeys?: boolean): Promise<DocumentVerification & Trust>;
@@ -1031,13 +1094,19 @@ export declare class CrawlCheck {
      * require_confirmation only if confirm() says yes; block, unsupported and every failure never (fail closed: an error,
      * an unreachable CrawlCheck, a malformed, foreign, expired, replayed or out-of-scope receipt all return proceed false
      * with why[]). Passes the acceptance suite at https://crawlcheck.io/spec/guard
+     * Every result carries failure_class (null when it proceeds; otherwise one of GUARD_FAILURE_CLASSES). With
+     * opts.mode "observe" the same checks run and are reported (would_proceed, failure_class, why) and nothing is refused.
      */
     guard(domain: string, action?: Action, opts?: GuardOptions): Promise<GuardResult>;
+    private guardDecide;
     /**
      * fetch() with the check where the action runs: guard() before the first request, and again before every redirect hop
      * to a new domain. The site is contacted only after its domain proceeds; a refused hop is never requested. Redirects
      * are followed by hand (GET/HEAD only), to http(s) only, at most maxHops (10). The receipt header is sent only to the
      * domain it names. In a browser a cross-origin redirect hides its target, so it is refused rather than followed blind.
+     * The result and every hop carry failure_class. With opts.mode "observe" a hop the guard would refuse is recorded
+     * (would_proceed false, failure_class, why) and requested anyway, without a receipt header; a URL or redirect that
+     * cannot be checked at all (fetch_refused) is refused in both modes.
      */
     guardedFetch(url: string, opts?: GuardedFetchOptions): Promise<GuardedFetchResult>;
     /** Look a domain up without sending it: only the first prefixLen hex characters of sha256(domain) leave this process (one more character per 413, up to 8). found false with ready true means no public measurement. */
@@ -1053,26 +1122,515 @@ export declare class CrawlCheck {
     /** For sites: check a CrawlCheck-Receipt header received with a request to host. accept only when the receipt is held, names host, has not expired, decided allow or warn, and verifies with a published key. */
     checkReceiptHeader(headerValue: string, host: string): Promise<ReceiptCheck>;
     /** Signed change feed (what changed since a time, optionally for one domain). */
-    changes(q?: QueryOf<"/api/v1/changes">): Promise<JsonObject>;
+    changes(q?: QueryOf<"/api/v1/changes">): Promise<({
+        kind?: string | null;
+        v?: number | null;
+        since?: string | null;
+        domain?: unknown;
+        generated_at?: string | null;
+        count?: number | null;
+        next_since?: string | null;
+        reading?: string | null;
+        events?: (({
+            domain?: string | null;
+            at?: string | null;
+            section?: string | null;
+            from_state?: string | null;
+            to_state?: string | null;
+            detail?: string | null;
+        } & {
+            [key: string]: unknown;
+        }) | null)[] | null;
+    } & {
+        [key: string]: unknown;
+    }) | null>;
     /** Report what happened after acting. Outcomes are kept apart from the signed record and never rewrite it. */
     outcome(body: JsonObject & {
         domain: string;
         action: Action;
     }): Promise<JsonObject>;
     /** The registry record (RDAP) and lifecycle of a domain. */
-    domain(domain: string): Promise<JsonObject>;
+    domain(domain: string): Promise<({
+        kind?: string | null;
+        v?: number | null;
+        domain?: string | null;
+        registry?: ({
+            state?: string | null;
+            source?: string | null;
+            registrar?: string | null;
+            registrar_iana_id?: string | null;
+            created?: string | null;
+            expires?: string | null;
+            changed?: string | null;
+            nameservers?: (string | null)[] | null;
+            dnssec?: boolean | null;
+            status?: (string | null)[] | null;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        timeline?: (({
+            at?: string | null;
+            type?: string | null;
+            detail?: string | null;
+            source?: string | null;
+        } & {
+            [key: string]: unknown;
+        }) | null)[] | null;
+    } & {
+        [key: string]: unknown;
+    }) | null>;
     /** The whole observation in one shape: findings (gated like the site), trust, freshness, score ledger, evidence links. */
     machineRecord(q: QueryOf<"/api/v1/machine-record">): Promise<MachineRecordV1>;
     /** Scan a domain now (free lane without a key; the licensed lane with one). */
     scan(domain: string): Promise<PublicReportV1>;
     /** A stored report by id, in the public v1 shape. */
     report(id: string): Promise<PublicReportV1>;
-    explain(q: QueryOf<"/api/explain">): Promise<JsonObject>;
-    impact(q: QueryOf<"/api/impact">): Promise<JsonObject>;
-    whatIf(q: QueryOf<"/api/whatif">): Promise<JsonObject>;
-    locate(q: QueryOf<"/api/locate">): Promise<JsonObject>;
+    explain(q: QueryOf<"/api/explain">): Promise<({
+        ok?: boolean | null;
+        kind?: string | null;
+        version?: string | null;
+        subject?: ({
+            domain?: string | null;
+            host?: string | null;
+            report_id?: string | null;
+            scanned_at?: string | null;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        finding?: ({
+            fid?: string | null;
+            decision_id?: string | null;
+            code?: string | null;
+            severity?: number | null;
+            path?: string | null;
+            title?: string | null;
+            detail?: unknown;
+            meaning?: unknown;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        rule?: ({
+            code?: string | null;
+            revision?: number | null;
+            revision_note?: unknown;
+            score_version?: number | null;
+            decided_in?: ({
+                trace_id?: string | null;
+                span_id?: string | null;
+            } & {
+                [key: string]: unknown;
+            }) | null;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        observed?: ({
+            evidence?: ({
+                shadowed_groups?: number | null;
+                agents_affected?: number | null;
+                search_engines_affected?: number | null;
+                sample?: ({
+                    [key: string]: unknown;
+                } | null)[] | null;
+            } & {
+                [key: string]: unknown;
+            }) | null;
+            compared_fetches?: unknown;
+            support_scope?: string | null;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        corroboration?: ({
+            status?: string | null;
+            reading?: string | null;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        trust?: ({
+            freshness?: ({
+                observed_at?: string | null;
+                last_observed?: string | null;
+                held_since?: string | null;
+                state?: string | null;
+            } & {
+                [key: string]: unknown;
+            }) | null;
+            confidence?: ({
+                level?: string | null;
+                means?: string | null;
+                basis?: (string | null)[] | null;
+            } & {
+                [key: string]: unknown;
+            }) | null;
+            contradictions?: unknown[] | null;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        score_effect?: ({
+            decision_id?: string | null;
+            code?: string | null;
+            path?: string | null;
+            severity?: number | null;
+            level?: string | null;
+            points?: number | null;
+            cap?: string | null;
+            binding?: boolean | null;
+            letter_now?: string | null;
+            letter_without_it?: string | null;
+            same_level_others?: number | null;
+            says?: string | null;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        held?: ({
+            state?: string | null;
+            first_seen?: string | null;
+            scans_seen?: number | null;
+            valid_time?: ({
+                valid_from?: ({
+                    after?: unknown;
+                    by?: string | null;
+                } & {
+                    [key: string]: unknown;
+                }) | null;
+                valid_to?: unknown;
+                recorded_at?: string | null;
+                superseded_at?: unknown;
+                superseded_by?: unknown;
+                earlier_intervals?: number | null;
+                before_bt1?: boolean | null;
+            } & {
+                [key: string]: unknown;
+            }) | null;
+            history?: string | null;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        proof?: ({
+            in_signed_manifest?: boolean | null;
+            manifest_sha256?: string | null;
+            decision_root?: string | null;
+            leaf?: string | null;
+            path?: (({
+                side?: string | null;
+                hash?: string | null;
+            } & {
+                [key: string]: unknown;
+            }) | null)[] | null;
+            how?: unknown;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        check?: ({
+            verify?: string | null;
+            bundle?: string | null;
+            offline_verifier?: string | null;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        access?: string | null;
+    } & {
+        [key: string]: unknown;
+    }) | null>;
+    impact(q: QueryOf<"/api/impact">): Promise<({
+        ok?: boolean | null;
+        kind?: string | null;
+        subject?: ({
+            domain?: string | null;
+            report_id?: string | null;
+            scanned_at?: string | null;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        fixes?: (string | null)[] | null;
+        each?: (({
+            fix?: string | null;
+            label?: string | null;
+            generator?: string | null;
+            findings_cleared?: number | null;
+            rows_cleared?: number | null;
+            clears_only_with?: (string | null)[] | null;
+            score_after?: number | null;
+            letter_after?: string | null;
+            points?: number | null;
+            root_causes_closed?: unknown[] | null;
+            certificate_newly_passing?: (string | null)[] | null;
+        } & {
+            [key: string]: unknown;
+        }) | null)[] | null;
+        asked?: (string | null)[] | null;
+        result?: ({
+            ok?: boolean | null;
+            fix?: (({
+                id?: string | null;
+                label?: string | null;
+                file?: string | null;
+                generator?: string | null;
+                failing_now?: boolean | null;
+            } & {
+                [key: string]: unknown;
+            }) | null)[] | null;
+            unknown?: unknown[] | null;
+            nothing_to_fix?: unknown[] | null;
+            clears?: ({
+                findings?: (({
+                    code?: string | null;
+                    path?: string | null;
+                    severity?: number | null;
+                    caps_letter_at?: unknown;
+                    decision_id?: string | null;
+                } & {
+                    [key: string]: unknown;
+                }) | null)[] | null;
+                rows?: (({
+                    section?: string | null;
+                    id?: string | null;
+                    row?: string | null;
+                } & {
+                    [key: string]: unknown;
+                }) | null)[] | null;
+            } & {
+                [key: string]: unknown;
+            }) | null;
+            clears_only_with?: (({
+                also_needs?: (string | null)[] | null;
+                findings?: (({
+                    code?: string | null;
+                    path?: string | null;
+                    severity?: number | null;
+                    caps_letter_at?: string | null;
+                    decision_id?: string | null;
+                } & {
+                    [key: string]: unknown;
+                }) | null)[] | null;
+                rows?: unknown[] | null;
+                why?: string | null;
+            } & {
+                [key: string]: unknown;
+            }) | null)[] | null;
+            policy_rows?: unknown[] | null;
+            root_causes?: (({
+                id?: string | null;
+                relation?: string | null;
+                members?: number | null;
+                cleared?: number | null;
+                closed?: boolean | null;
+                still_open?: (string | null)[] | null;
+            } & {
+                [key: string]: unknown;
+            }) | null)[] | null;
+            certificate?: ({
+                passing_now?: number | null;
+                passing_after?: number | null;
+                of?: number | null;
+                newly_passing?: (string | null)[] | null;
+            } & {
+                [key: string]: unknown;
+            }) | null;
+            score?: ({
+                now?: ({
+                    score?: number | null;
+                    letter?: string | null;
+                    cap?: string | null;
+                } & {
+                    [key: string]: unknown;
+                }) | null;
+                after?: ({
+                    score?: number | null;
+                    letter?: string | null;
+                    cap?: string | null;
+                    capped?: boolean | null;
+                    held_at_reach?: boolean | null;
+                    rows_applied?: number | null;
+                    findings_cleared?: number | null;
+                } & {
+                    [key: string]: unknown;
+                }) | null;
+                after_if_policy_also_allows?: unknown;
+                method?: string | null;
+            } & {
+                [key: string]: unknown;
+            }) | null;
+            policy_note?: unknown;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        method?: string | null;
+    } & {
+        [key: string]: unknown;
+    }) | null>;
+    whatIf(q: QueryOf<"/api/whatif">): Promise<({
+        ok?: boolean | null;
+        kind?: string | null;
+        subject?: ({
+            domain?: string | null;
+            report_id?: string | null;
+            scanned_at?: string | null;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        now?: ({
+            score?: number | null;
+            letter?: string | null;
+            cap?: unknown;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        asked?: ({
+            fix?: unknown[] | null;
+            clear?: (string | null)[] | null;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        result?: ({
+            score?: number | null;
+            letter?: string | null;
+            cap?: unknown;
+            capped?: boolean | null;
+            held_at_reach?: boolean | null;
+            rows_applied?: number | null;
+            findings_cleared?: number | null;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        not_applied?: ({
+            rows?: unknown[] | null;
+            findings?: (string | null)[] | null;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        next_letter?: ({
+            target?: unknown;
+            why?: string | null;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        combined?: ({
+            all_rows_fixed?: ({
+                score?: number | null;
+                letter?: string | null;
+                cap?: unknown;
+                capped?: boolean | null;
+                held_at_reach?: boolean | null;
+                rows_applied?: number | null;
+                findings_cleared?: number | null;
+            } & {
+                [key: string]: unknown;
+            }) | null;
+            all_findings_cleared?: ({
+                score?: number | null;
+                letter?: string | null;
+                cap?: unknown;
+                capped?: boolean | null;
+                held_at_reach?: boolean | null;
+                rows_applied?: number | null;
+                findings_cleared?: number | null;
+            } & {
+                [key: string]: unknown;
+            }) | null;
+            both?: ({
+                score?: number | null;
+                letter?: string | null;
+                cap?: unknown;
+                capped?: boolean | null;
+                held_at_reach?: boolean | null;
+                rows_applied?: number | null;
+                findings_cleared?: number | null;
+            } & {
+                [key: string]: unknown;
+            }) | null;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        rows?: (({
+            section_id?: string | null;
+            row?: string | null;
+            points?: number | null;
+            why?: unknown;
+        } & {
+            [key: string]: unknown;
+        }) | null)[] | null;
+        method?: string | null;
+    } & {
+        [key: string]: unknown;
+    }) | null>;
+    locate(q: QueryOf<"/api/locate">): Promise<({
+        ok?: boolean | null;
+        kind?: string | null;
+        report_id?: string | null;
+        domain?: string | null;
+        page?: ({
+            experience_id?: string | null;
+            sha256?: string | null;
+            bytes?: number | null;
+            artifact?: string | null;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        statements?: number | null;
+        located?: number | null;
+        read_back?: number | null;
+        rows?: (({
+            field?: string | null;
+            value?: string | null;
+            source?: ({
+                kind?: string | null;
+                via?: string | null;
+                name?: string | null;
+                node?: string | null;
+                id?: string | null;
+            } & {
+                [key: string]: unknown;
+            }) | null;
+            located?: boolean | null;
+            bytes?: (number | null)[] | null;
+            line?: number | null;
+            col?: number | null;
+            scope?: string | null;
+            match?: string | null;
+            cut?: string | null;
+            reads_back?: boolean | null;
+        } & {
+            [key: string]: unknown;
+        }) | null)[] | null;
+        method?: string | null;
+    } & {
+        [key: string]: unknown;
+    }) | null>;
     /** Every server-side verifier on one record. */
-    verify(id: string): Promise<JsonObject>;
+    verify(id: string): Promise<({
+        served_from?: string | null;
+        bundle?: string | null;
+        ok?: boolean | null;
+        id?: string | null;
+        domain?: string | null;
+        scanned_at?: string | null;
+        report?: string | null;
+        checks?: (({
+            name?: string | null;
+            ok?: boolean | null;
+            why?: string | null;
+            digest?: string | null;
+            recorded?: string | null;
+            date?: string | null;
+            manifest?: string | null;
+            kid?: string | null;
+            key_directory?: string | null;
+            bytes?: number | null;
+        } & {
+            [key: string]: unknown;
+        }) | null)[] | null;
+        summary?: ({
+            passed?: number | null;
+            failed?: number | null;
+            unverifiable?: number | null;
+            total?: number | null;
+        } & {
+            [key: string]: unknown;
+        }) | null;
+        note?: unknown;
+    } & {
+        [key: string]: unknown;
+    }) | null>;
     /** The evidence bundle (anonymous: subject and leaves withheld; with a licence for the domain: complete). */
     bundle(id: string): Promise<EvidenceBundleV1>;
     /** Download the bundle and verify it here, with the offline verifier: no trust in the API's own answer. */
@@ -1083,7 +1641,22 @@ export declare class CrawlCheck {
     verifyReceiptOffline(id: string): Promise<ReceiptVerification & Trust>;
     /** The observer's published Ed25519 key ids (RFC 7638 thumbprints), to close the one check a verifier cannot do offline. */
     publishedKeyIds(): Promise<string[]>;
-    receipts(domain: string): Promise<JsonObject>;
+    receipts(domain: string): Promise<({
+        ok?: boolean | null;
+        domain?: string | null;
+        receipts?: (({
+            id?: string | null;
+            at?: string | null;
+            before?: string | null;
+            after?: string | null;
+            verdict?: string | null;
+            url?: string | null;
+        } & {
+            [key: string]: unknown;
+        }) | null)[] | null;
+    } & {
+        [key: string]: unknown;
+    }) | null>;
     /** Run the published conformance fixtures through THIS package's verifier. Every result must be ok. */
     conformance(): Promise<{
         ok: boolean;
@@ -1136,5 +1709,3 @@ export interface LangChainToolsModule {
  * Same three tools as agentTools(); each returns its result as a JSON string; they fail closed. */
 export declare function langchainTools(cc: CrawlCheck, lc: LangChainToolsModule, opts?: AgentToolOptions): unknown[];
 export default CrawlCheck;
-/** Headers guardedFetch still sends after a redirect leaves the origin the caller named. Everything else stays behind. */
-export declare const GUARDED_SAFE_HEADERS: string[];

@@ -145,7 +145,7 @@ class McpPreflight:
         return receipt
 
     async def _check_connect(self, host):
-        # tscope1: name the server and, with a lockfile, its approved tools_sha256, so the signed receipt covers that tool state
+        # name the server and, with a lockfile, its approved tools_sha256, so the signed receipt covers that tool state
         scope = None
         if self.url and str(self.url).lower().startswith("https:"):
             scope = {"url": self.url}
@@ -154,7 +154,7 @@ class McpPreflight:
         if scope:
             try:
                 rc = self.cc.preflight(host, "connect", agent=self.agent, template=self.template, policy=self.policy, mcp=scope)
-            except TypeError:   # a client written before tscope1 takes no mcp=; decide on the domain alone
+            except TypeError:   # an older client takes no mcp=; decide on the domain alone
                 rc = self.cc.preflight(host, "connect", agent=self.agent, template=self.template, policy=self.policy)
         else:
             rc = self.cc.preflight(host, "connect", agent=self.agent, template=self.template, policy=self.policy)

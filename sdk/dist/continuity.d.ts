@@ -37,7 +37,7 @@ export declare function lockToolParts(t: any): Promise<{
     annotations_sha256: string;
 }>;
 /** parts for a lockfile: { [tool name]: lockToolParts(tool) }, for every tool given. Store it as lock.parts next to lock.tools. */
-export declare function lockParts(tools: any): Promise<{}>;
+export declare function lockParts(tools: any): Promise<any>;
 /** The most tools a v1 (lk) lockfile hashes; CrawlCheck's lockfile endpoint hashes the same. A longer list is compared on
  * its first LOCK_V1_MAX_TOOLS tools and the read is marked incomplete (tool_list_truncated), never cut silently. */
 export declare const LOCK_V1_MAX_TOOLS = 300;
@@ -110,10 +110,15 @@ export declare function acceptanceOf(receipt: any, verification: any, scope: any
 };
 /** Which failure class a refused guard() result is (for continuityFailure). */
 export declare function continuityClassOf(g: any): "check_timeout" | "decision_refused" | "evidence_expired" | "key_retired" | "key_unknown" | "response_malformed" | "server_identity_mismatch" | "service_unavailable" | "signature_invalid";
+export declare const GUARD_FAILURE_CLASSES: string[];
+/** Which failure class a refused guard() result is: one of GUARD_FAILURE_CLASSES (never fetch_refused, which only guardedFetch sets). guard() sets it as result.failure_class. */
+export declare function guardFailureClassOf(g: any): any;
 /** CrawlCheck's lockfile signing keys (RFC 7638 thumbprints), as published at /.well-known/http-message-signatures-directory on 2026-11-07. */
 export declare const CRAWLCHECK_LOCK_KIDS: readonly string[];
 /** The operator's signature over the canonical lockfile (every field but operator_signature). privateKey: an Ed25519 private JWK ({kty, crv, x, d}). */
 export declare function signLock(lock: any, privateKey: any): Promise<{
+    [k: string]: any;
+} & {
     operator_signature: {
         v: number;
         alg: string;

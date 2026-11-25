@@ -15,7 +15,7 @@ print(answer["actions"]["read"]["decision"])
 
 receipt = cc.preflight("example.com", action="cite", agent="GPTBot", template="safe_citation")
 print(receipt["decision"], [s["why"] for s in receipt["steps"]])
-assert cc.verify(receipt)["verified"]  # Ed25519, checked locally; the key must be in the published directory
+assert cc.verify(receipt)["accepted"]  # Ed25519, checked locally; the key must be in the published directory
 
 ok, receipt = cc.guard("shop.example", action="transact", confirm=lambda r: input(r["meaning"] + " y/n? ") == "y")
 ```
@@ -47,7 +47,13 @@ A free key of your own: `curl -s -X POST -H "content-type: application/json" -d 
 
 ## Trust
 
-`verify_document(doc)` and `CrawlCheck.verify(doc)` return `verified`, `integrity_valid`, `issuer_trusted` and `accepted`. Act on `accepted`: offline, `issuer_trusted` is `None` and `accepted` is `False`, because a document signed with someone else's key can be self-consistent. `CrawlCheck.verify` and `guard` check the published key directory, so `accepted` is decided there.
+`verify_document(doc)` and `CrawlCheck.verify(doc)` return `verified`, `integrity_valid`, `issuer_trusted` and `accepted`. Act on `accepted`: offline, `issuer_trusted` is `None` and `accepted` is `False`, because a document signed with someone else's key can be self-consistent. `CrawlCheck.verify` and `guard` check the published key directory, so `accepted` is decided there. A signature that could not be checked is never a pass: `integrity_valid` and `accepted` both need the signature to have verified under the stated key. Offline, `issuer_pinned` says whether the signature verifies under one of the key ids this release ships (`CRAWLCHECK_KEY_IDS`); a document that only names such an id is `issuer_pinned: False`. `verify_document(doc, kids)` decides the issuer from a list you hold, and for the ids this release knows it still applies each key's purpose (`pinned_key_policy()` is that policy as data). A Resolve answer without its transparency proof is `assurance: "partial"` (`accepted_strict` is `False`).
+
+Offline pinning knows only the keys listed in the package version you have installed: after CrawlCheck rotates a key, a genuine document under the new key reads `issuer_pinned: False` offline until you upgrade to a version that lists it. Online verification reads the current key directory and is unaffected.
+
+The signing policy is read at the latest time a document states inside its signed body (`decided_at`, `answered_at`, `created_at` and the like). `signature.signed_at` is not covered by the signature, so it can move that time later and never earlier; a decision receipt whose only time is that field fails `key_purpose`.
+
+`python -m crawlcheck verify file.json` and `python -m crawlcheck preflight <domain> <action>` exit 0 only when the document or receipt is accepted as CrawlCheck's.
 
 Since 1.9.1 a key the rotation record lists as retired still counts for its own signing window when the expected purpose is worked out: after a decision-key rotation, receipts the old decision key signed inside its window verify, and no other key may sign a decision made while that key was live (key-policy suite cases retired-decision-key-*).
 
@@ -60,6 +66,8 @@ Since 1.8.0 they also apply the signing policy (https://crawlcheck.io/keys#polic
 `accepted` says who signed a document. It is not permission to act: a valid receipt can say `block`, `warn` or `require_confirmation`. `guard()` decides that part.
 
 Since 1.12.0 `guard()` leaves the split in `client.last_guard["acceptance"]`: `integrity_valid`, `issuer_trusted`, `key_policy_valid`, `freshness_valid`, `subject_matches`, `operation_matches`, `replay_safe`, `baseline_matches`, `assessment_complete`, `policy_source` (which policy produced the decision), `evidence_level` (A record integrity, B reproducible decision, C corroborated reading) and `policy_result` (`proceed`, `pause` or `deny`). `acceptance_of(receipt, verification, decision_scope(receipt, domain, action))` computes it for a receipt you hold. It is the same contract as the JS SDK's `acceptanceOf`, pinned by the shared golden file `tests/fixtures/continuity.json`. A receipt is evidence and a recommendation; your deployment's policy decides whether the agent acts. `POST https://crawlcheck.io/api/v1/preflight/replay` re-runs a receipt's decision from the archived answer and the inputs it carries.
+
+`client.last_guard["failure_class"]` (and the `failure_class` of a `guarded_fetch()` result and of each hop) is `None` when the call proceeds, otherwise one word for why not: `service_unavailable`, `check_timeout`, `response_malformed`, `signature_invalid`, `key_unknown`, `key_retired`, `server_identity_mismatch`, `evidence_expired`, `operation_mismatch`, `replay_mismatch`, `decision_refused`, `revoked`, `split_view`, and `fetch_refused` from `guarded_fetch` only (the list is `GUARD_FAILURE_CLASSES`). Pass `mode="observe"` to run every check and refuse nothing: the first value returned is then always `True`, and `would_proceed`, `failure_class` and `why` say what `enforce` (the default) would have done. `on_record(last_guard, receipt)` receives every result in both modes.
 
 ## Give your agent the check as a tool
 
@@ -176,6 +184,8 @@ r = client.log_check()          # current head, GitHub's witness co-signature (R
 print(r["summary"])
 json.dump(client.log, open("cc-log.json", "w"))
 ```
+
+The client keeps a log head only when a key CrawlCheck publishes for log heads signed it; any other head is ignored, listed in `client.log_ignored`, and never becomes part of a fork. If you call `log_observe` or `log_gossip` yourself, pass `key_policy=client.published_key_policy()` or a list of key ids: without either a head is checked against its own key only and is kept marked `issuer_checked: False`. `log_prune(store, key_policy=...)` re-checks a saved store and drops what no published key signed. Long-running agents do well to glance at `client.log_ignored` from time to time, since each entry names a head some peer offered that no published key had signed.
 
 ## Use the site's staple
 

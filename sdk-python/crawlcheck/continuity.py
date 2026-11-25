@@ -448,6 +448,54 @@ def continuity_class_of(proceed, receipt, acceptance, why):
     return "decision_refused"
 
 
+# The failure class of a guard() or guarded_fetch() result, as a field on the result ("failure_class"): one word for why
+# it did not proceed. Same contract as the JS SDK's guardFailureClassOf. Finer than continuity_class_of, which is
+# unchanged (continuity records and policies key on its classes):
+#   operation_mismatch, replay_mismatch   the receipt is for another operation / does not carry this request's nonce
+#                                         (continuity_class_of reports both as server_identity_mismatch)
+#   revoked, split_view                   refused from the held revocation list / the answer log showed two histories
+#   response_malformed                    what came back is not a v1 decision receipt at all
+#   fetch_refused                         guarded_fetch's own: the URL or a redirect could not be checked, so no decision was asked for
+# A receipt for another domain or action is server_identity_mismatch even when its lifetime is also wrong for the action asked.
+GUARD_FAILURE_CLASSES = ("service_unavailable", "check_timeout", "response_malformed", "signature_invalid", "key_unknown", "key_retired", "server_identity_mismatch", "evidence_expired", "operation_mismatch", "replay_mismatch", "decision_refused", "revoked", "split_view", "fetch_refused")
+
+
+def guard_failure_class_of(receipt, guard):
+    """Which failure class a refused guard() is: one of GUARD_FAILURE_CLASSES (never fetch_refused, which only
+    guarded_fetch sets). receipt: what guard() returned as its second value. guard: client.last_guard (its "why",
+    "acceptance", "revoked", "split_view"; a "failure_class" already there is returned as is)."""
+    g = guard if isinstance(guard, dict) else {}
+    if g.get("failure_class") in GUARD_FAILURE_CLASSES:
+        return g["failure_class"]
+    if g.get("revoked"):
+        return "revoked"
+    if g.get("split_view"):
+        return "split_view"
+    if receipt is None:
+        import re
+        return "check_timeout" if re.search(r"timed? ?out|abort", "; ".join(g.get("why") or []), re.I) else "service_unavailable"
+    if not isinstance(receipt, dict) or receipt.get("kind") != "crawlcheck-decision" or receipt.get("v") != 1:
+        return "response_malformed"
+    A = g.get("acceptance")
+    if not A:
+        return "response_malformed"
+    if not A.get("integrity_valid"):
+        return "signature_invalid"
+    if A.get("issuer_trusted") is not True:
+        return "key_unknown"
+    if A.get("key_policy_valid") is False:
+        return "key_retired"
+    if not A.get("subject_matches"):
+        return "server_identity_mismatch"
+    if not A.get("freshness_valid"):
+        return "evidence_expired"
+    if A.get("operation_matches") is False:
+        return "operation_mismatch"
+    if A.get("replay_safe") is False:
+        return "replay_mismatch"
+    return "decision_refused"
+
+
 # -- signed baseline (1.14.0) ---------------------------------------------------------------------------------------------
 # Whoever can edit the approved lockfile can approve their own tools. So the baseline's signature is checked once, when a
 # gate is created (startup), before anything is compared against it. Same contract as the JS SDK's verifyLockBaseline:

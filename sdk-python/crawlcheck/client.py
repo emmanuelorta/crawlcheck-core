@@ -8,13 +8,13 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from .continuity import acceptance_of
-from .verify import verify_document, key_id, canon, key_policy_from, apply_key_policy
+from .continuity import acceptance_of, guard_failure_class_of, GUARD_FAILURE_CLASSES  # noqa: F401
+from .verify import verify_document, key_id, canon, key_policy_from, apply_key_policy, pinned_key_policy
 from . import log as _log
 from .staple import staple_check, staple_from_headers
 from .revocations import new_revocation_store, apply_revocations, revoked_for
 
-VERSION = "1.16.4"
+VERSION = "1.17.0"
 ACTIONS = ("read", "cite", "connect", "transact", "administer")
 
 
@@ -134,6 +134,14 @@ def receipt_header(receipt):
     return {RECEIPT_HEADER: "v=1; sha256=" + receipt["sha256"]}
 
 
+def _guard_mode(mode):
+    if mode in (None, "enforce"):
+        return "enforce"
+    if mode == "observe":
+        return "observe"
+    raise ValueError("mode must be enforce or observe")
+
+
 class CrawlCheckError(Exception):
     def __init__(self, status, body):
         self.status, self.body = status, body
@@ -177,11 +185,14 @@ class CrawlCheck:
         self.key, self.base, self.timeout = key, base.rstrip("/"), timeout
         self.headers = dict(headers or {})   # extra headers for every request to CrawlCheck (same as the JS client's headers option)
         self._kids = None
-        self._kp = None   # conf2: (read time, key policy)
+        self._kp = None   # (read time, key policy)
         self.last_guard = None
         # Transparency-log store: every Resolve answer's signed tree head is checked against it. Plain JSON - persist
         # it between runs (json.dump(client.log, f)) and pass it back as log_store= to catch a split view across runs.
         self.log = log_store if log_store is not None else _log.new_log_store()
+        # Log heads this client was shown and did not keep (at most 50): not signed by a key CrawlCheck publishes for
+        # log heads, or not a head at all. They are never stored and never count as a fork.
+        self.log_ignored = []
         # Revocation store: sync_revocations() fills it; guard() refuses a listed domain for a listed action with no
         # network call. Plain JSON - persist it (json.dump(client.revocations, f)) and pass it back as revocation_store=.
         self.revocations = revocation_store if revocation_store is not None else new_revocation_store()
@@ -234,7 +245,7 @@ class CrawlCheck:
 
     def resolve(self, domain):
         """The signed ResolveV1 answer: crawl policy, delivery, machine files, capabilities, entity, findings, freshness and a decision per action."""
-        if self.private_lookups:   # pfx2: only the hash prefix leaves this machine
+        if self.private_lookups:   # only the hash prefix leaves this machine
             p = self.resolve_private(domain)
             if not p["ready"]:
                 raise CrawlCheckError(503, {"error": p.get("why") or "the prefix index is not built yet"})
@@ -245,21 +256,41 @@ class CrawlCheck:
             a = p["answer"]
         else:
             a = self._req("GET", "/api/v1/resolve", {"domain": domain})
-        try:
-            _log.log_observe_answer(self.log, a)
-        except Exception:
-            pass
+        self._observe_answer(a)
         return a
 
     def resolve_batch(self, domains):
         """Up to 100 domains in one call; each answer is a full signed ResolveV1 document."""
         r = self._req("POST", "/api/v1/resolve", body={"domains": list(domains)})
         for a in (r or {}).get("answers") or []:
-            try:
-                _log.log_observe_answer(self.log, a)
-            except Exception:
-                pass
+            self._observe_answer(a)
         return r
+
+    def _log_key_policy(self):
+        """What a log head must be signed with before this client keeps it: the published signing policy, or (when the
+        directory cannot be read) the policy for the key ids this release ships. A head is never kept on its own word."""
+        try:
+            return self.published_key_policy()
+        except Exception:  # noqa: BLE001
+            return pinned_key_policy()
+
+    def _note_ignored(self, head, why=None):
+        h = head if isinstance(head, dict) else {}
+        self.log_ignored.append({"batch": h.get("batch") if isinstance(h.get("batch"), int) and not isinstance(h.get("batch"), bool) else None,
+                                 "sha256": h.get("sha256") if isinstance(h.get("sha256"), str) else None, "why": why or "not a head CrawlCheck signed",
+                                 "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+        del self.log_ignored[:-50]
+
+    def _observe_answer(self, a):
+        t = a.get("transparency") if isinstance(a, dict) else None
+        if not isinstance(t, dict) or t.get("state") != "included" or not t.get("sth"):
+            return
+        try:
+            r = _log.log_observe_answer(self.log, a, key_policy=self._log_key_policy())
+            if r.get("state") == "invalid":
+                self._note_ignored(t.get("sth"), r.get("why"))
+        except Exception:  # noqa: BLE001 - an unreadable head is not kept
+            pass
 
     def preflight(self, domain, action="read", agent=None, template=None, policy=None, operation=None, nonce=None, mcp=None):
         """The policy engine: a signed decision receipt (allow | warn | require_confirmation | block | unsupported).
@@ -277,7 +308,7 @@ class CrawlCheck:
         if nonce:
             b["nonce"] = nonce
         if mcp and mcp.get("url"):
-            # tscope1: an MCP server on this domain and its approved lockfile tools_sha256; the signed receipt's
+            # an MCP server on this domain and its approved lockfile tools_sha256; the signed receipt's
             # "assessed" block then names the endpoint and tool state it covered, and changed tools come back as block.
             b["mcp"] = {k: mcp[k] for k in ("url", "tools_sha256") if mcp.get(k)}
         return self._req("POST", "/api/v1/preflight", body=b)
@@ -311,7 +342,7 @@ class CrawlCheck:
         return self._kids
 
     def published_key_policy(self, refresh=False):
-        """conf2: the key directory and rotation record, read now (cached 10 minutes), as the signing policy reads them.
+        """the key directory and rotation record, read now (cached 10 minutes), as the signing policy reads them.
         Without the rotation record retired and compromised keys are unknown and only keys still in the directory pass."""
         if refresh or self._kp is None or time.time() - self._kp[0] > 600:
             d = self._req("GET", "/.well-known/http-message-signatures-directory")
@@ -353,12 +384,31 @@ class CrawlCheck:
             r = apply_revocations(st, doc)
         return res(r, v)
 
-    def guard(self, domain, action="read", agent=None, template=None, policy=None, confirm=None, allow_warn=False, nonce=None, now=None, operation=None):
+    def guard(self, domain, action="read", agent=None, template=None, policy=None, confirm=None, allow_warn=False, nonce=None, now=None, operation=None, mode="enforce", on_record=None):
         """Preflight, verify the receipt, check it is for THIS operation, and return (proceed: bool, receipt). Proceeds on
         allow; warn only with allow_warn=True; require_confirmation only if confirm(receipt) returns True; block,
         unsupported and every failure never (fail closed: an error, an unreachable CrawlCheck, a malformed, foreign,
         expired, replayed or out-of-scope receipt all return (False, receipt or None)). Why: client.last_guard["why"].
-        Passes the acceptance suite at https://crawlcheck.io/spec/guard"""
+        Passes the acceptance suite at https://crawlcheck.io/spec/guard
+        client.last_guard["failure_class"] is None when it proceeds, otherwise one of GUARD_FAILURE_CLASSES.
+        mode="observe": the same checks run and are reported in client.last_guard ("would_proceed", "failure_class",
+        "why", "enforced": False) and nothing is refused: the first value returned is True. on_record(last_guard, receipt)
+        is called with every result, in both modes; an error it raises is ignored."""
+        mode = _guard_mode(mode)
+        proceed, rc = self._guard_decide(domain, action, agent, template, policy, confirm, allow_warn, nonce, now, operation)
+        g = self.last_guard
+        g["failure_class"] = None if proceed else guard_failure_class_of(rc, g)   # _guard_decide names the class itself where the result alone cannot tell
+        g["mode"], g["enforced"], g["would_proceed"] = mode, mode != "observe", proceed
+        if mode == "observe":
+            proceed = g["proceed"] = True   # observe: checked and reported, never refused
+        if on_record is not None:
+            try:
+                on_record(g, rc)
+            except Exception:  # noqa: BLE001 - a failing recorder never changes the result
+                pass
+        return proceed, rc
+
+    def _guard_decide(self, domain, action, agent, template, policy, confirm, allow_warn, nonce, now, operation):
         nonce = nonce or secrets.token_hex(16)
 
         scope = {}
@@ -367,10 +417,11 @@ class CrawlCheck:
             self.last_guard = {"proceed": False, "why": why, "domain": domain, "action": action,
                                "acceptance": acceptance_of(rc, v, scope, allow_warn=allow_warn) if isinstance(rc, dict) and scope else None}
             return False, rc
-        rv = revoked_for(self.revocations, normalize_domain(domain) or domain, action)   # rvd1: refused offline, before any request
+        rv = revoked_for(self.revocations, normalize_domain(domain) or domain, action)   # refused offline, before any request
         if rv:
             no(["%s is on CrawlCheck's signed revocation list for %s (%s%s; list of %s)" % (rv["domain"], action, ", ".join(rv.get("causes") or []) or rv.get("state") or "revoked", ", since " + rv["since"] if rv.get("since") else "", self.revocations.get("generated_at"))])
             self.last_guard["revoked"] = rv
+            self.last_guard["failure_class"] = "revoked"
             return False, None
         try:
             b = {"domain": domain, "action": action, "nonce": nonce}
@@ -379,13 +430,27 @@ class CrawlCheck:
                     b[k] = v
             rc = self._req("POST", "/api/v1/preflight", body=b)
         except Exception as e:  # noqa: BLE001 - every failure refuses
-            return no(["CrawlCheck did not give a decision: %s" % e])
+            r = no(["CrawlCheck did not give a decision: %s" % e])
+            self.last_guard["failure_class"] = ("response_malformed" if isinstance(e, json.JSONDecodeError) else   # an answer that is not JSON
+                                                "check_timeout" if isinstance(e, TimeoutError) or re.search(r"timed? ?out|abort", str(e), re.I) else "service_unavailable")
+            return r
+        # A fork counts only when both of its heads are signed by a published key (a store saved by an earlier release may hold unchecked ones).
+        if any(not (isinstance(f, dict) and f.get("issuer_checked") is True) for f in self.log.get("forks") or []):
+            try:
+                _log.log_prune(self.log, key_policy=self._log_key_policy())
+            except Exception:  # noqa: BLE001 - left as it is: refused below
+                pass
         if self.log.get("forks"):   # the log has shown this client two contradicting histories (see client.log["forks"])
-            return no(["the transparency log has shown this client two histories (split view)"], rc)
+            r = no(["the transparency log has shown this client two histories (split view)"], rc)
+            self.last_guard["split_view"] = list(self.log["forks"])   # same field the JS result carries
+            self.last_guard["failure_class"] = "split_view"
+            return r
         scope = decision_scope(rc, domain, action, nonce=nonce, now=now, operation=operation)
         ok, why = scope["ok"], list(scope["why"])
         if not isinstance(rc, dict):
-            return no(why)
+            r = no(why)
+            self.last_guard["failure_class"] = "response_malformed"
+            return r
         try:
             v = self.verify(rc)
         except Exception as e:  # noqa: BLE001
@@ -414,32 +479,47 @@ class CrawlCheck:
         self.last_guard = {"proceed": proceed, "why": why, "domain": domain, "action": action, "verified": bool(v.get("accepted")), "acceptance": acc}   # 1.11.0: same field the JS tool returns
         return proceed, rc
 
-    def guarded_fetch(self, url, action="read", method="GET", headers=None, data=None, allow_warn=False, confirm=None, max_hops=10, transport=None, now=None, nonce=None, timeout=None):
+    def guarded_fetch(self, url, action="read", method="GET", headers=None, data=None, allow_warn=False, confirm=None, max_hops=10, transport=None, now=None, nonce=None, timeout=None, mode="enforce", on_record=None):
         """An HTTP request with the check where the action runs: guard() before the first request and again before every
         redirect hop to a new domain. The site is contacted only after its domain proceeds; a refused hop is never
         requested. Redirects are followed by hand (GET/HEAD only), to http(s) only, at most max_hops. The receipt header
-        goes only to the domain it names. Returns {"proceed", "status", "headers", "body", "url", "hops", "why"}.
+        goes only to the domain it names. Returns {"proceed", "status", "headers", "body", "url", "hops", "why",
+        "failure_class", "mode", "enforced", "would_proceed"}; every hop carries "failure_class" and "would_proceed" too.
+        failure_class is None when every check passed, the refused hop's class otherwise, or "fetch_refused" when the URL
+        or a redirect could not be checked at all. mode="observe": a hop the guard would refuse is recorded and requested
+        anyway, without a receipt header; fetch_refused is refused in both modes. on_record: as in guard(), once per hop.
         transport(method, url, headers, data) -> (status, headers_dict, body_bytes) replaces urllib (tests)."""
         transport = transport or (lambda m, u, h, d: _no_redirect_request(m, u, h, d, timeout or self.timeout))
         method = method.upper()
+        mode = _guard_mode(mode)
         hops, seen, cur = [], {}, url
         origin0 = _origin(url)
+        gkw = {}   # only what the caller set, so a guard() replaced by an older signature still works
+        if mode != "enforce":
+            gkw["mode"] = mode
+        if on_record is not None:
+            gkw["on_record"] = on_record
 
-        def out(proceed, why, status=None, hdrs=None, body=None):
-            return {"proceed": proceed, "status": status, "headers": hdrs, "body": body, "url": cur, "hops": hops, "why": why}
+        def out(proceed, why, status=None, hdrs=None, body=None, local=False):
+            bad = next((h for h in hops if h.get("would_proceed") is False), None)
+            return {"proceed": proceed, "status": status, "headers": hdrs, "body": body, "url": cur, "hops": hops, "why": why,
+                    "failure_class": bad.get("failure_class") if bad else ("fetch_refused" if local else None),
+                    "mode": mode, "enforced": mode != "observe", "would_proceed": not bad and not local}
         for _ in range(max_hops + 1):
             u = urllib.parse.urlsplit(cur)
             if u.scheme not in ("http", "https"):
-                return out(False, ["refused a %s: URL" % (u.scheme or "schemeless")])
+                return out(False, ["refused a %s: URL" % (u.scheme or "schemeless")], local=True)
             dom = normalize_domain(u.hostname or "")
             if not dom:
-                return out(False, ["not a public domain name: %s" % u.hostname])
-            key = method + " " + cur   # op1: each hop's receipt names that exact request
+                return out(False, ["not a public domain name: %s" % u.hostname], local=True)
+            key = method + " " + cur   # each hop's receipt names that exact request
             if key not in seen:
-                p, rc = self.guard(dom, action, allow_warn=allow_warn, confirm=confirm, now=now, nonce=nonce, operation={"method": method, "url": cur})
-                seen[key] = (p, rc, list(self.last_guard.get("why") or []))
-            p, rc, why = seen[key]
-            hop = {"url": cur, "domain": dom, "proceed": p, "decision": rc.get("decision") if isinstance(rc, dict) else None, "why": why}
+                p, rc = self.guard(dom, action, allow_warn=allow_warn, confirm=confirm, now=now, nonce=nonce, operation={"method": method, "url": cur}, **gkw)
+                lg = self.last_guard if isinstance(getattr(self, "last_guard", None), dict) else {}
+                would = bool(p) if mode == "enforce" else lg.get("would_proceed", p) is True
+                seen[key] = (p, rc, list(lg.get("why") or []), would, None if would else (lg.get("failure_class") or guard_failure_class_of(rc, lg)))
+            p, rc, why, would, cls = seen[key]
+            hop = {"url": cur, "domain": dom, "proceed": p, "decision": rc.get("decision") if isinstance(rc, dict) else None, "why": why, "failure_class": cls, "would_proceed": would}
             hops.append(hop)
             if not p:
                 return out(False, ["%s: %s" % (dom, "; ".join(why) or "refused")])
@@ -447,7 +527,8 @@ class CrawlCheck:
             # or port) only a short allowlist travels, so Authorization or Cookie never follows a redirect elsewhere.
             same = _origin(cur) == origin0
             h = {k: v for k, v in (headers or {}).items() if same or k.lower() in GUARDED_SAFE_HEADERS}
-            h.update(receipt_header(rc))
+            if would:   # in observe mode a receipt the guard did not accept is never sent
+                h.update(receipt_header(rc))
             status, rh, body = transport(method, cur, h, data)
             hop["status"] = status
             loc = {k.lower(): v for k, v in (rh or {}).items()}.get("location")
@@ -456,7 +537,7 @@ class CrawlCheck:
             if method not in ("GET", "HEAD"):
                 return out(True, ["redirect not followed for %s" % method], status, rh, body)
             cur = urllib.parse.urljoin(cur, loc)
-        return out(False, ["more than %d redirects" % max_hops])
+        return out(False, ["more than %d redirects" % max_hops], local=True)
 
     # --- split-view detection (1.0.5) ---
     def log_check(self, report=True, max_walk=200, max_unwitnessed_minutes=120):
@@ -465,12 +546,16 @@ class CrawlCheck:
         def jwks():
             with urllib.request.urlopen(urllib.request.Request(_log.GITHUB_OIDC_JWKS, headers={"user-agent": "crawlcheck-python/" + VERSION}), timeout=self.timeout) as r:
                 return json.loads(r.read().decode("utf-8"))
-        return _log.log_check(self.log, lambda p: self._req("GET", p), published_kids=self.published_key_ids(), fetch_jwks=jwks,
+        return _log.log_check(self.log, lambda p: self._req("GET", p), published_kids=self.published_key_ids(), fetch_jwks=jwks, key_policy=self._log_key_policy(),
                               post=(lambda p, b: self._req("POST", p, body=b)) if report else None, max_walk=max_walk, max_unwitnessed_minutes=max_unwitnessed_minutes)
 
     def log_gossip(self, sths):
         """Check heads another client sent (their log_heads) against this client's store."""
-        return _log.log_gossip(self.log, sths)
+        g = _log.log_gossip(self.log, sths, key_policy=self._log_key_policy())
+        for r in g["results"]:
+            if r.get("state") == "invalid":
+                self._note_ignored(r, r.get("why"))
+        return g
 
     # --- private lookup and receipt headers (1.0.3) ---
     def field_check(self, domain, field, value):

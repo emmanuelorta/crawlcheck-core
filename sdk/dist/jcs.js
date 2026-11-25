@@ -48,18 +48,13 @@ function clean(v, d) {
         return cleanS(v);
     if (Array.isArray(v))
         return v.map((x) => clean(x, d + 1));
-    if (v && typeof v === "object") {
-        const o = {};
-        Object.keys(v).forEach((k) => { o[cleanS(k)] = clean(v[k], d + 1); });
-        return o;
-    }
+    if (v && typeof v === "object")
+        return Object.fromEntries(Object.keys(v).map((k) => [cleanS(k), clean(v[k], d + 1)])); // fromEntries: a member named __proto__ stays a member
     return v;
 }
 /** A tool's extras: every member beyond name, description, inputSchema and outputSchema. */
 export function jcsExtras(t) {
-    const o = {};
-    Object.keys(t || {}).forEach((k) => { if (k !== "name" && k !== "description" && k !== "inputSchema" && k !== "outputSchema")
-        o[k] = t[k]; });
+    const o = Object.fromEntries(Object.entries(t || {}).filter(([k]) => k !== "name" && k !== "description" && k !== "inputSchema" && k !== "outputSchema"));
     return clean(o, 0);
 }
 const cpCmp = (a, b) => { const x = Array.from(a), y = Array.from(b), n = Math.min(x.length, y.length); for (let i = 0; i < n; i++) {
@@ -71,7 +66,7 @@ const byteCmp = (a, b) => { const n = Math.min(a.length, b.length); for (let i =
     if (a[i] !== b[i])
         return a[i] - b[i]; return a.length - b.length; };
 async function extrasSet(tools) {
-    const per = {};
+    const per = Object.create(null); // no prototype: a tool named __proto__ or constructor is a tool like any other
     for (const t of tools || []) {
         if (!t || typeof t.name !== "string" || !t.name)
             continue;
@@ -82,7 +77,7 @@ async function extrasSet(tools) {
     const names = Object.keys(per).sort(cpCmp);
     if (!names.length)
         return "";
-    const body = { tools: {} }, over = {}, omit = [];
+    const body = { tools: Object.create(null) }, over = Object.create(null), omit = [];
     let used = 0;
     for (const n of names) {
         const sz = enc.encode(jcsCanon(per[n])).length;

@@ -73,7 +73,7 @@ export function mcpPreflight(cc, opts = {}) {
     if (opts.maxAgeMs && Date.now() - state.decidedAt > opts.maxAgeMs) return false;
     return true;
   };
-  // tscope1: send the server URL and, with a lockfile, its approved tools_sha256, so CrawlCheck reads the live tools from its own
+  // send the server URL and, with a lockfile, its approved tools_sha256, so CrawlCheck reads the live tools from its own
   // vantage and the signed receipt names the endpoint and tool state it covered (a changed list comes back as block).
   const mcpScope = function () { if (!state.url || !/^https:/i.test(state.url)) return undefined; const h = opts.lock && typeof opts.lock.tools_sha256 === "string" ? opts.lock.tools_sha256 : null; return h ? { url: state.url, tools_sha256: h } : { url: state.url }; };
   const checkConnect = async function (host) {
@@ -152,7 +152,7 @@ export function mcpPreflight(cc, opts = {}) {
       }
       const mode = opts.toolReceipts || "write", ro = !!(annotations && annotations.readOnlyHint === true);
       let callReceipt = null;
-      if (state.host && (mode === "all" || (mode === "write" && !ro))) {   // op1/mcp: a receipt for this exact tool call
+      if (state.host && (mode === "all" || (mode === "write" && !ro))) {   // a receipt for this exact tool call
         const op = tool ? await toolOperation(tool, opts.scopes) : Object.assign({ tool: String(name) }, opts.scopes && opts.scopes.length ? { scopes: opts.scopes.slice() } : {});
         const g = await cc.guard(state.host, "connect", { template, policy: opts.policy, agent: opts.agent, confirm: opts.confirm, allowWarn: !!opts.allowWarn, onlineKeys: opts.onlineKeys, operation: op });
         if (!g.proceed) throw new McpPreflightRefused("tools/call", "no receipt for tool " + name + ": " + ((g.why || []).join("; ") || "refused"), { receipt: g.receipt, verification: g.verification });
@@ -171,7 +171,7 @@ export function mcpPreflight(cc, opts = {}) {
 export function withPreflight(client, cc, opts = {}) {
   const pf = mcpPreflight(cc, opts);
   const connect = client.connect.bind(client), callTool = client.callTool.bind(client);
-  const tools = {};
+  const tools = Object.create(null);   // no prototype: only the tools the server listed
   client.connect = async function (transport, ...rest) {
     await pf.beforeConnect(opts.serverUrl || transportUrl(transport));
     const r = await connect(transport, ...rest);

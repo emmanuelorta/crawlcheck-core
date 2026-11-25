@@ -1,5 +1,5 @@
 """Offline revocations (rvd1): sync the signed list and its ?since= delta; guard() refuses a listed domain for a listed
-action with the network cut. Fixtures are signed by the Worker's own code with a throwaway key."""
+action with the network cut. Fixtures are signed by the service's own code with a throwaway key."""
 import copy, json, os, unittest
 from crawlcheck import CrawlCheck, new_revocation_store, apply_revocations, revoked_for, key_id
 F = json.load(open(os.path.join(os.path.dirname(__file__), "fixtures", "revocations.json")))
