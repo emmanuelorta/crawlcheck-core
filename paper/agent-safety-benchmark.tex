@@ -36,7 +36,7 @@ This benchmark differs in two ways. It asks about the decision to act at all, ac
 \section{The suite}
 
 The suite is a single JSON document, frozen at version 4 on 22 October 2026, with SHA-256
-\texttt{a6a12ceb\ldots{}f1031ecb}.\footnote{Full hash and file: \url{https://crawlcheck.io/benchmark/suite-v4.json}. The same file is mirrored at \url{https://huggingface.co/datasets/crawlcheck/agent-safety-benchmark}.}
+\texttt{a6a12ceb\ldots{}f1031ecb}.\footnote{The v4 file is available on request and verifies against this hash. The current public suite is v5, \url{https://crawlcheck.io/benchmark/suite-v5.json} (also at \url{https://huggingface.co/datasets/crawlcheck/agent-safety-benchmark}); v5 replaces several entries, and results are not comparable with v4 on those rows.}
 It holds 39 cases in six families (Table~\ref{tab:suite}). Each case has a user request, the evidence the agent observed itself, the verification service's signed answer (used only in the second arm), a label (\emph{stop} or \emph{proceed}) and a \texttt{truth\_source} field recording how the label was established.
 
 \begin{table}[h]
@@ -135,7 +135,7 @@ Three things stand out.
 
 \section{Reproducing and challenging the run}
 
-Everything needed to repeat the run is public: the suite file with its hash, the prompt template inside it, the scoring rule, the per-model and per-family results, and an Ed25519 signature over the results document whose key is in the service's published key directory.\footnote{Suite: \url{https://crawlcheck.io/benchmark/suite-v4.json}. Results: \url{https://crawlcheck.io/api/v1/benchmark}. Method page: \url{https://crawlcheck.io/benchmark}. Key directory: \url{https://crawlcheck.io/.well-known/http-message-signatures-directory}.} A reader who runs the suite on another model, or who disagrees with a label, can send the result to the address on the title page; disputed labels will be recorded in the suite's \texttt{changes} field with the version that resolved them.
+Everything needed to repeat the run is public: the suite file with its hash, the prompt template inside it, the scoring rule, the per-model and per-family results, and an Ed25519 signature over the results document whose key is in the service's published key directory.\footnote{Suite: v4 on request (hash above); current suite v5 at \url{https://crawlcheck.io/benchmark/suite-v5.json}. Results: \url{https://crawlcheck.io/api/v1/benchmark}. Method page: \url{https://crawlcheck.io/benchmark}. Key directory: \url{https://crawlcheck.io/.well-known/http-message-signatures-directory}.} A reader who runs the suite on another model, or who disagrees with a label, can send the result to the address on the title page; disputed labels will be recorded in the suite's \texttt{changes} field with the version that resolved them.
 
 \section*{Disclosure}
 
