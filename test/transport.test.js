@@ -42,3 +42,53 @@ test("trustedNetwork turns the address check off on purpose", async () => {
   const f = withFetch(() => new Response("mine"));
   try { const r = await safeFetch("http://127.0.0.1/", {}, { trustedNetwork: true }); assert.equal(await r.text(), "mine"); } finally { f.restore(); }
 });
+
+
+test("cross-origin redirect strips credentials, cookies, custom headers, and request body", async () => {
+  const seen = [];
+  const f = withFetch((u, opts) => {
+    seen.push({url:u, method:opts.method, headers:Object.fromEntries(new Headers(opts.headers)), body:opts.body});
+    if (u === "https://one.example/start") return new Response(null,{status:302,headers:{location:"https://two.example/next"}});
+    if (u === "https://two.example/next") return new Response(null,{status:302,headers:{location:"https://two.example/final"}});
+    return new Response("ok");
+  });
+  try {
+    const r = await safeFetch("https://one.example/start", { method:"POST", headers:{authorization:"Bearer private", cookie:"session=private", "x-api-key":"private", accept:"application/json"}, body:"sensitive=1" });
+    assert.equal(await r.text(),"ok");
+    assert.equal(seen.length,3);
+    assert.equal(seen[0].headers.authorization,"Bearer private");
+    for(const s of seen.slice(1)){
+      assert.equal(s.method,"GET");
+      assert.equal(s.body,undefined);
+      assert.equal(s.headers.authorization,undefined);
+      assert.equal(s.headers.cookie,undefined);
+      assert.equal(s.headers["x-api-key"],undefined);
+      assert.equal(s.headers.accept,"application/json");
+    }
+  } finally { f.restore(); }
+});
+test("same-origin redirects retain explicitly supplied headers", async () => {
+  const seen=[];
+  const f=withFetch((u,o)=>{seen.push(o);return u.endsWith("/a") ? new Response(null,{status:302,headers:{location:"/b"}}):new Response("ok");});
+  try{
+    await safeFetch("https://example.test/a",{headers:{authorization:"Bearer local"}});
+    assert.equal(new Headers(seen[1].headers).get("authorization"),"Bearer local");
+  } finally {f.restore();}
+});
+
+
+test("redirect back to original origin must not restore initial credentials", async () => {
+  const calls=[];
+  const f=withFetch((url,init)=>{
+    calls.push({url,headers:Object.fromEntries(new Headers(init.headers))});
+    if(url.endsWith("/start"))return new Response(null,{status:302,headers:{location:"https://other.example/step"}});
+    if(url.endsWith("/step"))return new Response(null,{status:302,headers:{location:"https://original.example/final"}});
+    return new Response("done");
+  });
+  try {
+    await safeFetch("https://original.example/start",{headers:{authorization:"Bearer secret","x-api-key":"secret",accept:"text/html"}});
+    assert.equal(calls.length,3);
+    assert.equal(calls[2].headers.authorization,undefined);
+    assert.equal(calls[2].headers["x-api-key"],undefined);
+  } finally{f.restore();}
+});
