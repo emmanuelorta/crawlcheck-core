@@ -86,17 +86,37 @@ async function resolvesPublic(host) {
     return addrs.every((a) => (a.family === 6 ? !v6Private(a.address) : !v4Private(a.address)));
   } catch (e) { return true; }   // unresolvable: fetch fails on its own
 }
+// Forward only representation headers when following a redirect to a different origin.
+// In particular, never forward caller credentials, cookies or custom account headers.
+const CROSS_ORIGIN_HEADERS = new Set(["accept", "accept-language", "user-agent"]);
+function redirectHeaders(headers, sameOrigin) {
+  if (sameOrigin || !headers) return headers;
+  const safe = new Headers();
+  for (const [key, value] of new Headers(headers)) {
+    if (CROSS_ORIGIN_HEADERS.has(key.toLowerCase())) safe.set(key, value);
+  }
+  return safe;
+}
 export async function safeFetch(url, init, opts) {
   const o = opts || {}, max = o.maxRedirects == null ? MAX_REDIRECTS : o.maxRedirects;
-  let u = String(url);
+  let u = String(url), previousOrigin = null;
   for (let hop = 0; hop <= max; hop++) {
     const p = new URL(u);
     if (p.protocol !== "https:" && p.protocol !== "http:") throw new Error("blocked: scheme " + p.protocol);
     if (!o.trustedNetwork && (!isPublicHost(p.hostname) || !(await resolvesPublic(p.hostname)))) throw new Error("blocked: non-public address " + p.hostname);
-    const res = await fetch(u, Object.assign({}, init, { redirect: "manual" }));
+    const crossOrigin = previousOrigin !== null && previousOrigin !== p.origin;
+    const options = Object.assign({}, init, { redirect: "manual" });
+    if (crossOrigin) {
+      options.headers = redirectHeaders(init && init.headers, false);
+      // Never forward request bodies or non-GET methods across origins.
+      options.method = "GET";
+      delete options.body;
+    }
+    const res = await fetch(u, options);
     const loc = res.headers && res.headers.get("location");
     if (res.status >= 300 && res.status < 400 && loc) {
       try { if (res.body && res.body.cancel) await res.body.cancel(); } catch (e) { }
+      previousOrigin = p.origin;
       u = new URL(loc, u).toString(); continue;
     }
     if (!res.url) { try { Object.defineProperty(res, "url", { value: u }); } catch (e) { } }
