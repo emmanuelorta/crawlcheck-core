@@ -99,13 +99,14 @@ function redirectHeaders(headers, sameOrigin) {
 }
 export async function safeFetch(url, init, opts) {
   const o = opts || {}, max = o.maxRedirects == null ? MAX_REDIRECTS : o.maxRedirects;
-  let u = String(url), originalOrigin = null;
+  let u = String(url), originalOrigin = null, leftOrigin = false;
   for (let hop = 0; hop <= max; hop++) {
     const p = new URL(u);
     if (p.protocol !== "https:" && p.protocol !== "http:") throw new Error("blocked: scheme " + p.protocol);
     if (!o.trustedNetwork && (!isPublicHost(p.hostname) || !(await resolvesPublic(p.hostname)))) throw new Error("blocked: non-public address " + p.hostname);
     if (originalOrigin === null) originalOrigin = p.origin;
-    const crossOrigin = originalOrigin !== p.origin;
+    if (originalOrigin !== p.origin) leftOrigin = true;
+    const crossOrigin = leftOrigin;
     const options = Object.assign({}, init, { redirect: "manual" });
     if (crossOrigin) {
       options.headers = redirectHeaders(init && init.headers, false);
