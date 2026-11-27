@@ -93,7 +93,8 @@ export async function safeFetch(url, init, opts) {
     const p = new URL(u);
     if (p.protocol !== "https:" && p.protocol !== "http:") throw new Error("blocked: scheme " + p.protocol);
     if (!o.trustedNetwork && (!isPublicHost(p.hostname) || !(await resolvesPublic(p.hostname)))) throw new Error("blocked: non-public address " + p.hostname);
-    const res = await fetch(u, Object.assign({}, init, { redirect: "manual" }));
+    // Optional injected fetch makes this same guarded transport testable by the GitHub observer.
+    const res = await (o.fetch || fetch)(u, Object.assign({}, init, { redirect: "manual" }));
     const loc = res.headers && res.headers.get("location");
     if (res.status >= 300 && res.status < 400 && loc) {
       try { if (res.body && res.body.cancel) await res.body.cancel(); } catch (e) { }
