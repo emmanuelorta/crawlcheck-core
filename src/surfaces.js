@@ -99,12 +99,13 @@ function redirectHeaders(headers, sameOrigin) {
 }
 export async function safeFetch(url, init, opts) {
   const o = opts || {}, max = o.maxRedirects == null ? MAX_REDIRECTS : o.maxRedirects;
-  let u = String(url), previousOrigin = null;
+  let u = String(url), originalOrigin = null;
   for (let hop = 0; hop <= max; hop++) {
     const p = new URL(u);
     if (p.protocol !== "https:" && p.protocol !== "http:") throw new Error("blocked: scheme " + p.protocol);
     if (!o.trustedNetwork && (!isPublicHost(p.hostname) || !(await resolvesPublic(p.hostname)))) throw new Error("blocked: non-public address " + p.hostname);
-    const crossOrigin = previousOrigin !== null && previousOrigin !== p.origin;
+    if (originalOrigin === null) originalOrigin = p.origin;
+    const crossOrigin = originalOrigin !== p.origin;
     const options = Object.assign({}, init, { redirect: "manual" });
     if (crossOrigin) {
       options.headers = redirectHeaders(init && init.headers, false);
@@ -116,7 +117,6 @@ export async function safeFetch(url, init, opts) {
     const loc = res.headers && res.headers.get("location");
     if (res.status >= 300 && res.status < 400 && loc) {
       try { if (res.body && res.body.cancel) await res.body.cancel(); } catch (e) { }
-      previousOrigin = p.origin;
       u = new URL(loc, u).toString(); continue;
     }
     if (!res.url) { try { Object.defineProperty(res, "url", { value: u }); } catch (e) { } }
