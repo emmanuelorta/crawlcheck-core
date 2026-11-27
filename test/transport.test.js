@@ -75,3 +75,20 @@ test("same-origin redirects retain explicitly supplied headers", async () => {
     assert.equal(new Headers(seen[1].headers).get("authorization"),"Bearer local");
   } finally {f.restore();}
 });
+
+
+test("redirect back to original origin must not restore initial credentials", async () => {
+  const calls=[];
+  const f=withFetch((url,init)=>{
+    calls.push({url,headers:Object.fromEntries(new Headers(init.headers))});
+    if(url.endsWith("/start"))return new Response(null,{status:302,headers:{location:"https://other.example/step"}});
+    if(url.endsWith("/step"))return new Response(null,{status:302,headers:{location:"https://original.example/final"}});
+    return new Response("done");
+  });
+  try {
+    await safeFetch("https://original.example/start",{headers:{authorization:"Bearer secret","x-api-key":"secret",accept:"text/html"}});
+    assert.equal(calls.length,3);
+    assert.equal(calls[2].headers.authorization,undefined);
+    assert.equal(calls[2].headers["x-api-key"],undefined);
+  } finally{f.restore();}
+});
