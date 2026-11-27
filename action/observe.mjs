@@ -9,6 +9,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
+import { safeFetch } from "../src/surfaces.js";
 
 export const SIG_PREFIX = "crawlcheck-observation-v1\n";
 export const SOFTWARE = { name: "crawlcheck-action-observer", version: "1.0.0" };
@@ -36,13 +37,14 @@ export async function fetchOne(url, ident, timeoutMs, F) {
   const row = { identity: ident.id, request: { headers: ident.headers }, started_at: new Date().toISOString(), ms: 0, status: null, url_final: null, headers: {}, bytes: 0, sha256: null, error: null };
   let buf = null;
   try {
-    const r = await (F || fetch)(url, { redirect: "follow", headers: ident.headers, signal: AbortSignal.timeout(timeoutMs || 12000) });
+    // Each redirect hop must pass the public-address guard; never follow a task URL into a private network.
+    const r = await safeFetch(url, { headers: ident.headers, signal: AbortSignal.timeout(timeoutMs || 12000) }, { fetch: F || fetch });
     // cap1 (2026-11-22, outside audit F6): read as a stream and stop at a ceiling instead of buffering any size; a cut body
     // carries no digest (a digest of a prefix would read as the page's) and says truncated.
     const cap = READ_MAX; const parts = []; let n = 0;
     if (r.body && r.body.getReader) { const rd = r.body.getReader(); for (;;) { const { done, value } = await rd.read(); if (done) break; if (n + value.byteLength > cap) { parts.push(value.subarray(0, cap - n)); n = cap; row.truncated = true; try { await rd.cancel(); } catch (e) { } break; } parts.push(value); n += value.byteLength; } buf = Buffer.concat(parts.map((x) => Buffer.from(x)), n); }
     else { buf = Buffer.from(await r.arrayBuffer()); if (buf.byteLength > cap) { buf = buf.subarray(0, cap); row.truncated = true; } }
-    row.status = r.status; row.url_final = r.url || url;
+    row.status = r.status; row.url_final = r.finalUrl || r.url || url;
     for (const h of KEEP_HEADERS) { const v = r.headers.get(h); if (v != null) row.headers[h] = String(v).slice(0, 300); }
     row.bytes = buf.byteLength; row.sha256 = row.truncated ? null : sha256hex(buf);
   } catch (e) { row.error = String((e && e.message) || e).slice(0, 160); }
